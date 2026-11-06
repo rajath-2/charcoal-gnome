@@ -1,0 +1,128 @@
+/* Semi-transparent GNOME header bars */
+headerbar {
+    background-image: none;
+    background-color: rgba(35, 37, 42, 0.65);
+}
+
+headerbar:backdrop {
+    background-color: rgba(35, 37, 42, 0.45);
+}
+/* BEGIN Adwaita-MacButtons */
+/* Adwaita/libadwaita GTK4 window control override.
+ *
+ * Scope: only GtkWindowControls spacing and its close/minimize/maximize/
+ * restore buttons.
+ * This leaves headerbar/titlebar min-height, padding, shadows, and spacing
+ * controlled by upstream Adwaita.
+ */
+
+windowcontrols {
+  border-spacing: 0;
+}
+
+windowcontrols > button.close:not(.raised),
+windowcontrols > button.minimize:not(.raised),
+windowcontrols > button.maximize:not(.raised),
+windowcontrols > button.restore:not(.raised) {
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0;
+}
+
+windowcontrols > button.close:not(.raised) > image,
+windowcontrols > button.minimize:not(.raised) > image,
+windowcontrols > button.maximize:not(.raised) > image,
+windowcontrols > button.restore:not(.raised) > image {
+  min-width: 14px;
+  min-height: 14px;
+  padding: 0;
+  border-radius: 999px;
+  background-image: none;
+  color: transparent;
+  -gtk-icon-size: 8px;
+  -gtk-icon-shadow: none;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+
+windowcontrols > button.close:not(.raised) > image {
+  background-color: #ff5f57;
+}
+
+windowcontrols > button.minimize:not(.raised) > image {
+  background-color: #febc2e;
+}
+
+windowcontrols > button.maximize:not(.raised) > image,
+windowcontrols > button.restore:not(.raised) > image {
+  background-color: #28c840;
+}
+
+windowcontrols > button.close:hover:not(.raised) > image {
+  background-color: #e6544d;
+  color: rgb(0 0 0 / 58%);
+  -gtk-icon-source: -gtk-icontheme("window-close-symbolic");
+  -gtk-icon-size: 8px;
+}
+
+windowcontrols > button.minimize:hover:not(.raised) > image {
+  background-color: #dfa529;
+  color: rgb(0 0 0 / 58%);
+  -gtk-icon-source: -gtk-icontheme("window-minimize-symbolic");
+  -gtk-icon-size: 8px;
+}
+
+windowcontrols > button.maximize:hover:not(.raised) > image {
+  background-color: #23b038;
+  color: rgb(0 0 0 / 58%);
+  -gtk-icon-source: -gtk-icontheme("list-add-symbolic");
+  -gtk-icon-size: 8px;
+}
+
+windowcontrols > button.restore:hover:not(.raised) > image {
+  background-color: #23b038;
+  color: rgb(0 0 0 / 58%);
+  -gtk-icon-source: -gtk-icontheme("window-restore-symbolic");
+  -gtk-icon-size: 8px;
+}
+
+windowcontrols > button.close:active:not(.raised) > image {
+  background-color: #cc4c46;
+  color: rgb(0 0 0 / 58%);
+  -gtk-icon-source: -gtk-icontheme("window-close-symbolic");
+  -gtk-icon-size: 8px;
+}
+
+windowcontrols > button.minimize:active:not(.raised) > image {
+  background-color: #cb9625;
+  color: rgb(0 0 0 / 58%);
+  -gtk-icon-source: -gtk-icontheme("window-minimize-symbolic");
+  -gtk-icon-size: 8px;
+}
+
+windowcontrols > button.maximize:active:not(.raised) > image {
+  background-color: #20a033;
+  color: rgb(0 0 0 / 58%);
+  -gtk-icon-source: -gtk-icontheme("list-add-symbolic");
+  -gtk-icon-size: 8px;
+}
+
+windowcontrols > button.restore:active:not(.raised) > image {
+  background-color: #20a033;
+  color: rgb(0 0 0 / 58%);
+  -gtk-icon-source: -gtk-icontheme("window-restore-symbolic");
+  -gtk-icon-size: 8px;
+}
+
+windowcontrols > button.close:backdrop:not(.raised) > image {
+  background-color: #e9827d;
+}
+
+windowcontrols > button.minimize:backdrop:not(.raised) > image {
+  background-color: #e7bd62;
+}
+
+windowcontrols > button.maximize:backdrop:not(.raised) > image,
+windowcontrols > button.restore:backdrop:not(.raised) > image {
+  background-color: #60c16f;
+}
+/* END Adwaita-MacButtons */

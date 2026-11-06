@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="64"
+   height="64"
+   version="1.1"
+   id="svg73"
+   sodipodi:docname="abcd.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <metadata
+     id="metadata77">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#f5f7fa"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1377"
+     inkscape:window-height="679"
+     id="namedview75"
+     showgrid="false"
+     inkscape:zoom="6.2890624"
+     inkscape:cx="47.622361"
+     inkscape:cy="45.316771"
+     inkscape:window-x="13"
+     inkscape:window-y="130"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="g877"
+     inkscape:document-rotation="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:showpageshadow="2"
+     inkscape:deskcolor="#d1d1d1" />
+  <defs
+     id="defs29">
+    <clipPath
+       id="clip0_2648_607">
+      <rect
+         width="16"
+         height="16"
+         fill="#ffffff"
+         id="rect1"
+         x="0"
+         y="0" />
+    </clipPath>
+  </defs>
+  <circle
+     cx="32.516094"
+     cy="31.877844"
+     r="0"
+     fill="url(#b)"
+     stroke-width="1.5715"
+     id="circle41"
+     style="fill:url(#b)" />
+  <g
+     aria-label="GZ"
+     transform="matrix(1.2212657,0,0,0.81882264,0.4960938,-0.1661539)"
+     id="text93"
+     style="font-weight:bold;font-size:11.5263px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';fill:#f2f2f2;stroke-width:0.288159" />
+  <g
+     id="g877"
+     transform="matrix(1.1,0,0,1.1,-3.1845928,-3.2065454)">
+    <circle
+       style="opacity:1;fill:#414141;stroke:#dfdfdf;stroke-width:2.27272727;stroke-dasharray:none;fill-opacity:1;stroke-opacity:1"
+       id="path1"
+       cx="31.985994"
+       cy="32.005951"
+       r="25.454546" />
+    <path
+       style="color:#444444;fill:#dfdfdf;fill-opacity:1;stroke:none;stroke-width:0.834254;stroke-dasharray:none;stroke-opacity:0.3"
+       class="ColorScheme-Text"
+       d="m 28.623072,20.235711 c -0.672586,0 -0.671653,9e-4 -1.31036,0.679809 l -1.822678,2.683117 h -4.266052 c -1.479692,0 -2.689687,1.103316 -2.689687,2.541896 v 15.021499 c 0,1.43859 1.209995,2.614157 2.689687,2.614157 h 21.524033 c 1.479686,0 2.689677,-1.175567 2.689677,-2.614157 V 26.140533 c 0,-1.43858 -1.209991,-2.541896 -2.689677,-2.541896 H 38.481956 L 36.636289,20.889249 C 36.022255,20.236844 36.021506,20.235711 35.34892,20.235711 Z m 14.272724,5.044388 a 0.84073111,0.84073114 0 0 1 0.01956,0 0.84073111,0.84073114 0 0 1 0.840788,0.840731 0.84073111,0.84073114 0 0 1 -0.840763,0.840731 0.84073111,0.84073114 0 0 1 -0.840734,-0.840731 0.84073111,0.84073114 0 0 1 0.821027,-0.840731 z m -11.011609,1.681462 a 6.7258492,6.7258492 0 0 1 0.101811,0 6.7258492,6.7258492 0 0 1 6.725848,6.725851 6.7258492,6.7258492 0 0 1 -6.72585,6.725849 6.7258492,6.7258492 0 0 1 -6.725847,-6.725849 6.7258492,6.7258492 0 0 1 6.624038,-6.725851 z m 0.01966,3.362925 a 3.3629244,3.3629244 0 0 0 -3.280806,3.362926 3.3629244,3.3629244 0 0 0 3.362925,3.362923 3.3629244,3.3629244 0 0 0 3.362925,-3.362923 3.3629244,3.3629244 0 0 0 -3.362925,-3.362926 3.3629244,3.3629244 0 0 0 -0.08211,0 z"
+       id="path5-3" />
+    <g
+       id="g2"
+       style="fill:#dfdfdf;fill-opacity:1;stroke:none;stroke-opacity:0.6"
+       transform="translate(-1.8181818e-7,1.7274047)" />
+  </g>
+</svg>

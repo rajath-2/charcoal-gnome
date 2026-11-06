@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+"""Install this offline GNOME 51 theme bundle for the current user."""
+import argparse
+import ast
+import datetime
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parent
+HOME_DIR = Path.home()
+DATA = Path(os.environ.get('XDG_DATA_HOME', HOME_DIR / '.local/share'))
+CONFIG = Path(os.environ.get('XDG_CONFIG_HOME', HOME_DIR / '.config'))
+STATE = Path(os.environ.get('XDG_STATE_HOME', HOME_DIR / '.local/state')) / 'gnome-themes/backups'
+AUTO = 'adaptive-smoke-panel@local'
+BLUR = 'blur-my-shell@aunetx'
+USER_THEME = 'user-theme@gnome-shell-extensions.gcampax.github.com'
+EXTENSIONS = [USER_THEME, BLUR, AUTO]
+TARGETS = {'gtk-4.0': CONFIG / 'gtk-4.0'}
+for name in ['GreyStone - circle', 'Future-black-cursors']:
+    TARGETS[f'icons/{name}'] = DATA / 'icons' / name
+for name in ['Waybar-GNOME', 'Waybar-GNOME-Islands']:
+    TARGETS[f'themes/{name}'] = HOME_DIR / '.themes' / name
+for name in EXTENSIONS:
+    TARGETS[f'extensions/{name}'] = DATA / 'gnome-shell/extensions' / name
+
+
+def run(args):
+    return subprocess.run([str(a) for a in args], check=True, text=True, capture_output=True).stdout.strip()
+
+
+def gs(action, schema, key, value=None):
+    args = ['gsettings']
+    if schema.startswith('org.gnome.shell.extensions.blur-my-shell'):
+        args += ['--schemadir', DATA / 'gnome-shell/extensions' / BLUR / 'schemas']
+    elif schema == 'org.gnome.shell.extensions.user-theme':
+        args += ['--schemadir', DATA / 'gnome-shell/extensions' / USER_THEME / 'schemas']
+    args += [action, schema, key]
+    if value is not None:
+        args.append(value)
+    return run(args)
+
+
+def setting_plan(mode):
+    interface = 'org.gnome.desktop.interface'
+    panel = 'org.gnome.shell.extensions.blur-my-shell.panel'
+    popup = 'org.gnome.shell.extensions.blur-my-shell.popup'
+    plan = [
+        (interface, 'icon-theme', repr('GreyStone - circle')),
+        (interface, 'cursor-theme', repr('Future-black-cursors')),
+        (interface, 'cursor-size', '24'),
+        (interface, 'color-scheme', repr('prefer-dark')),
+        ('org.gnome.desktop.wm.preferences', 'button-layout', repr('close,minimize:icon')),
+        ('org.gnome.shell.extensions.user-theme', 'name', repr('Waybar-GNOME' if mode == 'compact' else 'Waybar-GNOME-Islands')),
+        (panel, 'blur', 'true' if mode == 'compact' else 'false'),
+        (panel, 'static-blur', 'true'), (panel, 'override-background', 'false'),
+        (panel, 'override-background-dynamically', 'false'), (panel, 'gradient-panel', 'false'),
+        (panel, 'corner-radius', '10'), (panel, 'rounded-corners', '0'),
+        (popup, 'blur', 'true'), (popup, 'static-blur', 'true'),
+        (popup, 'override-background', 'false'),
+        (popup, 'pipeline', repr('pipeline_charcoal_popup_light')),
+    ]
+    for key, value in [('menu-corner-radius', 22), ('quick-settings-corner-radius', 22),
+                       ('calendar-corner-radius', 22), ('notification-corner-radius', 16),
+                       ('submenu-corner-radius', 16)]:
+        plan.append((popup, key, str(value)))
+    return plan
+
+
+def exists(path):
+    return path.exists() or path.is_symlink()
+
+
+def remove(path):
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.exists():
+        shutil.rmtree(path)
+
+
+def write_manifest(folder, data):
+    (folder / 'manifest.json').write_text(json.dumps(data, indent=2) + '\n')
+
+
+def preflight(activate):
+    for label, target in TARGETS.items():
+        source = ROOT / label
+        if not source.is_dir():
+            raise RuntimeError(f'Missing bundle directory: {source}')
+        if source.resolve().is_relative_to(target.resolve()) or target.resolve().is_relative_to(source.resolve()):
+            raise RuntimeError(f'Source and destination overlap: {source} / {target}')
+    commands = ['glib-compile-schemas'] + (['gsettings', 'gjs', 'gnome-shell'] if activate else [])
+    for command in commands:
+        if not shutil.which(command):
+            raise RuntimeError(f'Required command missing: {command}')
+    if activate:
+        version = run(['gnome-shell', '--version'])
+        if not re.search(r'GNOME Shell 51(?:\.|\s|$)', version):
+            raise RuntimeError(f'Activation requires GNOME Shell 51; found {version}. Use --no-activate to copy only.')
+        if not os.environ.get('DBUS_SESSION_BUS_ADDRESS'):
+            raise RuntimeError('Run inside your GNOME session, or use --no-activate.')
+        if os.environ.get('GSETTINGS_BACKEND') == 'memory':
+            raise RuntimeError('The memory settings backend cannot persist an installation; use --no-activate.')
+
+
+def install(args):
+    preflight(not args.no_activate)
+    print('Mode:', args.mode, '(copy only)' if args.no_activate else '(activate)')
+    for label, target in TARGETS.items():
+        print(f'  {label} -> {target}')
+    if args.dry_run:
+        print('Dry run: no files or settings changed.')
+        return
+    STATE.mkdir(parents=True, exist_ok=True)
+    backup = STATE / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')
+    (backup / 'files').mkdir(parents=True)
+    manifest = {'format': 1, 'home': str(HOME_DIR), 'targets': {}, 'settings': [], 'status': 'installing'}
+    write_manifest(backup, manifest)
+    try:
+        for label, target in TARGETS.items():
+            manifest['targets'][label] = {'path': str(target), 'existed': exists(target), 'installed': False}
+            write_manifest(backup, manifest)
+            if exists(target):
+                saved = backup / 'files' / label
+                saved.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(target), str(saved))
+            target.parent.mkdir(parents=True, exist_ok=True)
+            # Do not install old GTK edit snapshots as live configuration.
+            ignore = shutil.ignore_patterns('gtk.css.*') if label == 'gtk-4.0' else None
+            shutil.copytree(ROOT / label, target, symlinks=True, ignore=ignore)
+            manifest['targets'][label]['installed'] = True
+            write_manifest(backup, manifest)
+        for extension in [USER_THEME, BLUR]:
+            run(['glib-compile-schemas', DATA / 'gnome-shell/extensions' / extension / 'schemas'])
+        if not args.no_activate:
+            plan = setting_plan(args.mode)
+            special = [('org.gnome.shell', 'enabled-extensions'), ('org.gnome.shell', 'disabled-extensions'),
+                       ('org.gnome.shell.extensions.blur-my-shell', 'pipelines')]
+            for schema, key in [(s, k) for s, k, _ in plan] + special:
+                value = gs('get', schema, key)
+                if gs('writable', schema, key) != 'true':
+                    raise RuntimeError(f'Setting is locked: {schema} {key}')
+                manifest['settings'].append([schema, key, value])
+            write_manifest(backup, manifest)
+            # Let the existing adaptive instance restore its blur state before applying a mode.
+            current_disabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'disabled-extensions').removeprefix('@as '))
+            if AUTO not in current_disabled:
+                gs('set', 'org.gnome.shell', 'disabled-extensions', repr(current_disabled + [AUTO]))
+                time.sleep(0.5)
+            run(['gjs', '-m', ROOT / 'configure-blur.js', DATA / 'gnome-shell/extensions' / BLUR / 'schemas'])
+            for schema, key, value in plan:
+                gs('set', schema, key, value)
+                if gs('get', schema, key) != value:
+                    raise RuntimeError(f'Setting did not persist: {schema} {key}')
+            enabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'enabled-extensions').removeprefix('@as '))
+            disabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'disabled-extensions').removeprefix('@as '))
+            wanted = [USER_THEME, BLUR] + ([AUTO] if args.mode == 'auto' else [])
+            enabled = [x for x in enabled if x not in EXTENSIONS] + wanted
+            disabled = [x for x in disabled if x not in wanted]
+            if args.mode != 'auto' and AUTO not in disabled:
+                disabled.append(AUTO)
+            gs('set', 'org.gnome.shell', 'disabled-extensions', repr(disabled))
+            gs('set', 'org.gnome.shell', 'enabled-extensions', repr(enabled))
+        manifest['status'] = 'complete'
+        write_manifest(backup, manifest)
+    except Exception:
+        manifest['status'] = 'failed'
+        write_manifest(backup, manifest)
+        print(f'Installation interrupted. Restore with: ./install.sh --restore "{backup}"', file=sys.stderr)
+        raise
+    print(f'Installed. Backup: {backup}')
+    if not args.no_activate:
+        print('Log out and back in to load the installed extension code. No automatic logout is performed.')
+        if gs('get', 'org.gnome.shell', 'disable-user-extensions') == 'true':
+            print('User extensions are globally disabled. Enable them in the Extensions application.')
+
+
+def restore(args):
+    backup = Path(args.restore).expanduser().resolve()
+    data = json.loads((backup / 'manifest.json').read_text())
+    if data.get('format') != 1 or data.get('home') != str(HOME_DIR) or data.get('status') == 'restored':
+        raise RuntimeError('Not an unrestored backup for this user.')
+    for label, entry in data['targets'].items():
+        if label not in TARGETS or Path(entry['path']) != TARGETS[label]:
+            raise RuntimeError('Backup destinations do not match current HOME/XDG directories.')
+    if args.dry_run:
+        print(f'Would restore files and {len(data["settings"])} settings from {backup}')
+        return
+    # Restore settings while the bundled extension schemas still exist.
+    for schema, key, value in reversed(data['settings']):
+        gs('set', schema, key, value)
+    for label, entry in reversed(list(data['targets'].items())):
+        target = TARGETS[label]
+        saved = backup / 'files' / label
+        if exists(saved):
+            remove(target)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(saved), str(target))
+        elif not entry['existed']:
+            remove(target)
+    data['status'] = 'restored'
+    write_manifest(backup, data)
+    print('Restored previous files and settings. Log out/in if extensions were active.')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--mode', choices=['auto', 'compact', 'islands'], default='auto')
+    parser.add_argument('--dry-run', action='store_true', help='show changes without writing')
+    parser.add_argument('--no-activate', action='store_true', help='install files without desktop settings changes')
+    parser.add_argument('--restore', metavar='BACKUP_DIR', help='restore a backup created by this installer')
+    args = parser.parse_args()
+    if os.geteuid() == 0:
+        parser.error('Run as your normal desktop user, not sudo/root.')
+    try:
+        restore(args) if args.restore else install(args)
+    except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError) as error:
+        detail = getattr(error, 'stderr', '') or str(error)
+        print(f'Error: {detail.strip()}', file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

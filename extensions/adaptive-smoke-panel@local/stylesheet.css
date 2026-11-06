@@ -1,0 +1,22 @@
+/* The drawing surface morphs continuously; controls keep the accepted island layout. */
+#panel.adaptive-smoke {
+    margin: 3px 18px 3px;
+    height: 30px;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    transition-duration: 0ms;
+}
+#panel.adaptive-smoke #panelLeft,
+#panel.adaptive-smoke #panelCenter,
+#panel.adaptive-smoke #panelRight {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    box-shadow: none;
+    padding: 0 4px;
+    margin: 0;
+    transition-duration: 0ms;
+}

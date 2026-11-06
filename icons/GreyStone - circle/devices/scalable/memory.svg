@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="64"
+   height="64"
+   version="1.1"
+   id="svg73"
+   sodipodi:docname="abcd.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <metadata
+     id="metadata77">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#f5f7fa"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1377"
+     inkscape:window-height="679"
+     id="namedview75"
+     showgrid="false"
+     inkscape:zoom="6.2890624"
+     inkscape:cx="47.622361"
+     inkscape:cy="45.316771"
+     inkscape:window-x="13"
+     inkscape:window-y="130"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="g877"
+     inkscape:document-rotation="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:showpageshadow="2"
+     inkscape:deskcolor="#d1d1d1" />
+  <defs
+     id="defs29">
+    <clipPath
+       id="clip0_2648_607">
+      <rect
+         width="16"
+         height="16"
+         fill="#ffffff"
+         id="rect1"
+         x="0"
+         y="0" />
+    </clipPath>
+  </defs>
+  <circle
+     cx="32.516094"
+     cy="31.877844"
+     r="0"
+     fill="url(#b)"
+     stroke-width="1.5715"
+     id="circle41"
+     style="fill:url(#b)" />
+  <g
+     aria-label="GZ"
+     transform="matrix(1.2212657,0,0,0.81882264,0.4960938,-0.1661539)"
+     id="text93"
+     style="font-weight:bold;font-size:11.5263px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';fill:#f2f2f2;stroke-width:0.288159" />
+  <g
+     id="g877"
+     transform="matrix(1.1,0,0,1.1,-3.1845928,-3.2065454)">
+    <circle
+       style="opacity:1;fill:#414141;stroke:#dfdfdf;stroke-width:2.27272727;stroke-dasharray:none;fill-opacity:1;stroke-opacity:1"
+       id="path1"
+       cx="31.985994"
+       cy="32.005951"
+       r="25.454546" />
+    <path
+       style="color:#444444;fill:#dfdfdf;fill-opacity:1;stroke:none;stroke-width:0.859787;stroke-dasharray:none;stroke-opacity:0.3"
+       class="ColorScheme-Text"
+       d="m 18.122969,39.804143 c 0,0.960039 0.772888,1.732928 1.732931,1.732928 h 1.732934 1.73293 1.732932 1.732932 1.732934 v -3.465862 h -3.465866 -1.732932 -1.73293 -3.465865 z m 0,-3.465867 h 1.732931 13.863457 1.732413 6.931903 1.732934 1.732931 v -3.465865 -1.732934 a 1.7329322,1.7329322 0 0 1 -1.732931,-1.732931 1.7329322,1.7329322 0 0 1 1.611621,-1.729464 2.5993982,2.5993982 0 0 1 0.121262,-0.0036 V 25.940623 25.07416 24.207693 c 0,-0.960044 -0.772884,-1.732933 -1.732931,-1.732933 H 43.25014 42.383673 21.588313 20.721844 19.855381 c -0.960046,0 -1.732932,0.772889 -1.732932,1.732933 v 0.866467 0.866463 1.732935 a 1.7329322,1.7329322 0 0 1 0.173293,0.01032 1.7329322,1.7329322 0 0 1 1.560159,1.722539 1.7329322,1.7329322 0 0 1 -1.732932,1.732931 v 1.732967 1.73276 z m 5.198795,-3.465865 v -6.931728 h 3.465864 v 6.931728 z m 6.931729,0 v -6.931728 h 3.465864 v 6.931728 z m 1.732933,8.66466 h 1.732931 1.732413 1.733103 1.732934 1.732931 1.732935 1.732934 c 0.960044,0 1.732931,-0.772889 1.732931,-1.732928 v -1.732934 h -3.465865 -1.732935 -1.732931 -1.732934 -3.465516 -1.732931 z m 5.198447,-8.66466 v -6.931728 h 3.465865 v 6.931728 z"
+       id="path5-5" />
+    <g
+       id="g2"
+       style="fill:#dfdfdf;fill-opacity:1;stroke:none;stroke-opacity:0.6"
+       transform="translate(-1.8181818e-7,1.7274047)" />
+  </g>
+</svg>
