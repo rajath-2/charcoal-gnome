@@ -55,6 +55,7 @@ standalone compact mode retains generous 72px side margins. Automatic mode uses
 
 Extensions bundled for offline installation:
 
+- `charcoal-launchers@local`: centered multipurpose search and a configurable hold-Super favorites wheel.
 - `adaptive-smoke-panel@local`: the custom automatic bar and menu handoff behavior.
 - `user-theme@gnome-shell-extensions.gcampax.github.com`: loads the Shell stylesheets.
 - `blur-my-shell@aunetx`: the exact installed version used with this setup, including
@@ -120,3 +121,45 @@ The file-install test uses a temporary home, checks dry run, installation, repea
 installation, symlink preservation, and both restore operations. It does not change
 your live desktop settings. Real-session activation is intentionally not run by
 the test.
+
+## Search and favorites launchers
+
+- **Super+Space:** centered search for applications, files, calculations, and settings.
+- **Tap Super:** workspace overview.
+- **Hold Super:** compact favorites wheel at the cursor. Move into a sector and
+  release to launch. Release in its center or outside its boundary to cancel.
+- **Esc:** cancel. Other Super shortcuts cancel the wheel and retain their action.
+
+Open **Extensions → Charcoal Launchers → Preferences**, or run:
+
+```bash
+gnome-extensions prefs charcoal-launchers@local
+```
+
+Preferences include favorite apps and order, wheel size/spacing, colors, opacity,
+optional blur, search categories, result limit, shortcut, hold delay, and animation
+speed. Defaults use a 240-pixel wheel and short fade/scale animations. The system's
+animation setting is respected. Settings survive reinstalling the bundle.
+
+Super+Space normally switches keyboard layouts. The extension temporarily removes
+that exact conflict and restores it when disabled. Other shortcut collisions are
+reported in Preferences instead of overriding them. Disabling the wheel restores
+GNOME's original Super action. Avoid enabling another Super-key remapper alongside
+this extension.
+
+File results depend on GNOME Files and its search index; this is not a whole-disk
+scan. GNOME Search privacy settings are respected. Calculator and Settings require
+their installed GNOME search providers. Enter copies calculation results; ordinary
+results open their application or file. Unavailable providers are shown separately.
+
+Additional verification:
+
+```bash
+node --test tests/test_launchers.mjs
+glib-compile-schemas --strict extensions/charcoal-launchers@local/schemas
+```
+
+The new UI and gestures were exercised in an isolated GNOME 51.1 Wayland session,
+including a focused application, Super+Left, selected/neutral release, Escape,
+shortcut conflict rejection, provider responses, Preferences, and blur. Physical
+keyboard behavior and mixed-DPI monitors still merit checking after login.

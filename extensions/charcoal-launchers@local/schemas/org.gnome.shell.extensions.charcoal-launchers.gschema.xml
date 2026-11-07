@@ -1,0 +1,34 @@
+<schemalist>
+  <schema id="org.gnome.shell.extensions.charcoal-launchers" path="/org/gnome/shell/extensions/charcoal-launchers/">
+    <key name="search-enabled" type="b"><default>true</default></key>
+    <key name="wheel-enabled" type="b"><default>true</default></key>
+    <key name="launcher-shortcut" type="as"><default>['&lt;Super&gt;space']</default></key>
+    <key name="hold-delay" type="i"><range min="150" max="1500"/><default>300</default></key>
+    <key name="search-apps" type="b"><default>true</default></key>
+    <key name="search-files" type="b"><default>true</default></key>
+    <key name="search-calculator" type="b"><default>true</default></key>
+    <key name="search-settings" type="b"><default>true</default></key>
+    <key name="result-limit" type="i"><range min="3" max="20"/><default>8</default></key>
+    <key name="favorites" type="as"><default>[]</default></key>
+    <key name="favorites-initialized" type="b"><default>false</default></key>
+    <key name="wheel-radius" type="i"><range min="100" max="300"/><default>120</default></key>
+    <key name="wheel-icon-size" type="i"><range min="20" max="64"/><default>32</default></key>
+    <key name="neutral-radius" type="i"><range min="24" max="80"/><default>36</default></key>
+    <key name="sector-gap" type="i"><range min="0" max="12"/><default>3</default></key>
+    <key name="background-color" type="s"><default>'#202127'</default></key>
+    <key name="foreground-color" type="s"><default>'#f0f0f2'</default></key>
+    <key name="accent-color" type="s"><default>'#a6b5cc'</default></key>
+    <key name="background-opacity" type="i"><range min="40" max="100"/><default>94</default></key>
+    <key name="corner-radius" type="i"><range min="0" max="40"/><default>20</default></key>
+    <key name="launcher-width" type="i"><range min="360" max="1000"/><default>600</default></key>
+    <key name="search-icon-size" type="i"><range min="20" max="64"/><default>32</default></key>
+    <key name="animations" type="b"><default>true</default></key>
+    <key name="scale-animation" type="b"><default>true</default></key>
+    <key name="open-duration" type="i"><range min="0" max="500"/><default>180</default></key>
+    <key name="close-duration" type="i"><range min="0" max="400"/><default>120</default></key>
+    <key name="blur" type="b"><default>false</default></key>
+    <key name="blur-radius" type="i"><range min="0" max="60"/><default>18</default></key>
+    <key name="owned-bindings" type="s"><default>'[]'</default></key>
+    <key name="status" type="s"><default>''</default></key>
+  </schema>
+</schemalist>

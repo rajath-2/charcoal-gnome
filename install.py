@@ -20,7 +20,8 @@ STATE = Path(os.environ.get('XDG_STATE_HOME', HOME_DIR / '.local/state')) / 'gno
 AUTO = 'adaptive-smoke-panel@local'
 BLUR = 'blur-my-shell@aunetx'
 USER_THEME = 'user-theme@gnome-shell-extensions.gcampax.github.com'
-EXTENSIONS = [USER_THEME, BLUR, AUTO]
+LAUNCHERS = 'charcoal-launchers@local'
+EXTENSIONS = [USER_THEME, BLUR, AUTO, LAUNCHERS]
 TARGETS = {'gtk-4.0': CONFIG / 'gtk-4.0'}
 for name in ['GreyStone - circle', 'Future-black-cursors']:
     TARGETS[f'icons/{name}'] = DATA / 'icons' / name
@@ -122,6 +123,11 @@ def install(args):
     manifest = {'format': 1, 'home': str(HOME_DIR), 'targets': {}, 'settings': [], 'status': 'installing'}
     write_manifest(backup, manifest)
     try:
+        if not args.no_activate:
+            for key in ['enabled-extensions', 'disabled-extensions']:
+                manifest['settings'].append(['org.gnome.shell', key, gs('get', 'org.gnome.shell', key)])
+            write_manifest(backup, manifest)
+            stop_launchers()
         for label, target in TARGETS.items():
             manifest['targets'][label] = {'path': str(target), 'existed': exists(target), 'installed': False}
             write_manifest(backup, manifest)
@@ -135,13 +141,15 @@ def install(args):
             shutil.copytree(ROOT / label, target, symlinks=True, ignore=ignore)
             manifest['targets'][label]['installed'] = True
             write_manifest(backup, manifest)
-        for extension in [USER_THEME, BLUR]:
+        for extension in [USER_THEME, BLUR, LAUNCHERS]:
             run(['glib-compile-schemas', DATA / 'gnome-shell/extensions' / extension / 'schemas'])
         if not args.no_activate:
             plan = setting_plan(args.mode)
             special = [('org.gnome.shell', 'enabled-extensions'), ('org.gnome.shell', 'disabled-extensions'),
                        ('org.gnome.shell.extensions.blur-my-shell', 'pipelines')]
             for schema, key in [(s, k) for s, k, _ in plan] + special:
+                if any(s == schema and k == key for s, k, _ in manifest['settings']):
+                    continue
                 value = gs('get', schema, key)
                 if gs('writable', schema, key) != 'true':
                     raise RuntimeError(f'Setting is locked: {schema} {key}')
@@ -159,7 +167,7 @@ def install(args):
                     raise RuntimeError(f'Setting did not persist: {schema} {key}')
             enabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'enabled-extensions').removeprefix('@as '))
             disabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'disabled-extensions').removeprefix('@as '))
-            wanted = [USER_THEME, BLUR] + ([AUTO] if args.mode == 'auto' else [])
+            wanted = [USER_THEME, BLUR, LAUNCHERS] + ([AUTO] if args.mode == 'auto' else [])
             enabled = [x for x in enabled if x not in EXTENSIONS] + wanted
             disabled = [x for x in disabled if x not in wanted]
             if args.mode != 'auto' and AUTO not in disabled:
@@ -180,6 +188,26 @@ def install(args):
             print('User extensions are globally disabled. Enable them in the Extensions application.')
 
 
+def stop_launchers():
+    if not os.environ.get('DBUS_SESSION_BUS_ADDRESS') or not shutil.which('gnome-extensions'):
+        return
+    env = dict(os.environ, LC_ALL='C')
+    def info():
+        return subprocess.run(['gnome-extensions', 'info', LAUNCHERS], env=env,
+                              capture_output=True, text=True, check=False).stdout
+    details = info()
+    installed_path = DATA / 'gnome-shell/extensions' / LAUNCHERS
+    if not any(line.strip() == f'Path: {installed_path}' for line in details.splitlines()):
+        return  # An isolated file-install test must not disable the live extension.
+    run(['gnome-extensions', 'disable', LAUNCHERS])
+    for _ in range(20):
+        details = info()
+        if not re.search(r'State: (ACTIVE|ENABLED)\b', details):
+            return
+        time.sleep(0.1)
+    raise RuntimeError('Launcher is still active; refusing to replace its files before cleanup.')
+
+
 def restore(args):
     backup = Path(args.restore).expanduser().resolve()
     data = json.loads((backup / 'manifest.json').read_text())
@@ -191,6 +219,8 @@ def restore(args):
     if args.dry_run:
         print(f'Would restore files and {len(data["settings"])} settings from {backup}')
         return
+    if f'extensions/{LAUNCHERS}' in data['targets']:
+        stop_launchers()
     # Restore settings while the bundled extension schemas still exist.
     for schema, key, value in reversed(data['settings']):
         gs('set', schema, key, value)

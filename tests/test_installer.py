@@ -42,6 +42,9 @@ class InstallerTest(unittest.TestCase):
             extension = home / '.local/share/gnome-shell/extensions/adaptive-smoke-panel@local'
             self.assertEqual((extension / 'extension.js').read_bytes(),
                              (ROOT / 'extensions/adaptive-smoke-panel@local/extension.js').read_bytes())
+            launcher = home / '.local/share/gnome-shell/extensions/charcoal-launchers@local'
+            self.assertTrue((launcher / 'prefs.js').is_file())
+            self.assertTrue((launcher / 'schemas/gschemas.compiled').is_file())
             backup_root = home / '.local/state/gnome-themes/backups'
             first = next(backup_root.iterdir())
             self.assertEqual(json.loads((first / 'manifest.json').read_text())['status'], 'complete')
@@ -57,6 +60,7 @@ class InstallerTest(unittest.TestCase):
             self.assertTrue(theme.is_symlink())
             self.assertEqual(theme.resolve(), original_theme)
             self.assertFalse(extension.exists())
+            self.assertFalse(launcher.exists())
 
 
 if __name__ == '__main__':

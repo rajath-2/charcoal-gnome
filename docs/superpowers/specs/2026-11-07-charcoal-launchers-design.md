@@ -1,6 +1,8 @@
 # Charcoal launchers
 
-Status: design for review; implementation has not started.
+Status: approved and implemented; runtime validation recorded in the implementation plan ledger.
+
+User refinement: smaller wheel and a cleaner minimal theme for both surfaces. Defaults now use a 120 logical-pixel radius, 32-pixel wheel icons, and subtle highlights.
 
 ## Intent and agreed behavior
 
