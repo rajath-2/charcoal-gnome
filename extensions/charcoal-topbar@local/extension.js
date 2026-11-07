@@ -11,6 +11,7 @@ import {PanelMask} from './panelmask.js';
 import {addBlur} from './blur.js';
 import {buildCss, rgb01} from './theme.js';
 import {installMenuHandoff} from './menuHandoff.js';
+import {ContentTheme} from './contentTheme.js';
 
 const MODE_CLASSES = ['charcoal-compact', 'charcoal-islands', 'adaptive-smoke'];
 
@@ -23,6 +24,7 @@ export default class CharcoalTopbar extends Extension {
         this._timeline = null;
         this._progress = null;
         this._prefs = this.getSettings();
+        this._contentTheme = new ContentTheme([Main.panel._leftBox, Main.panel._centerBox, Main.panel._rightBox]);
         this._blur = this._settings('blur-my-shell@aunetx', 'org.gnome.shell.extensions.blur-my-shell.panel');
         this._popupBlur = this._settings('blur-my-shell@aunetx', 'org.gnome.shell.extensions.blur-my-shell.popup');
         // Restored on disable; lock screen keeps us enabled (session-modes), so this is a real toggle-off.
@@ -78,6 +80,7 @@ export default class CharcoalTopbar extends Extension {
         theme.load_stylesheet(file);
         this._unloadStyle();
         this._styleFile = file;
+        this._contentTheme.update(values['text-color'], values['bold-text']);
         this._surface?.queue_repaint();
     }
 
@@ -272,6 +275,8 @@ export default class CharcoalTopbar extends Extension {
     }
 
     disable() {
+        this._contentTheme?.destroy();
+        this._contentTheme = null;
         this._restoreMenuHandoff?.();
         this._restoreMenuHandoff = null;
         if (this._pending)

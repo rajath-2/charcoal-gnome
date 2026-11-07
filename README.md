@@ -219,6 +219,15 @@ background, outline (color, width, strength) and shadow (color, size, strength; 
 color reads as a glow) in their Appearance preferences. The bar and the search panel also
 have a text size. The wheel's shadow applies to its window previews.
 
+The bar's **Text and icons** color also overrides nested extension labels, workspace
+dots, and tray icons (including full-color icons). Text size and weight apply throughout
+the bar. New indicators are themed automatically; disabling Charcoal restores their
+own styling. Forced color also replaces warning/status colors and turns full-color
+tray images into monochrome silhouettes. Popup colors remain separately configurable.
+
+The isolated GNOME 51 integration check is `python3 tests/test_topbar_session.py`.
+It starts a separate headless session and leaves its log and screenshot under `/tmp`.
+
 ## Desktop widgets
 
 Charcoal Widgets puts three cards on the desktop: **weather** (top-left), a **month

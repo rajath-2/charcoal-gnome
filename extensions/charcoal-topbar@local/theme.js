@@ -73,10 +73,13 @@ export function buildCss(o) {
 }
 
 /* Bar controls */
-#panel .panel-button {
+#panel {
     color: ${text};
     font-weight: ${o['bold-text'] ? 600 : 400};
     font-size: ${+(o['text-size'] / 100).toFixed(2)}em;
+}
+#panel .workspace-dot { background-color: ${text} !important; }
+#panel .panel-button {
     border-radius: ${radius}px;
     -natural-hpadding: 10px;
     -minimum-hpadding: 5px;
