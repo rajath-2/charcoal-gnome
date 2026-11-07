@@ -27,6 +27,19 @@ test('zero border and shadow, bad colors fall back to gray', () => {
     assert.ok(css.includes('#808080'));
 });
 
+test('each widget has its own size; 100% keeps the reference sizes', () => {
+    const css = buildCss({...defaults, 'music-size': 150, 'calendar-size': 70});
+    const block = name => css.slice(css.indexOf(`/* ${name} */`), css.indexOf('/* end */', css.indexOf(`/* ${name} */`)));
+    assert.ok(block('weather').includes('padding: 16px'));
+    assert.ok(block('weather').includes('font-size: 13pt'));
+    assert.ok(block('music').includes('padding: 24px'));
+    assert.ok(block('music').includes('font-size: 19.5pt'));
+    assert.ok(block('calendar').includes('width: 21px'), 'day cells shrink');
+    assert.ok(block('music').includes('.charcoal-widget-music .charcoal-play-ring'));
+    assert.doesNotMatch(css, /undefined|NaN/);
+    assert.equal(css.split('{').length, css.split('}').length);
+});
+
 test('saved positions survive garbage and missing monitors', () => {
     assert.deepEqual(readPositions('nope', 1, 0), DEFAULT_POSITIONS);
     const p = readPositions(JSON.stringify({music: {monitor: 3, x: 0.1, y: 0.1}, weather: {monitor: 0, x: 4, y: -1}}), 2, 1);

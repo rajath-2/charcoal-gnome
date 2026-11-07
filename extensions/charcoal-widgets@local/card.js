@@ -6,6 +6,7 @@ import {addBlur, RoundedMask} from './blur.js';
 import {effectBox, fromFraction, readPositions, toFraction} from './policy.js';
 
 const FADE_MS = 200;
+const DRAG_THRESHOLD = 5;
 
 // One desktop widget: a blur layer cut to the card's corners, the styled surface on top.
 // Dragged by its background (buttons stop their own presses), saved as a fraction of the
@@ -22,7 +23,11 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
         this._mask = new RoundedMask();
         this._blurLayer.add_effect(this._mask);
         this.add_child(this._blurLayer);
-        this.body = new St.BoxLayout({style_class: 'charcoal-widget', orientation: Clutter.Orientation.VERTICAL});
+        // Lengths set in code follow the widget's size preference, like the stylesheet's (theme.js).
+        const scale = settings.get_int(`${name}-size`) / 100;
+        this.px = n => Math.round(n * scale);
+        this.body = new St.BoxLayout({style_class: `charcoal-widget charcoal-widget-${name}`,
+            orientation: Clutter.Orientation.VERTICAL});
         this.add_child(this.body);
         // A fixed size keeps the monitor-sized wallpaper copy from inflating the card.
         this.body.connect('notify::allocation', () => {
@@ -85,22 +90,34 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
         return this._shown;
     }
 
+    // Only arm a drag here: grabbing on press would cancel the click gesture of the card's buttons.
     _startDrag(event) {
         if (this._grab || this.settings.get_boolean('locked') || event.get_button() !== Clutter.BUTTON_PRIMARY)
             return Clutter.EVENT_PROPAGATE;
+        for (let actor = global.stage.get_event_actor(event); actor && actor !== this; actor = actor.get_parent()) {
+            if (actor instanceof St.Button)
+                return Clutter.EVENT_PROPAGATE;
+        }
         const [px, py] = event.get_coords();
+        this._press = [px, py];
         this._offset = [px - this.x, py - this.y];
-        this._grab = global.stage.grab(this);
-        return Clutter.EVENT_STOP;
+        return Clutter.EVENT_PROPAGATE;
     }
 
     _drag(event) {
-        if (!this._grab)
-            return Clutter.EVENT_PROPAGATE;
-        // The release went elsewhere (another grab, a modal): finish here instead of following the pointer.
-        if (!(event.get_state() & Clutter.ModifierType.BUTTON1_MASK))
-            return this._endDrag();
+        const held = event.get_state() & Clutter.ModifierType.BUTTON1_MASK;
         const [px, py] = event.get_coords();
+        if (!this._grab) {
+            if (!held)
+                this._press = null;
+            if (!this._press || Math.hypot(px - this._press[0], py - this._press[1]) < DRAG_THRESHOLD)
+                return Clutter.EVENT_PROPAGATE;
+            this._press = null;
+            this._grab = global.stage.grab(this);
+        }
+        // The release went elsewhere (another grab, a modal): finish here instead of following the pointer.
+        if (!held)
+            return this._endDrag();
         this.set_position(Math.round(px - this._offset[0]), Math.round(py - this._offset[1]));
         return Clutter.EVENT_STOP;
     }
@@ -115,6 +132,7 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
     }
 
     _endDrag() {
+        this._press = null;
         if (!this._grab)
             return Clutter.EVENT_PROPAGATE;
         this._grab.dismiss();

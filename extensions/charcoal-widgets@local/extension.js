@@ -20,6 +20,7 @@ export default class CharcoalWidgets extends Extension {
         this._signals = [];
         this._windows = new Map();
         this._cards = new Map();
+        this._resized = new Set();
         this._settings = this.getSettings();
         // Above the wallpaper, below every window; the window group is hidden in the overview.
         // A BackgroundGroup: Mutter's restack keeps those under the windows (a plain actor ends up on top).
@@ -52,13 +53,13 @@ export default class CharcoalWidgets extends Extension {
     _settingChanged(key) {
         if (key === 'positions') this._placeAll();
         else if (REBUILD_KEYS.includes(key)) this._build();
-        else if (!OWN_KEYS.includes(key)) this._queueStyle();
+        else if (!OWN_KEYS.includes(key)) this._queueStyle(key.endsWith('-size') ? key.slice(0, -5) : null);
     }
 
-    _build() {
-        this._cards.forEach(card => card.destroy());
-        this._cards.clear();
-        for (const name of NAMES) {
+    _build(names = NAMES) {
+        for (const name of names) {
+            this._cards.get(name)?.destroy();
+            this._cards.delete(name);
             if (!this._settings.get_boolean(`${name}-enabled`))
                 continue;
             const card = new CARD_TYPES[name](name, this._settings, this);
@@ -110,12 +111,18 @@ export default class CharcoalWidgets extends Extension {
     }
 
     // Sliders emit many changes; restyle once they settle.
-    _queueStyle() {
+    // `resized`: a card whose size changed; its code-set lengths need a rebuild too.
+    _queueStyle(resized = null) {
+        if (resized)
+            this._resized.add(resized);
         if (this._styleTimer)
             GLib.Source.remove(this._styleTimer);
         this._styleTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
             this._styleTimer = 0;
             this._loadStyle();
+            if (this._resized.size)
+                this._build([...this._resized]);
+            this._resized.clear();
             this._cards.forEach(card => card._syncBlur());
             return GLib.SOURCE_REMOVE;
         });

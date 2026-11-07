@@ -19,7 +19,7 @@ const time = date => date.toLocaleTimeString(undefined, {hour: '2-digit', minute
 export const CalendarCard = GObject.registerClass(class CalendarCard extends Card {
     _init(name, settings, ext) {
         super._init(name, settings, ext);
-        this.body.width = WIDTH;
+        this.body.width = this.px(WIDTH);
         // Same first weekday as the top bar's calendar: the desktop setting, else the locale.
         this._desktop = new Gio.Settings({schema_id: 'org.gnome.desktop.calendar'});
         const readWeekStart = () => {
@@ -44,9 +44,9 @@ export const CalendarCard = GObject.registerClass(class CalendarCard extends Car
             header.add_child(button);
         }
         this._grid = new Clutter.GridLayout();
-        const grid = new St.Widget({layout_manager: this._grid, style: 'margin-top: 8px;'});
+        const grid = new St.Widget({layout_manager: this._grid, style: `margin-top: ${this.px(8)}px;`});
         this._gridActor = grid;
-        this._events = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style: 'margin-top: 8px; spacing: 2px;'});
+        this._events = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style: `margin-top: ${this.px(8)}px; spacing: ${this.px(2)}px;`});
         for (const child of [header, grid, this._events])
             this.body.add_child(child);
         this._source = new DBusEventSource();

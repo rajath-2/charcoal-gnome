@@ -3,6 +3,9 @@
     <key name="weather-enabled" type="b"><default>true</default></key>
     <key name="calendar-enabled" type="b"><default>true</default></key>
     <key name="music-enabled" type="b"><default>true</default></key>
+    <key name="weather-size" type="i"><range min="70" max="150"/><default>100</default><summary>Size of the weather widget, percent</summary></key>
+    <key name="calendar-size" type="i"><range min="70" max="150"/><default>100</default><summary>Size of the calendar widget, percent</summary></key>
+    <key name="music-size" type="i"><range min="70" max="150"/><default>100</default><summary>Size of the music widget, percent</summary></key>
     <key name="locked" type="b"><default>false</default></key>
     <key name="positions" type="s"><default>'{}'</default><summary>JSON {name: {monitor, x, y}}, x/y as fractions of the free space</summary></key>
     <key name="weather-city" type="s"><default>''</default></key>

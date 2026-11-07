@@ -16,9 +16,9 @@ export const WeatherCard = GObject.registerClass(class WeatherCard extends Card 
         this._session = new Soup.Session({user_agent: 'Charcoal Widgets', timeout: 20});
         this._data = null;
         this._schedule = {lastAttempt: null, lastSuccess: null, failures: 0};
-        const row = new St.BoxLayout({style: 'spacing: 12px;'});
+        const row = new St.BoxLayout({style: `spacing: ${this.px(12)}px;`});
         this._temp = new St.Label({style_class: 'charcoal-widget-big', y_align: Clutter.ActorAlign.CENTER});
-        this._icon = new St.Icon({icon_size: 36, style_class: 'charcoal-widget-accent', y_align: Clutter.ActorAlign.CENTER});
+        this._icon = new St.Icon({icon_size: this.px(36), style_class: 'charcoal-widget-accent', y_align: Clutter.ActorAlign.CENTER});
         row.add_child(this._temp);
         row.add_child(this._icon);
         this._condition = new St.Label({style_class: 'charcoal-widget-title'});

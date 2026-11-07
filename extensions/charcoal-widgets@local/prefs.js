@@ -63,6 +63,10 @@ export default class CharcoalWidgetsPreferences extends ExtensionPreferences {
         toggle(shown, 'weather-enabled', 'Weather');
         toggle(shown, 'calendar-enabled', 'Calendar', 'Events come from the calendars in your top bar’s date menu');
         toggle(shown, 'music-enabled', 'Music');
+        const sizes = group(widgets, 'Size', 'Percent of the normal size: text, icons, artwork and spacing.');
+        spin(sizes, 'weather-size', 'Weather', 70, 150, 5);
+        spin(sizes, 'calendar-size', 'Calendar', 70, 150, 5);
+        spin(sizes, 'music-size', 'Music', 70, 150, 5);
         const placement = group(widgets, 'Placement', 'Drag a widget by its background to move it.');
         toggle(placement, 'locked', 'Lock widgets', 'Stop widgets from being dragged');
         button(placement, 'Reset positions', 'Weather top-left, calendar top-right, music bottom-center', 'Reset',

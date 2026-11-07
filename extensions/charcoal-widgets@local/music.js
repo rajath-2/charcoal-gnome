@@ -16,11 +16,11 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
         super._init(name, settings, ext);
         this._ext = ext;
         this._position = 0;
-        this.body.width = WIDTH;
-        const top = new St.BoxLayout({style: 'spacing: 14px;'});
-        this._art = new St.Icon({icon_size: 72, style_class: 'charcoal-artwork'});
+        this.body.width = this.px(WIDTH);
+        const top = new St.BoxLayout({style: `spacing: ${this.px(14)}px;`});
+        this._art = new St.Icon({icon_size: this.px(72), style_class: 'charcoal-artwork'});
         const info = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true,
-            y_align: Clutter.ActorAlign.CENTER, style: 'spacing: 4px;'});
+            y_align: Clutter.ActorAlign.CENTER, style: `spacing: ${this.px(4)}px;`});
         this._title = new St.Label({style_class: 'charcoal-widget-title'});
         this._artist = new St.Label({style_class: 'charcoal-widget-dim'});
         info.add_child(this._title);
@@ -29,7 +29,7 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
         top.add_child(info);
 
         this._trough = new St.Widget({style_class: 'charcoal-seek-trough', reactive: true, x_expand: true,
-            style: 'margin-top: 14px;'});
+            style: `margin-top: ${this.px(14)}px;`});
         this._fill = new St.Widget({style_class: 'charcoal-seek-fill'});
         this._trough.add_child(this._fill);
         this._trough.connect('notify::allocation', () => this._syncSeek());
@@ -40,16 +40,16 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
             if (length) this._watcher.seek(trackId, Math.min(1, Math.max(0, (x - tx) / actor.width)) * length);
             return Clutter.EVENT_STOP;
         });
-        const times = new St.BoxLayout({style: 'margin-top: 4px;'});
+        const times = new St.BoxLayout({style: `margin-top: ${this.px(4)}px;`});
         this._elapsed = new St.Label({style_class: 'charcoal-seek-time', x_expand: true});
         this._total = new St.Label({style_class: 'charcoal-seek-time'});
         times.add_child(this._elapsed);
         times.add_child(this._total);
 
-        const controls = new St.BoxLayout({x_align: Clutter.ActorAlign.CENTER, style: 'spacing: 18px; margin-top: 8px;'});
+        const controls = new St.BoxLayout({x_align: Clutter.ActorAlign.CENTER, style: `spacing: ${this.px(18)}px; margin-top: ${this.px(8)}px;`});
         const button = (icon, label, callback, extra = '') => {
             const b = new St.Button({style_class: `charcoal-music-button ${extra}`, accessible_name: label,
-                child: new St.Icon({icon_name: icon, icon_size: extra ? 20 : 16}), y_align: Clutter.ActorAlign.CENTER});
+                child: new St.Icon({icon_name: icon, icon_size: this.px(extra ? 20 : 16)}), y_align: Clutter.ActorAlign.CENTER});
             b.connect('clicked', callback);
             controls.add_child(b);
             return b;
