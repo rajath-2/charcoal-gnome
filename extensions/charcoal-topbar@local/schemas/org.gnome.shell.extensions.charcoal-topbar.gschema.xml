@@ -10,5 +10,22 @@
       <default>true</default>
       <summary>Blur only the wallpaper behind the bar and popups (cheaper than live blur)</summary>
     </key>
+    <!-- Appearance: read by theme.js (stylesheet) and morph.js (auto-mode surface). -->
+    <key name="bar-color" type="s"><default>'#121212'</default></key>
+    <key name="bar-opacity" type="i"><range min="0" max="100"/><default>78</default></key>
+    <key name="islands-opacity" type="i"><range min="0" max="100"/><default>90</default></key>
+    <key name="border-opacity" type="i"><range min="0" max="60"/><default>15</default></key>
+    <key name="text-color" type="s"><default>'#ededed'</default></key>
+    <key name="accent-color" type="s"><default>'#c7c7c7'</default></key>
+    <key name="bar-height" type="i"><range min="22" max="48"/><default>30</default></key>
+    <key name="corner-radius" type="i"><range min="0" max="20"/><default>10</default></key>
+    <key name="top-margin" type="i"><range min="0" max="16"/><default>3</default></key>
+    <key name="side-margin" type="i"><range min="0" max="400"/><default>72</default></key>
+    <key name="island-margin" type="i"><range min="0" max="120"/><default>18</default></key>
+    <key name="bold-text" type="b"><default>true</default></key>
+    <key name="shadow" type="b"><default>true</default></key>
+    <key name="popup-color" type="s"><default>'#141414'</default></key>
+    <key name="popup-opacity" type="i"><range min="30" max="100"/><default>86</default></key>
+    <key name="popup-radius" type="i"><range min="0" max="32"/><default>22</default></key>
   </schema>
 </schemalist>

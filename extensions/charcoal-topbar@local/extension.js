@@ -7,6 +7,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {useIslands} from './policy.js';
 import {paintMorph} from './morph.js';
+import {buildCss, rgb01} from './theme.js';
 import {installMenuHandoff} from './menuHandoff.js';
 
 const MODE_CLASSES = ['charcoal-compact', 'charcoal-islands', 'adaptive-smoke'];
@@ -33,7 +34,16 @@ export default class CharcoalTopbar extends Extension {
         for (const box of [Main.panel._leftBox, Main.panel._centerBox, Main.panel._rightBox])
             this._connect(box, 'notify::allocation', () => this._surface.queue_repaint());
         this._connect(Main.panel.get_parent(), 'child-added', () => this._syncBlur());
-        this._connect(this._prefs, 'changed', () => this._applyPrefs());
+        // Sliders emit many changes; restyle once they settle.
+        this._connect(this._prefs, 'changed', () => {
+            if (this._prefsTimer)
+                GLib.Source.remove(this._prefsTimer);
+            this._prefsTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+                this._prefsTimer = 0;
+                this._applyPrefs();
+                return GLib.SOURCE_REMOVE;
+            });
+        });
         this._connect(global.display, 'window-created', (_, window) => {
             this._watch(window);
             this._queue();
@@ -51,7 +61,34 @@ export default class CharcoalTopbar extends Extension {
         ]);
     }
 
+    // The stylesheet is generated from preferences; a new file per change makes St reparse it.
+    _loadStyle() {
+        const values = Object.fromEntries(this._prefs.settings_schema.list_keys()
+            .map(key => [key, this._prefs.get_value(key).deepUnpack()]));
+        this._style = {color: rgb01(values['bar-color']), line: rgb01(values['text-color']),
+            full: values['bar-opacity'] / 100, islands: values['islands-opacity'] / 100,
+            border: values['border-opacity'] / 100, radius: values['corner-radius'], shadow: values.shadow};
+        const dir = GLib.build_filenamev([GLib.get_user_runtime_dir(), 'charcoal-topbar']);
+        GLib.mkdir_with_parents(dir, 0o700);
+        const file = Gio.File.new_for_path(`${dir}/style-${GLib.uuid_string_random()}.css`);
+        file.replace_contents(new TextEncoder().encode(buildCss(values)), null, false, Gio.FileCreateFlags.NONE, null);
+        const theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
+        theme.load_stylesheet(file);
+        this._unloadStyle();
+        this._styleFile = file;
+        this._surface?.queue_repaint();
+    }
+
+    _unloadStyle() {
+        if (!this._styleFile)
+            return;
+        St.ThemeContext.get_for_stage(global.stage).get_theme().unload_stylesheet(this._styleFile);
+        this._styleFile.delete(null);
+        this._styleFile = null;
+    }
+
     _applyPrefs() {
+        this._loadStyle();
         const mode = this._prefs.get_string('mode');
         const staticBlur = this._prefs.get_boolean('static-blur');
         for (const settings of [this._blur, this._popupBlur])
@@ -143,7 +180,7 @@ export default class CharcoalTopbar extends Extension {
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
         const boxes = [Main.panel._leftBox, Main.panel._centerBox, Main.panel._rightBox]
             .map(box => ({x: box.x + box.translation_x, width: box.width}));
-        paintMorph(cr, Main.panel.width, Main.panel.height, boxes, this._progress ?? 0, scale);
+        paintMorph(cr, Main.panel.width, Main.panel.height, boxes, this._progress ?? 0, scale, this._style);
         cr.$dispose();
     }
 
@@ -214,6 +251,9 @@ export default class CharcoalTopbar extends Extension {
         this._restoreMenuHandoff = null;
         if (this._pending)
             GLib.Source.remove(this._pending);
+        if (this._prefsTimer)
+            GLib.Source.remove(this._prefsTimer);
+        this._prefsTimer = 0;
         this._pending = 0;
         for (const [object, id] of this._signals ?? [])
             object.disconnect(id);
@@ -226,6 +266,7 @@ export default class CharcoalTopbar extends Extension {
         for (const [settings, key, value] of this._saved ?? [])
             settings.set_boolean(key, value);
         this._saved = null;
+        this._unloadStyle();
         this._surface?.destroy();
         this._surface = null;
         this._signals = [];
