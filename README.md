@@ -167,7 +167,8 @@ the test.
 - **Radial dock mode** (Preferences): running apps join the wheel as outer rings. Windows
   open out of the cursor, and releasing on the focused app minimizes it into the cursor;
   releasing on it again restores it from there. Every minimize and restore in this mode
-  (Super+H, the title-bar button) also goes into and out of the cursor.
+  (Super+H, the title-bar button) also goes into and out of the cursor. With the dock hidden,
+  Super+1…9 open the 1st…9th wheel favorite (clockwise from the top) the same way.
 
 Open **Extensions → Charcoal Launchers → Preferences**, or run:
 
