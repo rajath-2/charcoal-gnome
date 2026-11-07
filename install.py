@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install this offline GNOME 51 theme bundle for the current user."""
+"""Install the GNOME 51 theme bundle for the current user; offline by default."""
 import argparse
 import ast
 import datetime
@@ -11,6 +11,9 @@ import shutil
 import subprocess
 import sys
 import time
+
+sys.dont_write_bytecode = True  # keep the bundle checkout untouched, even on --dry-run
+from extension_manager import install_manager
 
 ROOT = Path(__file__).resolve().parent
 HOME_DIR = Path.home()
@@ -109,11 +112,15 @@ def preflight(activate):
             raise RuntimeError(f'Missing bundle directory: {source}')
         if source.resolve().is_relative_to(target.resolve()) or target.resolve().is_relative_to(source.resolve()):
             raise RuntimeError(f'Source and destination overlap: {source} / {target}')
-    commands = ['glib-compile-schemas'] + (['gsettings', 'gjs', 'gnome-shell'] if activate else [])
-    for command in commands:
-        if not shutil.which(command):
-            raise RuntimeError(f'Required command missing: {command}')
+    commands = ['glib-compile-schemas'] + (['gsettings', 'gjs'] if activate else [])
+    missing = [c for c in commands if not shutil.which(c)]
+    if missing:
+        raise RuntimeError(f'Required commands missing: {", ".join(missing)}. Install them with your '
+                           "distribution's package manager (see README.md, Dependencies), then rerun.")
     if activate:
+        if not shutil.which('gnome-shell'):
+            raise RuntimeError('Activation requires an existing GNOME Shell 51 desktop. '
+                               'See README.md for setup, or use --no-activate to copy only.')
         version = run(['gnome-shell', '--version'])
         if not re.search(r'GNOME Shell 51(?:\.|\s|$)', version):
             raise RuntimeError(f'Activation requires GNOME Shell 51; found {version}. Use --no-activate to copy only.')
@@ -125,6 +132,8 @@ def preflight(activate):
 
 def install(args):
     preflight(not args.no_activate)
+    if args.install_extension_manager:
+        install_manager(args.dry_run)
     labels = {label for name in args.only for label in COMPONENTS[name]}
     targets = {label: target for label, target in TARGETS.items() if label in labels}
     extensions = [x for x in EXTENSIONS if f'extensions/{x}' in labels]
@@ -281,12 +290,19 @@ def main():
                         help='install only some pieces: topbar, appearance, launchers, widgets (default: all)')
     parser.add_argument('--dry-run', action='store_true', help='show changes without writing')
     parser.add_argument('--no-activate', action='store_true', help='install files without desktop settings changes')
+    parser.add_argument('--install-extension-manager', action='store_true',
+                        help='offer to install optional Extension Manager from Flathub for this user')
     parser.add_argument('--restore', metavar='BACKUP_DIR', help='restore a backup created by this installer')
     args = parser.parse_args()
+    if args.restore and args.install_extension_manager:
+        parser.error('--install-extension-manager cannot be combined with --restore.')
     if os.geteuid() == 0:
         parser.error('Run as your normal desktop user, not sudo/root.')
     try:
         restore(args) if args.restore else install(args)
+    except KeyboardInterrupt:
+        print('\nCancelled.', file=sys.stderr)
+        return 130
     except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError) as error:
         detail = getattr(error, 'stderr', '') or str(error)
         print(f'Error: {detail.strip()}', file=sys.stderr)
