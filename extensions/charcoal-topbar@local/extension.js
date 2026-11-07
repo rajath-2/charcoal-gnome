@@ -158,7 +158,7 @@ export default class CharcoalTopbar extends Extension {
             monitor: window.get_monitor(),
             horizontal: window.maximized_horizontally,
             vertical: window.maximized_vertically,
-        })), monitor);
+        })), monitor, this._prefs.get_boolean('invert-auto'));
         if (islands === this._lastMode)
             return;
         Main.panel.add_style_class_name('adaptive-smoke');

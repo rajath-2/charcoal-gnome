@@ -47,7 +47,8 @@ profiles, the starting layout) and retires an older top-bar setup.
 
 The default is **automatic** mode: a complete bar when no visible app on the
 current workspace/panel monitor is fully maximized; islands when one is maximized.
-The controls stay anchored while the background splits/joins. Popup handoffs and
+The controls stay anchored while the background splits/joins. **Invert automatic layout** in
+Preferences swaps the two: islands on the desktop, a full bar while an app is maximized. Popup handoffs and
 lighter popup blur are included.
 
 Log out and back in after installation. GNOME caches extension JavaScript for the

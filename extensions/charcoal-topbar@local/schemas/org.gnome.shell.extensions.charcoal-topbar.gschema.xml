@@ -6,6 +6,10 @@
       <default>'auto'</default>
       <summary>Bar layout</summary>
     </key>
+    <key name="invert-auto" type="b">
+      <default>false</default>
+      <summary>Automatic layout swapped: islands on the desktop, full bar while an app is maximized</summary>
+    </key>
     <key name="static-blur" type="b">
       <default>true</default>
       <summary>Blur only the wallpaper behind the bar and popups (cheaper than live blur)</summary>
