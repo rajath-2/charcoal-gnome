@@ -13,7 +13,7 @@ import {MusicCard} from './music.js';
 const NAMES = ['weather', 'calendar', 'music'];
 const CARD_TYPES = {weather: WeatherCard, calendar: CalendarCard, music: MusicCard};
 const REBUILD_KEYS = ['weather-enabled', 'calendar-enabled', 'music-enabled', 'blur', 'static-blur'];
-const OWN_KEYS = ['positions', 'locked', 'weather-city', 'weather-latitude', 'weather-longitude', 'idle-artwork'];
+const OWN_KEYS = ['positions', 'sizes', 'locked', 'weather-city', 'weather-latitude', 'weather-longitude', 'idle-artwork'];
 
 export default class CharcoalWidgets extends Extension {
     enable() {
@@ -51,7 +51,7 @@ export default class CharcoalWidgets extends Extension {
     }
 
     _settingChanged(key) {
-        if (key === 'positions') this._placeAll();
+        if (key === 'positions' || key === 'sizes') this._placeAll();
         else if (REBUILD_KEYS.includes(key)) this._build();
         else if (!OWN_KEYS.includes(key)) this._queueStyle(key.endsWith('-size') ? key.slice(0, -5) : null);
     }

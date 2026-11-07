@@ -63,14 +63,15 @@ export default class CharcoalWidgetsPreferences extends ExtensionPreferences {
         toggle(shown, 'weather-enabled', 'Weather');
         toggle(shown, 'calendar-enabled', 'Calendar', 'Events come from the calendars in your top bar’s date menu');
         toggle(shown, 'music-enabled', 'Music');
-        const sizes = group(widgets, 'Size', 'Percent of the normal size: text, icons, artwork and spacing.');
+        const sizes = group(widgets, 'Text and icon size', 'Text, icons, artwork and spacing. Drag a card’s edge or corner to resize it: its layout adapts automatically to the available space. Larger text leaves room for fewer details.');
         spin(sizes, 'weather-size', 'Weather', 70, 150, 5);
         spin(sizes, 'calendar-size', 'Calendar', 70, 150, 5);
         spin(sizes, 'music-size', 'Music', 70, 150, 5);
-        const placement = group(widgets, 'Placement', 'Drag a widget by its background to move it.');
-        toggle(placement, 'locked', 'Lock widgets', 'Stop widgets from being dragged');
+        const placement = group(widgets, 'Placement', 'Drag a widget by its background to move it, by its edge or corner to resize it to any shape.');
+        toggle(placement, 'locked', 'Lock widgets', 'Stop widgets from being moved or resized');
         button(placement, 'Reset positions', 'Weather top-left, calendar top-right, music bottom-center', 'Reset',
             () => settings.reset('positions'));
+        button(placement, 'Reset shapes', 'Each widget fits its content again', 'Reset', () => settings.reset('sizes'));
 
         const weather = group(widgets, 'Weather');
         const describeCity = () => {

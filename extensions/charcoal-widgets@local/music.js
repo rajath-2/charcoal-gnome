@@ -16,9 +16,12 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
         super._init(name, settings, ext);
         this._ext = ext;
         this._position = 0;
-        this.body.width = this.px(WIDTH);
-        const top = new St.BoxLayout({style: `spacing: ${this.px(14)}px;`});
-        this._art = new St.Icon({icon_size: this.px(72), style_class: 'charcoal-artwork'});
+        this.body.natural_width = this.px(WIDTH);
+        const top = this._top = new St.BoxLayout({style: `spacing: ${this.px(14)}px;`});
+        // A CSS background crops to cover without distorting the image, and St clips it
+        // to the border radius (an St.Icon's texture is not clipped by its CSS radius).
+        this._art = new St.Widget({style_class: 'charcoal-artwork',
+            x_align: Clutter.ActorAlign.START, y_align: Clutter.ActorAlign.CENTER});
         const info = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true,
             y_align: Clutter.ActorAlign.CENTER, style: `spacing: ${this.px(4)}px;`});
         this._title = new St.Label({style_class: 'charcoal-widget-title'});
@@ -38,17 +41,19 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
         this._trough.connect('button-press-event', (actor, event) => {
             const [x] = event.get_coords();
             const [tx] = actor.get_transformed_position();
+            const [width] = actor.get_transformed_size(); // The card may be scaled to fit its shape.
             const {length, trackId} = this._track;
-            if (length) this._watcher.seek(trackId, Math.min(1, Math.max(0, (x - tx) / actor.width)) * length);
+            if (length) this._watcher.seek(trackId, Math.min(1, Math.max(0, (x - tx) / width)) * length);
             return Clutter.EVENT_STOP;
         });
-        const times = new St.BoxLayout({style: `margin-top: ${this.px(4)}px;`});
+        const times = this._times = new St.BoxLayout({style: `margin-top: ${this.px(4)}px;`});
         this._elapsed = new St.Label({style_class: 'charcoal-seek-time', x_expand: true});
         this._total = new St.Label({style_class: 'charcoal-seek-time'});
         times.add_child(this._elapsed);
         times.add_child(this._total);
 
-        const controls = new St.BoxLayout({x_align: Clutter.ActorAlign.CENTER, style: `spacing: ${this.px(18)}px; margin-top: ${this.px(8)}px;`});
+        const controls = this._controls = new St.BoxLayout({x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER});
         const button = (icon, label, callback, extra = '') => {
             const b = new St.Button({style_class: `charcoal-music-button ${extra}`, accessible_name: label,
                 child: new St.Icon({icon_name: icon, icon_size: this.px(extra ? 20 : 16)}), y_align: Clutter.ActorAlign.CENTER});
@@ -64,16 +69,8 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
         this._repeat = button('media-playlist-repeat-symbolic', 'Repeat',
             () => this._watcher.setLoop(nextLoop(this._watcher.active?.LoopStatus)));
 
-        if (this.layout === 'small') {
-            // Small: artwork, title and play/pause in one row.
-            this.body.width = -1;
-            controls.remove_child(this._play);
-            top.add_child(this._play);
-            this.body.add_child(top);
-        } else {
-            for (const child of [top, this._trough, times, controls])
-                this.body.add_child(child);
-        }
+        for (const child of [top, this._trough, times, controls])
+            this.body.add_child(child);
         this._watcher = new MprisWatcher(() => this._refresh());
         this._artChanged = settings.connect('changed::idle-artwork', () => this._render());
         // Position is polled only while the card is on screen and something plays.
@@ -88,6 +85,22 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
             settings.disconnect(this._artChanged);
             this._watcher.destroy();
         });
+        this.onLayoutChanged();
+    }
+
+    onLayoutChanged() {
+        const {mode, art, seek, skip, secondary} = this.layout;
+        const inline = mode !== 'stack';
+        const parent = inline ? this._top : this.body;
+        if (this._controls.get_parent() !== parent) {
+            this._controls.get_parent().remove_child(this._controls);
+            parent.add_child(this._controls);
+        }
+        this._controls.set_style(`spacing: ${this.px(inline ? 4 : 14)}px; margin-top: ${this.px(inline ? 0 : 8)}px;`);
+        this._art.visible = art;
+        this._trough.visible = this._times.visible = seek;
+        this._previous.visible = this._next.visible = skip;
+        this._shuffle.visible = this._repeat.visible = secondary;
         this._render();
     }
 
@@ -99,9 +112,9 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
         }
     }
 
-    _idleArt() {
+    _idleArtUri() {
         const path = this.settings.get_string('idle-artwork');
-        return Gio.FileIcon.new(Gio.File.new_for_path(path || `${this._ext.path}/assets/idle.svg`));
+        return Gio.File.new_for_path(path || `${this._ext.path}/assets/idle.svg`).get_uri();
     }
 
     _render() {
@@ -111,10 +124,14 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
         const {title, artist, artUrl, length} = this._track;
         this._title.text = player ? title : 'Nothing playing';
         this._artist.text = player ? artist : '';
-        this._artist.visible = !!this._artist.text && this.layout !== 'small';
+        this._artist.visible = !!this._artist.text && this.layout.artist;
         this._album.text = player ? this._track.album : '';
-        this._album.visible = !!this._album.text && this.layout === 'large';
-        this._art.gicon = player && artUrl ? Gio.FileIcon.new(Gio.File.new_for_uri(artUrl)) : this._idleArt();
+        this._album.visible = !!this._album.text && this.layout.album;
+        const uri = player && artUrl ? Gio.File.new_for_uri(artUrl).get_uri() : this._idleArtUri();
+        if (uri !== this._artUri) {
+            this._artUri = uri;
+            this._art.set_style(`background-image: url(${JSON.stringify(uri)});`);
+        }
         const position = player ? Math.min(this._position, length || this._position) : 0;
         this._elapsed.text = formatTime(position);
         this._total.text = formatTime(player ? length : 0);
@@ -142,6 +159,8 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
     }
 
     _syncSeek() {
+        if (!this._trough.has_allocation())
+            return;
         const width = Math.round(this._trough.width * (this._fraction ?? 0));
         if (this._fill.width !== width)
             this._fill.set_size(width, this._trough.height);

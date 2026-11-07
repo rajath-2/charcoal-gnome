@@ -16,7 +16,7 @@ export const WeatherCard = GObject.registerClass(class WeatherCard extends Card 
         this._session = new Soup.Session({user_agent: 'Charcoal Widgets', timeout: 20});
         this._data = null;
         this._schedule = {lastAttempt: null, lastSuccess: null, failures: 0};
-        const row = new St.BoxLayout({style: `spacing: ${this.px(12)}px;`});
+        const row = this._temperatureRow = new St.BoxLayout({style: `spacing: ${this.px(12)}px;`});
         this._temp = new St.Label({style_class: 'charcoal-widget-big', y_align: Clutter.ActorAlign.CENTER});
         this._icon = new St.Icon({icon_size: this.px(36), style_class: 'charcoal-widget-accent', y_align: Clutter.ActorAlign.CENTER});
         row.add_child(this._temp);
@@ -27,8 +27,12 @@ export const WeatherCard = GObject.registerClass(class WeatherCard extends Card 
             x_align: Clutter.ActorAlign.START});
         this._setup.connect('clicked', () => ext.openPreferences());
         this._extra = new St.Label({style_class: 'charcoal-widget-dim', visible: false});
-        for (const child of [row, this._condition, this._detail, this._extra, this._setup])
-            this.body.add_child(child);
+        this._details = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER});
+        for (const child of [this._condition, this._detail, this._extra, this._setup])
+            this._details.add_child(child);
+        this.body.add_child(row);
+        this.body.add_child(this._details);
         this._timer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, TICK_SECONDS, () => {
             this._tick();
             return GLib.SOURCE_CONTINUE;
@@ -54,8 +58,14 @@ export const WeatherCard = GObject.registerClass(class WeatherCard extends Card 
             GLib.Source.remove(this._timer);
             this._session.abort();
         });
-        this._render();
+        this.onLayoutChanged();
         this._fetch();
+    }
+
+    onLayoutChanged() {
+        this.body.orientation = this.layout.horizontal ? Clutter.Orientation.HORIZONTAL : Clutter.Orientation.VERTICAL;
+        this.body.set_style(this.layout.horizontal ? `spacing: ${this.px(18)}px;` : '');
+        this._render();
     }
 
     onShown(shown) {
@@ -110,10 +120,10 @@ export const WeatherCard = GObject.registerClass(class WeatherCard extends Card 
         const data = this._data;
         this._setup.visible = !this._hasCity();
         this._temp.visible = this._icon.visible = !!data && this._hasCity();
-        this._detail.visible = !!data && this._hasCity() && this.layout !== 'small';
-        this._extra.visible = this._detail.visible && this.layout === 'large';
+        this._detail.visible = !!data && this._hasCity() && this.layout.detail;
+        this._extra.visible = this._detail.visible && this.layout.extra;
         // Small: temperature and icon only; the condition line is for status messages.
-        this._condition.visible = !data || this.layout !== 'small';
+        this._condition.visible = !data || this.layout.condition;
         if (!this._hasCity()) {
             this._condition.text = 'Weather';
             return;
@@ -130,7 +140,7 @@ export const WeatherCard = GObject.registerClass(class WeatherCard extends Card 
         this._detail.text = `${city} · ${data.high}° / ${data.low}°`;
         this._extra.text = [data.feelsLike !== null && `Feels like ${data.feelsLike}°`,
             data.humidity !== null && `Humidity ${data.humidity}%`, data.wind !== null && `Wind ${data.wind} km/h`]
-            .filter(Boolean).join(' · ');
+            .filter(Boolean).join('\n');
         this._extra.visible &&= !!this._extra.text;
     }
 });

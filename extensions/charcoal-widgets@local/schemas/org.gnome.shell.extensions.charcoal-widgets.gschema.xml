@@ -8,6 +8,7 @@
     <key name="music-size" type="i"><range min="70" max="150"/><default>100</default><summary>Size of the music widget, percent</summary></key>
     <key name="locked" type="b"><default>false</default></key>
     <key name="positions" type="s"><default>'{}'</default><summary>JSON {name: {monitor, x, y}}, x/y as fractions of the free space</summary></key>
+    <key name="sizes" type="s"><default>'{}'</default><summary>JSON {name: {width, height}}, logical pixels; missing = fit the content</summary></key>
     <key name="weather-city" type="s"><default>''</default></key>
     <key name="weather-latitude" type="d"><default>0</default></key>
     <key name="weather-longitude" type="d"><default>0</default></key>

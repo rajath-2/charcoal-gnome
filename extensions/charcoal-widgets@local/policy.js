@@ -173,5 +173,76 @@ export function mergePlaces(first, second) {
     return [...first, ...second].filter((place, i, all) => all.findIndex(other => same(place, other)) === i);
 }
 
-// Layout for a widget size (percent): small and large widgets show less or more, not just scale.
-export const sizeClass = percent => percent < 90 ? 'small' : percent >= 125 ? 'large' : 'medium';
+export function weekGrid(selected, weekStart) {
+    const offset = (selected.getDay() - weekStart + 7) % 7;
+    return Array.from({length: 7}, (_, i) =>
+        new Date(selected.getFullYear(), selected.getMonth(), selected.getDate() - offset + i));
+}
+
+// Inner content dimensions, in typography-independent pixels. Width AND height matter:
+// a long thin card cannot show the same information as a square of the same area.
+export const DEFAULT_CONTENT_SIZE = {calendar: [280, 330], weather: [230, 110], music: [340, 210]};
+export function widgetLayout(name, width, height, scale = 1, displayScale = 1) {
+    const w = width / (scale * displayScale), h = height / (scale * displayScale);
+    if (name === 'calendar') {
+        const mode = w >= 224 && h >= 250 ? 'month' : w >= 224 && h >= 150 ? 'week' : 'compact';
+        const sideBySide = mode === 'month' && w >= 520;
+        const remaining = h - (sideBySide ? 108 : mode === 'month' ? 258 : mode === 'week' ? 110 : 78);
+        return {mode, sideBySide, events: Math.max(0, Math.min(6, Math.floor(remaining / 22))),
+            summary: mode === 'compact' || sideBySide};
+    }
+    if (name === 'weather') {
+        const horizontal = w >= 360;
+        return {horizontal, condition: h >= (horizontal ? 28 : 80),
+            detail: w >= 160 && h >= (horizontal ? 52 : 105),
+            extra: w >= 200 && h >= (horizontal ? 145 : 195)};
+    }
+    const mode = w >= 400 && h < 160 ? 'strip' : h >= 150 ? 'stack' : 'compact';
+    return {mode, art: w >= (mode === 'compact' ? 280 : 220) && h >= 64, artist: w >= 200 && h >= 100,
+        album: w >= 240 && h >= 260, skip: w >= (mode === 'strip' ? 520 : 220) && (mode === 'strip' || h >= 150),
+        seek: w >= 220 && h >= 205, secondary: w >= 300 && h >= 180};
+}
+
+// A widget's own shape, drawn by dragging its edges: {name: {width, height}} in logical pixels.
+export const MIN_CARD = 80;
+
+export function resizeEdges(rect, px, py, margin = 12) {
+    const {x, y, width, height} = rect;
+    const inside = px >= x && px <= x + width && py >= y && py <= y + height;
+    return {left: inside && px < x + margin, right: inside && px >= x + width - margin,
+        top: inside && py < y + margin, bottom: inside && py >= y + height - margin};
+}
+
+// Always measure from the press rectangle, not the moving top-left corner. Clamp dimensions
+// before computing the new origin so the opposite edge stays fixed at the minimum size.
+export function resizeRect(rect, edges, dx, dy) {
+    const width = Math.max(MIN_CARD, Math.round(rect.width + (edges.left ? -dx : edges.right ? dx : 0)));
+    const height = Math.max(MIN_CARD, Math.round(rect.height + (edges.top ? -dy : edges.bottom ? dy : 0)));
+    return {x: edges.left ? rect.x + rect.width - width : rect.x,
+        y: edges.top ? rect.y + rect.height - height : rect.y, width, height};
+}
+
+export function readSize(json, name) {
+    let saved = null;
+    try {
+        saved = JSON.parse(json)?.[name];
+    } catch {}
+    if (!Number.isFinite(saved?.width) || !Number.isFinite(saved?.height))
+        return null;
+    return {width: Math.max(MIN_CARD, Math.round(saved.width)), height: Math.max(MIN_CARD, Math.round(saved.height))};
+}
+
+// Content in a box of the user's shape: stretch to the box's width when the content can, else
+// lay it out at its minimum width; then scale it down (never up) until it fits, centered.
+// measure(width) gives the content's natural height at that width.
+export function fitContent(boxW, boxH, minW, measure) {
+    const fit = width => Math.min(1, boxW / width, boxH / Math.max(1, measure(width)));
+    let width = Math.max(boxW, minW);
+    let scale = fit(width);
+    // Scaled down for height: lay out wider so the scaled content still fills the width.
+    if (scale < 1) {
+        width = Math.max(boxW / scale, minW);
+        scale = fit(width);
+    }
+    return {width, height: measure(width), scale};
+}

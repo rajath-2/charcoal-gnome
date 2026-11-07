@@ -153,6 +153,10 @@ the test.
 - **Hold Super:** compact favorites wheel at the cursor. Move toward an app and release
   to launch: the direction picks it, so overshooting past the wheel still selects the
   outermost app that way. Release in the center (or press Esc) to cancel.
+- **Your own trigger keys:** Preferences → Wheel → Trigger adds, changes or removes keys
+  that open the wheel while held. You can turn off Hold Super there too. For a mouse side
+  button, map it to a key such as F13 in the mouse's software, Piper or Input Remapper,
+  then add that key: GNOME doesn't let extensions see clicks made on app windows.
 - **Esc:** cancel. Other Super shortcuts cancel the wheel and retain their action.
 - **Window previews:** rest on a running app for a moment to see its windows beside the wheel.
   Move out to them (the app stays selected along its direction) and release on one to bring
@@ -226,9 +230,18 @@ screen; minimizing everything brings them back.
 - The music card follows the app that is playing (Spotify, browsers, any MPRIS
   player). Shuffle, repeat and seeking dim when the player does not support them.
   With nothing playing it shows "Nothing playing" and artwork you can choose.
-- Each widget has its own **Size** (70–150%), and shows more or less with it: small keeps the
-  essentials (temperature; the month grid; artwork, title and play/pause), large adds feels-like,
-  humidity and wind, up to six events, and the album name.
+- Drag any edge or corner of a widget to give it any width and height, e.g. the
+  calendar in the weather card's shape. Content rearranges as you drag, according to both width
+  and height. **Reset shapes** in Preferences makes each fit its default content again.
+- A compact calendar shows the date and next remaining event for that day. More room reveals
+  a selectable week, then the full month and more events; a wide month card puts its agenda
+  beside the grid. The date rolls over at midnight while the desktop stays visible.
+- Weather rearranges into a row in wide cards and reveals city, high/low, feels-like, humidity,
+  and wind when they fit. Music keeps title and play/pause accessible, adding artwork, artist,
+  transport controls, seeking, shuffle/repeat, and album as space allows.
+- Each widget has its own **Text and icon size** (70–150%). This controls readability;
+  the actual card dimensions determine which details fit. Very tiny shapes use a final fit
+  adjustment after reducing content to the essentials.
 - Every color, border, glow, corner radius and the blur are in **Appearance**;
   **Restore reference look** returns the amber glass default.
 

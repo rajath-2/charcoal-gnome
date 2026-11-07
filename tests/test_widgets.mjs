@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 import {buildCss} from '../extensions/charcoal-widgets@local/theme.js';
 import {DEFAULT_POSITIONS, readPositions, toFraction, fromFraction, isDesktopClear, effectBox,
     geocodeUrl, parseGeocode, forecastUrl, parseForecast, describeWeather, monthGrid,
     pickPlayer, trackInfo, formatTime, nextLoop,
-    placeSearchUrl, parsePlaceSearch, mergePlaces, weekStartDay, weatherDue, sizeClass} from '../extensions/charcoal-widgets@local/policy.js';
+    placeSearchUrl, parsePlaceSearch, mergePlaces, weekStartDay, weatherDue, widgetLayout, weekGrid, readSize, fitContent, MIN_CARD,
+    resizeEdges, resizeRect} from '../extensions/charcoal-widgets@local/policy.js';
 
 const schema = readFileSync(new URL('../extensions/charcoal-widgets@local/schemas/org.gnome.shell.extensions.charcoal-widgets.gschema.xml', import.meta.url), 'utf8');
 const defaults = Object.fromEntries([...schema.matchAll(/<key name="([^"]+)" type="(.)">[\s\S]*?<default>([^<]+)<\/default>/g)]
@@ -165,7 +167,121 @@ test('city search also understands OpenStreetMap results and merges duplicates',
     assert.deepEqual(mergePlaces(osm, meteo).map(p => p.label), ['Bengaluru, Karnataka, India', 'Bangalore Town, Sindh, Pakistan']);
 });
 
-test('widget size picks a layout: small, medium or large', () => {
-    assert.deepEqual([70, 85, 90, 100, 120, 125, 150].map(sizeClass),
-        ['small', 'small', 'medium', 'medium', 'medium', 'large', 'large']);
+test('calendar changes information with its shape, keeping small dates readable', () => {
+    const compact = widgetLayout('calendar', 230, 110);
+    assert.equal(compact.mode, 'compact');
+    assert.equal(compact.events, 1);
+    assert.equal(widgetLayout('calendar', 300, 180).mode, 'week');
+    assert.equal(widgetLayout('calendar', 280, 300).mode, 'month');
+    assert.equal(widgetLayout('calendar', 150, 500).mode, 'compact', 'height alone cannot fit seven days');
+    assert.equal(widgetLayout('calendar', 600, 90).mode, 'compact', 'width alone cannot fit a week');
+    const expanded = widgetLayout('calendar', 600, 350);
+    assert.equal(expanded.sideBySide, true);
+    assert.ok(expanded.events > compact.events);
+    assert.equal(widgetLayout('calendar', 60, 45).events, 0);
+});
+
+test('weather and music arrange wide shallow cards horizontally and reveal details with room', () => {
+    assert.equal(widgetLayout('weather', 400, 90).horizontal, true);
+    assert.equal(widgetLayout('weather', 200, 200).horizontal, false);
+    assert.equal(widgetLayout('weather', 230, 110).extra, false);
+    assert.equal(widgetLayout('weather', 300, 240).extra, true);
+    assert.equal(widgetLayout('music', 500, 90).mode, 'strip');
+    assert.equal(widgetLayout('music', 260, 260).mode, 'stack');
+    assert.equal(widgetLayout('music', 180, 90).seek, false);
+    assert.equal(widgetLayout('music', 340, 230).seek, true);
+    assert.equal(widgetLayout('music', 340, 280).album, true);
+    assert.equal(widgetLayout('music', 70, 50).art, false);
+});
+
+test('layout respects typography scale and switches back after repeated resizes', () => {
+    for (const name of ['calendar', 'weather', 'music']) {
+        assert.deepEqual(widgetLayout(name, 450, 270, 1.5), widgetLayout(name, 300, 180));
+        const small = widgetLayout(name, 200, 100);
+        widgetLayout(name, 600, 400);
+        assert.deepEqual(widgetLayout(name, 200, 100), small);
+    }
+    assert.equal(widgetLayout('calendar', 280, 300, 1.5).mode, 'compact');
+});
+
+test('HiDPI cards choose the same content as equal logical-size cards', () => {
+    for (const name of ['calendar', 'weather', 'music'])
+        assert.deepEqual(widgetLayout(name, 560, 600, 1, 2), widgetLayout(name, 280, 300));
+    assert.equal(widgetLayout('calendar', 280, 300, 1, 2).mode, 'compact');
+});
+
+test('calendar refreshes remaining events on a same-day clock tick', () => {
+    // Exercise the production timer handler without a Shell session; GI is needed only
+    // when constructing actors, which this test deliberately does not do.
+    const source = readFileSync(new URL('../extensions/charcoal-widgets@local/calendar.js', import.meta.url), 'utf8')
+        .replace(/^import .*;\n/gm, '').replace('export const CalendarCard', 'const CalendarCard');
+    const CalendarCard = runInNewContext(`${source}\nCalendarCard;`, {
+        GObject: {registerClass: cls => cls}, Card: class {}, Date,
+    });
+    let refreshed = false;
+    CalendarCard.prototype._checkDay.call({_today: new Date(), _renderEvents() { refreshed = true; }});
+    assert.equal(refreshed, true, 'an event may have ended even though the date has not changed');
+});
+
+test('week strip respects first weekday and crosses month/year boundaries', () => {
+    const week = weekGrid(new Date(2027, 0, 1), 1);
+    assert.equal(week.length, 7);
+    assert.equal(week[0].getDay(), 1);
+    assert.deepEqual(week.map(d => d.getDate()), [28, 29, 30, 31, 1, 2, 3]);
+    assert.equal(week[0].getFullYear(), 2026);
+});
+
+test('a drawn shape is read back clamped; anything malformed means "fit the content"', () => {
+    assert.deepEqual(readSize('{"calendar":{"width":300.4,"height":20}}', 'calendar'), {width: 300, height: MIN_CARD});
+    for (const json of ['', 'nope', '{}', '{"calendar":{"width":"x","height":1}}', 'null'])
+        assert.equal(readSize(json, 'calendar'), null, json);
+});
+
+test('all four edges and corners resize, while the middle moves', () => {
+    const rect = {x: 100, y: 200, width: 300, height: 180};
+    const cases = [[101, 201, ['left', 'top']], [399, 201, ['right', 'top']],
+        [101, 379, ['left', 'bottom']], [399, 379, ['right', 'bottom']],
+        [101, 290, ['left']], [399, 290, ['right']], [250, 201, ['top']],
+        [250, 379, ['bottom']], [250, 290, []], [99, 290, []]];
+    for (const [x, y, expected] of cases)
+        assert.deepEqual(Object.entries(resizeEdges(rect, x, y)).filter(([, active]) => active)
+            .map(([edge]) => edge).sort(), expected.sort());
+});
+
+test('resizing from each corner anchors the opposite corner', () => {
+    const rect = {x: -300, y: 100, width: 300, height: 180};
+    assert.deepEqual(resizeRect(rect, {left: true, top: true}, -40, -30),
+        {x: -340, y: 70, width: 340, height: 210});
+    assert.deepEqual(resizeRect(rect, {right: true, top: true}, 40, -30),
+        {x: -300, y: 70, width: 340, height: 210});
+    assert.deepEqual(resizeRect(rect, {left: true, bottom: true}, -40, 30),
+        {x: -340, y: 100, width: 340, height: 210});
+    assert.deepEqual(resizeRect(rect, {right: true, bottom: true}, 40, 30),
+        {x: -300, y: 100, width: 340, height: 210});
+    assert.deepEqual(resizeRect(rect, {left: true}, 40, 999),
+        {x: -260, y: 100, width: 260, height: 180});
+    assert.deepEqual(resizeRect(rect, {top: true}, 999, 30),
+        {x: -300, y: 130, width: 300, height: 150});
+});
+
+test('left/top shrinking stops at minimum size without moving the opposite edge', () => {
+    const rect = {x: 100, y: 200, width: 300, height: 180};
+    assert.deepEqual(resizeRect(rect, {left: true, top: true}, 1000, 1000),
+        {x: 400 - MIN_CARD, y: 380 - MIN_CARD, width: MIN_CARD, height: MIN_CARD});
+    assert.deepEqual(resizeRect(rect, {left: true, top: true}, 0, 0), rect,
+        'returning to the starting pointer position restores the original shape');
+});
+
+test('content fills a wider shape and shrinks into a smaller one', () => {
+    const calendar = w => 280 * 248 / w; // wider lays out shorter, like wrapped text
+    // Just wider: content stretches to the width, not scaled.
+    assert.deepEqual(fitContent(400, 300, 248, () => 260), {width: 400, height: 260, scale: 1});
+    // Weather's shape (wide, short): scaled down to fit both ways.
+    const fit = fitContent(260, 130, 248, () => 260);
+    assert.equal(fit.scale, 0.5);
+    assert.ok(fit.width * fit.scale <= 260 && fit.height * fit.scale <= 130);
+    // Narrower than the content's minimum: laid out at the minimum, scaled to the width.
+    const narrow = fitContent(124, 400, 248, calendar);
+    assert.ok(narrow.width * narrow.scale <= 124.001 && narrow.height * narrow.scale <= 400);
+    assert.ok(narrow.width >= 248);
 });
