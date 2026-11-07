@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 import {buildCss} from '../extensions/charcoal-widgets@local/theme.js';
 import {DEFAULT_POSITIONS, readPositions, toFraction, fromFraction, isDesktopClear, effectBox,
     geocodeUrl, parseGeocode, forecastUrl, parseForecast, describeWeather, monthGrid,
-    pickPlayer, trackInfo, formatTime, nextLoop} from '../extensions/charcoal-widgets@local/policy.js';
+    pickPlayer, trackInfo, formatTime, nextLoop,
+    placeSearchUrl, parsePlaceSearch, mergePlaces} from '../extensions/charcoal-widgets@local/policy.js';
 
 const schema = readFileSync(new URL('../extensions/charcoal-widgets@local/schemas/org.gnome.shell.extensions.charcoal-widgets.gschema.xml', import.meta.url), 'utf8');
 const defaults = Object.fromEntries([...schema.matchAll(/<key name="([^"]+)" type="(.)">[\s\S]*?<default>([^<]+)<\/default>/g)]
@@ -109,4 +110,16 @@ test('time and loop helpers', () => {
     assert.equal(formatTime(NaN), '0:00');
     assert.equal(formatTime(-5), '0:00');
     assert.deepEqual(['None', 'Playlist', 'Track', 'weird'].map(nextLoop), ['Playlist', 'Track', 'None', 'Playlist']);
+});
+
+test('city search also understands OpenStreetMap results and merges duplicates', () => {
+    assert.ok(placeSearchUrl('Bangalore').startsWith('https://nominatim.openstreetmap.org/search?q=Bangalore&'));
+    assert.ok(placeSearchUrl('x').includes('featureType=settlement'), 'cities only, not roads or shops');
+    const osm = parsePlaceSearch([{name: 'Bengaluru', lat: '12.9767936', lon: '77.5900820',
+        address: {state: 'Karnataka', country: 'India'}}, {name: 'broken'}]);
+    assert.deepEqual(osm, [{label: 'Bengaluru, Karnataka, India', latitude: 12.9767936, longitude: 77.590082}]);
+    assert.deepEqual(parsePlaceSearch({error: 'x'}), []);
+    const meteo = [{label: 'Bengaluru, Karnataka, India', latitude: 12.97, longitude: 77.59},
+        {label: 'Bangalore Town, Sindh, Pakistan', latitude: 24.9, longitude: 67.1}];
+    assert.deepEqual(mergePlaces(osm, meteo).map(p => p.label), ['Bengaluru, Karnataka, India', 'Bangalore Town, Sindh, Pakistan']);
 });

@@ -132,3 +132,25 @@ export function formatTime(us) {
 
 const LOOPS = ['None', 'Playlist', 'Track'];
 export const nextLoop = status => LOOPS.includes(status) ? LOOPS[(LOOPS.indexOf(status) + 1) % 3] : 'Playlist';
+
+// OpenStreetMap's search knows city aliases Open-Meteo lacks ("Bangalore" -> Bengaluru).
+export const placeSearchUrl = name =>
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=jsonv2&limit=5&addressdetails=1&accept-language=en&featureType=settlement`;
+
+export function parsePlaceSearch(json) {
+    if (!Array.isArray(json))
+        return [];
+    return json.map(r => ({r, latitude: Number(r?.lat), longitude: Number(r?.lon)}))
+        .filter(({r, latitude, longitude}) => typeof r?.name === 'string' && r.name && Number.isFinite(latitude) && Number.isFinite(longitude))
+        .map(({r, latitude, longitude}) => ({
+            label: [r.name, r.address?.state, r.address?.country].filter(part => typeof part === 'string' && part).join(', '),
+            latitude, longitude,
+        }));
+}
+
+// Same label, or within ~10 km, counts as the same place; the first list wins.
+export function mergePlaces(first, second) {
+    const same = (a, b) => a.label === b.label ||
+        (Math.abs(a.latitude - b.latitude) < 0.1 && Math.abs(a.longitude - b.longitude) < 0.1);
+    return [...first, ...second].filter((place, i, all) => all.findIndex(other => same(place, other)) === i);
+}
