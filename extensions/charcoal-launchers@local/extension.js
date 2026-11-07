@@ -34,7 +34,7 @@ export default class CharcoalLaunchers extends Extension {
             });
         else this._configure();
         this._changed = this._settings.connect('changed', (_, key) => {
-            if (['owned-bindings', 'status', 'favorites-initialized'].includes(key)) return;
+            if (['owned-bindings', 'owned-dock', 'status', 'favorites-initialized'].includes(key)) return;
             this._cancel();
             if (this._reload) GLib.Source.remove(this._reload);
             this._reload = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {

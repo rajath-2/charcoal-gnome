@@ -1,5 +1,9 @@
 # Charcoal GNOME theme bundle
 
+<video src="media/demo.mp4" controls width="100%"></video>
+
+[Watch the demo](media/demo.mp4) if the video doesn't play above.
+
 Personal GNOME **51** setup, packaged as four extensions plus GTK4 styling:
 
 | Extension | What it does | Preferences |
@@ -169,6 +173,8 @@ the test.
   releasing on it again restores it from there. Every minimize and restore in this mode
   (Super+H, the title-bar button) also goes into and out of the cursor. With the dock hidden,
   Super+1…9 open the 1st…9th wheel favorite (clockwise from the top) the same way.
+  **Also show desktop dock** keeps your bottom dock; **Show dock only on hover** then keeps it
+  hidden until the pointer touches the bottom edge (your Dash to Dock settings come back when off).
 
 Open **Extensions → Charcoal Launchers → Preferences**, or run:
 

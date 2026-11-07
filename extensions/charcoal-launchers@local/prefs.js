@@ -64,6 +64,8 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         toggle(behaviour, 'touchpad-wheel', 'Three-finger touchpad wheel', 'Rest three fingers on the touchpad, slide toward an app, lift to open it. Quick three-finger swipes keep their GNOME actions');
         toggle(behaviour, 'dock-mode', 'Radial dock mode', 'Running apps in outer rings, normal dock hidden. Windows open from and minimize into the cursor: release on the focused app to minimize it');
         toggle(behaviour, 'desktop-dock', 'Also show desktop dock', 'Keep your bottom dock alongside the hold-Super wheel');
+        const hover = toggle(behaviour, 'desktop-dock-hover', 'Show dock only on hover', 'Desktop dock stays hidden until the pointer touches the bottom edge');
+        settings.bind('desktop-dock', hover, 'sensitive', Gio.SettingsBindFlags.GET);
         const appGroup = group(wheelPage, 'Favorite applications', 'Up to 12 apps, arranged clockwise from the top. This list is independent of your dock.');
         const add = new Gtk.Button({label: 'Add application', css_classes: ['suggested-action'], valign: Gtk.Align.CENTER});
         appGroup.header_suffix = add;
@@ -180,7 +182,7 @@ export default class CharcoalPreferences extends ExtensionPreferences {
             dialog.choose(window, null, (source, result) => {
                 if (source.choose_finish(result) !== 'reset') return;
                 for (const key of settings.settings_schema.list_keys())
-                    if (!['owned-bindings', 'status', 'favorites', 'favorites-initialized', 'wheel-colors-split'].includes(key)) settings.reset(key);
+                    if (!['owned-bindings', 'owned-dock', 'status', 'favorites', 'favorites-initialized', 'wheel-colors-split'].includes(key)) settings.reset(key);
                 settings.set_strv('favorites', new Gio.Settings({schema_id: 'org.gnome.shell'}).get_strv('favorite-apps').slice(0, 12));
                 settings.set_boolean('favorites-initialized', true);
             });
