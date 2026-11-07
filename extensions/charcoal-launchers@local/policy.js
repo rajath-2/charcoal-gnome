@@ -146,8 +146,8 @@ export function surfaceCss(o) {
         border: ${border}; box-shadow: ${shadow}; font-size: ${+(o['text-size'] / 100).toFixed(2)}em;`;
 }
 
-// Super+N shortcut names from dash-to-dock and GNOME -> zero-based favorite index, or -1.
+// dash-to-dock's Super+N shortcut names -> zero-based favorite index, or -1.
 export function appHotkeyIndex(name) {
-    const match = /^(?:app-hotkey|switch-to-application)-(\d+)$/.exec(name);
+    const match = /^app-hotkey-(\d+)$/.exec(name);
     return match ? Number(match[1]) - 1 : -1;
 }

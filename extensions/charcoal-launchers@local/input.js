@@ -106,6 +106,7 @@ export class InputController {
         });
         this._connect(global.window_manager, 'filter-keybinding', (_, binding) => {
             // Radial dock mode hides the dock that Super+1..9 activate, so launch the Nth wheel favorite instead.
+            // The binding still runs (a filtered key would reach the focused app); DockIntegration mutes its launch.
             const index = appHotkeyIndex(binding.get_name());
             if (index >= 0 && this.settings.get_boolean('wheel-enabled') && this.settings.get_boolean('dock-mode') &&
                 !this.settings.get_boolean('desktop-dock')) {
@@ -118,7 +119,7 @@ export class InputController {
                     this.hotkeyTime = event.get_time();
                     this.cancel(); this._launch(id, global.get_pointer().slice(0, 2));
                 }
-                return true;
+                return false;
             }
             if (this.escapeAction && Meta.external_binding_name_for_action(this.escapeAction) === binding.get_name())
                 return false;

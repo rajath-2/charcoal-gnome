@@ -134,7 +134,8 @@ test('search panel details follow the text and highlight colors', () => {
 
 test('Super+N shortcut names map to favorite indexes', () => {
     assert.equal(appHotkeyIndex('app-hotkey-1'), 0);
-    assert.equal(appHotkeyIndex('switch-to-application-9'), 8);
+    assert.equal(appHotkeyIndex('app-hotkey-9'), 8);
+    assert.equal(appHotkeyIndex('switch-to-application-1'), -1);
     assert.equal(appHotkeyIndex('app-ctrl-hotkey-1'), -1);
     assert.equal(appHotkeyIndex('switch-to-workspace-1'), -1);
 });
