@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {buildCss} from '../extensions/charcoal-widgets@local/theme.js';
-import {DEFAULT_POSITIONS, readPositions, toFraction, fromFraction, isDesktopClear, effectBox} from '../extensions/charcoal-widgets@local/policy.js';
+import {DEFAULT_POSITIONS, readPositions, toFraction, fromFraction, isDesktopClear, effectBox,
+    geocodeUrl, parseGeocode, forecastUrl, parseForecast, describeWeather} from '../extensions/charcoal-widgets@local/policy.js';
 
 const schema = readFileSync(new URL('../extensions/charcoal-widgets@local/schemas/org.gnome.shell.extensions.charcoal-widgets.gschema.xml', import.meta.url), 'utf8');
 const defaults = Object.fromEntries([...schema.matchAll(/<key name="([^"]+)" type="(.)">[\s\S]*?<default>([^<]+)<\/default>/g)]
@@ -50,4 +51,26 @@ test('blur mask maps through the enlarged effect texture', () => {
     assert.deepEqual(effectBox(18, 3, 1244, 30), [-2, -2, 1247, 33]);
     const [x, y, w, h] = effectBox(18.4, 3.6, 1244.2, 30);
     assert.ok(x <= 0 && y <= 0 && x + w >= 1244.2 && y + h >= 30);
+});
+
+test('weather parsing tolerates bad responses', () => {
+    const good = {current: {temperature_2m: 23.6, weather_code: 3, is_day: 1},
+        daily: {temperature_2m_max: [29.2], temperature_2m_min: [18.7]}};
+    assert.deepEqual(parseForecast(good), {temperature: 24, high: 29, low: 19, code: 3, isDay: true});
+    assert.equal(parseForecast({error: true, reason: 'x'}), null);
+    assert.equal(parseForecast({current: {}}), null);
+    assert.equal(parseForecast(null), null);
+    assert.deepEqual(parseGeocode({}), []);
+    assert.deepEqual(parseGeocode(null), []);
+    assert.deepEqual(parseGeocode({results: [{name: 'Bengaluru', admin1: 'Karnataka', country: 'India', latitude: 12.97, longitude: 77.59}]}),
+        [{label: 'Bengaluru, Karnataka, India', latitude: 12.97, longitude: 77.59}]);
+    assert.ok(geocodeUrl('São Paulo').includes('name=S%C3%A3o%20Paulo'));
+    assert.ok(forecastUrl(12.97, 77.59).includes('latitude=12.97&longitude=77.59'));
+});
+
+test('weather codes map to text and icons', () => {
+    assert.deepEqual(describeWeather(0, false), {text: 'Clear', icon: 'weather-clear-night-symbolic'});
+    assert.equal(describeWeather(63, true).text, 'Rain');
+    assert.equal(describeWeather(96, true).icon, 'weather-storm-symbolic');
+    assert.equal(describeWeather(1234, true).text, 'Unknown');
 });
