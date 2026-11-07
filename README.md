@@ -166,7 +166,7 @@ Open **Extensions → Charcoal Launchers → Preferences**, or run:
 gnome-extensions prefs charcoal-launchers@local
 ```
 
-Preferences include favorite apps and order, wheel size/spacing, colors, opacity,
+Preferences include favorite apps and order, wheel size/spacing, separate wheel and search colors, opacity,
 blur (search panel and wheel, static or live), search categories, result limit, shortcut, hold delay, and animation
 speed. Defaults use a 240-pixel ring with a transparent center, separate app sectors,
 and short fade/scale animations. The wheel's blur follows its sector shapes. The system's

@@ -25,7 +25,7 @@ export class WindowPreviews {
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
         const thumbHeight = 96 * scale, thumbWidth = 168 * scale;
         this.app = app;
-        this.actor = new St.BoxLayout({reactive: false, style: `${surfaceStyle(this.settings)} padding: 8px; spacing: 8px;`});
+        this.actor = new St.BoxLayout({reactive: false, style: `${surfaceStyle(this.settings, 'wheel-')} padding: 8px; spacing: 8px;`});
         for (const window of windows) {
             const source = window.get_compositor_private();
             const [width, height] = source.get_size();
@@ -77,7 +77,7 @@ export class WindowPreviews {
         }
         if (window !== this.hovered) {
             this.hovered = window;
-            const accent = color(this.settings, 'accent-color');
+            const accent = color(this.settings, 'wheel-accent-color');
             for (const {item, window: candidate} of this.items)
                 item.style = `padding: 6px; spacing: 4px; border-radius: 10px; border: 2px solid ${candidate === window ? accent : 'transparent'};`;
         }

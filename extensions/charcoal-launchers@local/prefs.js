@@ -113,8 +113,10 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         spin(searchLook, 'close-duration', 'Closing duration', 0, 400, 10, 'Milliseconds');
 
         const appearance = page('Appearance', 'applications-graphics-symbolic');
-        const colors = group(appearance, 'Colors', 'Shared by the wheel and search');
-        for (const [key, title] of [['background-color', 'Background'], ['foreground-color', 'Text'], ['accent-color', 'Highlight']]) {
+        const colorGroups = [[group(appearance, 'Wheel colors', 'Sectors, the running-app dot and window previews'), 'wheel-'],
+            [group(appearance, 'Search colors', 'The search panel and its results'), '']];
+        for (const [colors, prefix] of colorGroups) for (const [name, title] of [['background-color', 'Background'], ['foreground-color', 'Text'], ['accent-color', 'Highlight']]) {
+            const key = prefix + name;
             const row = new Adw.ActionRow({title});
             const picker = new Gtk.ColorDialogButton({dialog: new Gtk.ColorDialog({with_alpha: false}), valign: Gtk.Align.CENTER});
             const update = () => { const rgba = new Gdk.RGBA(); rgba.parse(settings.get_string(key)); picker.rgba = rgba; };
@@ -140,7 +142,7 @@ export default class CharcoalPreferences extends ExtensionPreferences {
             dialog.choose(window, null, (source, result) => {
                 if (source.choose_finish(result) !== 'reset') return;
                 for (const key of settings.settings_schema.list_keys())
-                    if (!['owned-bindings', 'status', 'favorites', 'favorites-initialized'].includes(key)) settings.reset(key);
+                    if (!['owned-bindings', 'status', 'favorites', 'favorites-initialized', 'wheel-colors-split'].includes(key)) settings.reset(key);
                 settings.set_strv('favorites', new Gio.Settings({schema_id: 'org.gnome.shell'}).get_strv('favorite-apps').slice(0, 12));
                 settings.set_boolean('favorites-initialized', true);
             });

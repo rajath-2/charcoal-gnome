@@ -11,6 +11,12 @@ import {DockIntegration} from './dock.js';
 export default class CharcoalLaunchers extends Extension {
     enable() {
         this._settings = this.getSettings();
+        // Colors used to be shared: start the wheel's own colors from the user's previous choice.
+        if (!this._settings.get_boolean('wheel-colors-split')) {
+            for (const key of ['background-color', 'foreground-color', 'accent-color'])
+                if (this._settings.get_user_value(key)) this._settings.set_string(`wheel-${key}`, this._settings.get_string(key));
+            this._settings.set_boolean('wheel-colors-split', true);
+        }
         if (!this._settings.get_boolean('favorites-initialized')) {
             const shell = new Gio.Settings({schema_id: 'org.gnome.shell'});
             this._settings.set_strv('favorites', shell.get_strv('favorite-apps').slice(0, 12));

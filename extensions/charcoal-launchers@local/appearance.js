@@ -10,10 +10,12 @@ export function color(settings, key) {
 export function rgb(hex) {
     return [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16) / 255);
 }
-export function surfaceStyle(settings) {
-    const [r, g, b] = rgb(color(settings, 'background-color')).map(v => Math.round(v * 255));
-    return `background-color: rgba(${r},${g},${b},${settings.get_int('background-opacity') / 100});
-        color: ${color(settings, 'foreground-color')}; border-radius: ${settings.get_int('corner-radius')}px;
+// prefix '' = the search panel's colors, 'wheel-' = the wheel's (used by its window previews).
+export function surfaceStyle(settings, prefix = '') {
+    const [r, g, b] = rgb(color(settings, `${prefix}background-color`)).map(v => Math.round(v * 255));
+    const opacity = settings.get_int(prefix ? 'wheel-opacity' : 'background-opacity') / 100;
+    return `background-color: rgba(${r},${g},${b},${opacity});
+        color: ${color(settings, `${prefix}foreground-color`)}; border-radius: ${settings.get_int('corner-radius')}px;
         border: 1px solid rgba(255,255,255,0.12);`;
 }
 export function animate(actor, settings, opening, done = () => {}) {

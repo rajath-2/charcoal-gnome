@@ -26,6 +26,11 @@
     <key name="background-color" type="s"><default>'#202127'</default></key>
     <key name="foreground-color" type="s"><default>'#f0f0f2'</default></key>
     <key name="accent-color" type="s"><default>'#a6b5cc'</default></key>
+    <!-- The keys above are the search panel's; the wheel (and its window previews) has its own. -->
+    <key name="wheel-background-color" type="s"><default>'#202127'</default></key>
+    <key name="wheel-foreground-color" type="s"><default>'#f0f0f2'</default></key>
+    <key name="wheel-accent-color" type="s"><default>'#a6b5cc'</default></key>
+    <key name="wheel-colors-split" type="b"><default>false</default><summary>Wheel colors copied from the formerly shared ones</summary></key>
     <key name="background-opacity" type="i"><range min="40" max="100"/><default>94</default></key>
     <key name="corner-radius" type="i"><range min="0" max="40"/><default>20</default></key>
     <key name="launcher-width" type="i"><range min="360" max="1000"/><default>600</default></key>

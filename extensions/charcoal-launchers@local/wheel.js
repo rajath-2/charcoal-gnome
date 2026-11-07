@@ -64,7 +64,7 @@ export class FavoritesWheel {
                 if (running.includes(id)) {
                     const dot = new St.Widget({width: 4 * scale * ratio, height: 4 * scale * ratio,
                         x: cx - 2 * scale * ratio, y: cy + iconSize / 2 + 5 * scale * ratio,
-                        style: `background-color: ${color(this.settings, 'accent-color')}; border-radius: 99px;`});
+                        style: `background-color: ${color(this.settings, 'wheel-accent-color')}; border-radius: 99px;`});
                     group.add_child(dot);
                 }
                 this.actor.add_child(group);
@@ -101,8 +101,8 @@ export class FavoritesWheel {
     }
     _paint({id, index, ring, disc}) {
         const cr = disc.get_context(), r = this.geometry.radius;
-        const background = rgb(color(this.settings, 'background-color'));
-        const accent = rgb(color(this.settings, 'accent-color'));
+        const background = rgb(color(this.settings, 'wheel-background-color'));
+        const accent = rgb(color(this.settings, 'wheel-accent-color'));
         const step = Math.PI * 2 / ring.ids.length;
         const gap = this._gap(ring);
         const start = index * step - Math.PI / 2 - step / 2 + gap;
