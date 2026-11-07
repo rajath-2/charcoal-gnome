@@ -6,7 +6,7 @@ import Meta from 'gi://Meta';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {useIslands} from './policy.js';
-import {paintMorph, morphShapes} from './morph.js';
+import {paintMorph, morphShapes, effectBox} from './morph.js';
 import {PanelMask} from './panelmask.js';
 import {addBlur} from './blur.js';
 import {buildCss, rgb01} from './theme.js';
@@ -248,7 +248,9 @@ export default class CharcoalTopbar extends Extension {
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
         const boxes = [Main.panel._leftBox, Main.panel._centerBox, Main.panel._rightBox]
             .map(box => ({x: box.x + box.translation_x, width: box.width}));
+        const [stageX, stageY] = Main.panel.get_transformed_position();
         this._mask.setShapes([Main.panel.width, Main.panel.height],
+            effectBox(stageX, stageY, Main.panel.width, Main.panel.height),
             morphShapes(Main.panel.width, Main.panel.height, boxes, this._progress, this._style.radius * scale));
     }
 

@@ -44,3 +44,11 @@ test('auto bar shapes: one joined bar at rest, three pieces once splitting', () 
     assert.equal(split.length, 3);
     assert.deepEqual(split.map(r => [r.x, r.width]), [[0, 100], [300, 100], [700, 100]]);
 });
+
+test('blur mask maps through the enlarged effect texture, not the bare layer box', async () => {
+    const {effectBox} = await import('../extensions/charcoal-topbar@local/morph.js');
+    // Panel at (18, 3), 1244x30: Clutter renders the effect into a 1247x33 texture starting 2px up-left.
+    assert.deepEqual(effectBox(18, 3, 1244, 30), [-2, -2, 1247, 33]);
+    const [x, y, w, h] = effectBox(18.4, 3.6, 1244.2, 30);
+    assert.ok(x <= 0 && y <= 0 && x + w >= 1244.2 && y + h >= 30, 'texture always covers the layer');
+});

@@ -88,3 +88,13 @@ export function paintMorph(cr, width, height, boxes, progress, scale = 1, style 
         cr.stroke();
     }
 }
+
+// The texture an offscreen effect (our blur mask) renders into is not the actor's box: Clutter
+// quantizes and enlarges it (_clutter_actor_box_enlarge_for_effects). Returns that texture's
+// [x, y, width, height] relative to the actor, given the actor's stage position and size, so the
+// mask can map texture coordinates back to actor pixels exactly.
+export function effectBox(x, y, width, height) {
+    const w = Math.round(width), h = Math.round(height);
+    const x2 = Math.ceil(x + width + 0.75), y2 = Math.ceil(y + height + 0.75);
+    return [x2 - w - 3 - x, y2 - h - 3 - y, w + 3, h + 3];
+}
