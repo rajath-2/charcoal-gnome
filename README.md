@@ -226,7 +226,9 @@ screen; minimizing everything brings them back.
 - The music card follows the app that is playing (Spotify, browsers, any MPRIS
   player). Shuffle, repeat and seeking dim when the player does not support them.
   With nothing playing it shows "Nothing playing" and artwork you can choose.
-- Each widget has its own **Size** (70–150%).
+- Each widget has its own **Size** (70–150%), and shows more or less with it: small keeps the
+  essentials (temperature; the month grid; artwork, title and play/pause), large adds feels-like,
+  humidity and wind, up to six events, and the album name.
 - Every color, border, glow, corner radius and the blur are in **Appearance**;
   **Restore reference look** returns the amber glass default.
 

@@ -26,7 +26,8 @@ export const WeatherCard = GObject.registerClass(class WeatherCard extends Card 
         this._setup = new St.Button({label: 'Set your city in Preferences', style_class: 'charcoal-cal-nav',
             x_align: Clutter.ActorAlign.START});
         this._setup.connect('clicked', () => ext.openPreferences());
-        for (const child of [row, this._condition, this._detail, this._setup])
+        this._extra = new St.Label({style_class: 'charcoal-widget-dim', visible: false});
+        for (const child of [row, this._condition, this._detail, this._extra, this._setup])
             this.body.add_child(child);
         this._timer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, TICK_SECONDS, () => {
             this._tick();
@@ -108,7 +109,11 @@ export const WeatherCard = GObject.registerClass(class WeatherCard extends Card 
         const city = this.settings.get_string('weather-city').split(',')[0];
         const data = this._data;
         this._setup.visible = !this._hasCity();
-        this._temp.visible = this._icon.visible = this._detail.visible = !!data && this._hasCity();
+        this._temp.visible = this._icon.visible = !!data && this._hasCity();
+        this._detail.visible = !!data && this._hasCity() && this.layout !== 'small';
+        this._extra.visible = this._detail.visible && this.layout === 'large';
+        // Small: temperature and icon only; the condition line is for status messages.
+        this._condition.visible = !data || this.layout !== 'small';
         if (!this._hasCity()) {
             this._condition.text = 'Weather';
             return;
@@ -123,5 +128,9 @@ export const WeatherCard = GObject.registerClass(class WeatherCard extends Card 
         this._icon.icon_name = icon;
         this._condition.text = text;
         this._detail.text = `${city} · ${data.high}° / ${data.low}°`;
+        this._extra.text = [data.feelsLike !== null && `Feels like ${data.feelsLike}°`,
+            data.humidity !== null && `Humidity ${data.humidity}%`, data.wind !== null && `Wind ${data.wind} km/h`]
+            .filter(Boolean).join(' · ');
+        this._extra.visible &&= !!this._extra.text;
     }
 });

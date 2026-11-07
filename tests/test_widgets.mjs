@@ -5,7 +5,7 @@ import {buildCss} from '../extensions/charcoal-widgets@local/theme.js';
 import {DEFAULT_POSITIONS, readPositions, toFraction, fromFraction, isDesktopClear, effectBox,
     geocodeUrl, parseGeocode, forecastUrl, parseForecast, describeWeather, monthGrid,
     pickPlayer, trackInfo, formatTime, nextLoop,
-    placeSearchUrl, parsePlaceSearch, mergePlaces, weekStartDay, weatherDue} from '../extensions/charcoal-widgets@local/policy.js';
+    placeSearchUrl, parsePlaceSearch, mergePlaces, weekStartDay, weatherDue, sizeClass} from '../extensions/charcoal-widgets@local/policy.js';
 
 const schema = readFileSync(new URL('../extensions/charcoal-widgets@local/schemas/org.gnome.shell.extensions.charcoal-widgets.gschema.xml', import.meta.url), 'utf8');
 const defaults = Object.fromEntries([...schema.matchAll(/<key name="([^"]+)" type="(.)">[\s\S]*?<default>([^<]+)<\/default>/g)]
@@ -71,7 +71,11 @@ test('blur mask maps through the enlarged effect texture', () => {
 test('weather parsing tolerates bad responses', () => {
     const good = {current: {temperature_2m: 23.6, weather_code: 3, is_day: 1},
         daily: {temperature_2m_max: [29.2], temperature_2m_min: [18.7]}};
-    assert.deepEqual(parseForecast(good), {temperature: 24, high: 29, low: 19, code: 3, isDay: true});
+    assert.deepEqual(parseForecast(good), {temperature: 24, high: 29, low: 19, code: 3, isDay: true,
+        feelsLike: null, humidity: null, wind: null});
+    const extra = {...good, current: {...good.current, apparent_temperature: 25.4, relative_humidity_2m: 83, wind_speed_10m: 11.6}};
+    assert.deepEqual(parseForecast(extra), {temperature: 24, high: 29, low: 19, code: 3, isDay: true,
+        feelsLike: 25, humidity: 83, wind: 12});
     assert.equal(parseForecast({error: true, reason: 'x'}), null);
     assert.equal(parseForecast({current: {}}), null);
     assert.equal(parseForecast(null), null);
@@ -81,6 +85,7 @@ test('weather parsing tolerates bad responses', () => {
         [{label: 'Bengaluru, Karnataka, India', latitude: 12.97, longitude: 77.59}]);
     assert.ok(geocodeUrl('São Paulo').includes('name=S%C3%A3o%20Paulo'));
     assert.ok(forecastUrl(12.97, 77.59).includes('latitude=12.97&longitude=77.59'));
+    assert.ok(forecastUrl(1, 2).includes('apparent_temperature,relative_humidity_2m,wind_speed_10m'));
 });
 
 test('weather codes map to text and icons', () => {
@@ -133,8 +138,9 @@ test('the playing player wins over a later-paused one', () => {
 
 test('track info survives malformed metadata', () => {
     assert.deepEqual(trackInfo({'xesam:artist': 'Amber Street', 'mpris:length': 'x'}),
-        {title: 'Unknown title', artist: '', artUrl: '', length: 0, trackId: ''});
-    assert.deepEqual(trackInfo(undefined), {title: 'Unknown title', artist: '', artUrl: '', length: 0, trackId: ''});
+        {title: 'Unknown title', artist: '', album: '', artUrl: '', length: 0, trackId: ''});
+    assert.deepEqual(trackInfo(undefined), {title: 'Unknown title', artist: '', album: '', artUrl: '', length: 0, trackId: ''});
+    assert.equal(trackInfo({'xesam:album': 'Night Roads'}).album, 'Night Roads');
     assert.equal(trackInfo({'xesam:title': 'Midnight Drive', 'xesam:artist': ['A', 'B']}).artist, 'A, B');
     assert.equal(trackInfo({'mpris:length': 268000000}).length, 268000000);
 });
@@ -157,4 +163,9 @@ test('city search also understands OpenStreetMap results and merges duplicates',
     const meteo = [{label: 'Bengaluru, Karnataka, India', latitude: 12.97, longitude: 77.59},
         {label: 'Bangalore Town, Sindh, Pakistan', latitude: 24.9, longitude: 67.1}];
     assert.deepEqual(mergePlaces(osm, meteo).map(p => p.label), ['Bengaluru, Karnataka, India', 'Bangalore Town, Sindh, Pakistan']);
+});
+
+test('widget size picks a layout: small, medium or large', () => {
+    assert.deepEqual([70, 85, 90, 100, 120, 125, 150].map(sizeClass),
+        ['small', 'small', 'medium', 'medium', 'medium', 'large', 'large']);
 });

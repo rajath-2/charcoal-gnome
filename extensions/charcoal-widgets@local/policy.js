@@ -65,7 +65,8 @@ export function parseGeocode(json) {
 
 export const forecastUrl = (lat, lon) =>
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    '&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1';
+    '&current=temperature_2m,weather_code,is_day,apparent_temperature,relative_humidity_2m,wind_speed_10m' +
+    '&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1';
 
 export function parseForecast(json) {
     const values = [json?.current?.temperature_2m, json?.daily?.temperature_2m_max?.[0],
@@ -73,7 +74,10 @@ export function parseForecast(json) {
     if (!values.every(Number.isFinite))
         return null;
     const [temperature, high, low, code] = values.map(Math.round);
-    return {temperature, high, low, code, isDay: json.current.is_day !== 0};
+    // Extras only the large layout shows; missing ones are null.
+    const extra = key => Number.isFinite(json.current[key]) ? Math.round(json.current[key]) : null;
+    return {temperature, high, low, code, isDay: json.current.is_day !== 0,
+        feelsLike: extra('apparent_temperature'), humidity: extra('relative_humidity_2m'), wind: extra('wind_speed_10m')};
 }
 
 // WMO weather interpretation codes.
@@ -131,6 +135,7 @@ export function trackInfo(metadata) {
     return {
         title: typeof m['xesam:title'] === 'string' && m['xesam:title'] ? m['xesam:title'] : 'Unknown title',
         artist: Array.isArray(artists) && artists.every(a => typeof a === 'string') ? artists.join(', ') : '',
+        album: typeof m['xesam:album'] === 'string' ? m['xesam:album'] : '',
         artUrl: typeof m['mpris:artUrl'] === 'string' ? m['mpris:artUrl'] : '',
         length: Number.isFinite(length) && length > 0 ? length : 0,
         trackId: typeof m['mpris:trackid'] === 'string' ? m['mpris:trackid'] : '',
@@ -167,3 +172,6 @@ export function mergePlaces(first, second) {
         (Math.abs(a.latitude - b.latitude) < 0.1 && Math.abs(a.longitude - b.longitude) < 0.1);
     return [...first, ...second].filter((place, i, all) => all.findIndex(other => same(place, other)) === i);
 }
+
+// Layout for a widget size (percent): small and large widgets show less or more, not just scale.
+export const sizeClass = percent => percent < 90 ? 'small' : percent >= 125 ? 'large' : 'medium';

@@ -3,7 +3,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {addBlur, RoundedMask} from './blur.js';
-import {effectBox, fromFraction, readPositions, toFraction} from './policy.js';
+import {effectBox, fromFraction, readPositions, sizeClass, toFraction} from './policy.js';
 
 const FADE_MS = 200;
 const DRAG_THRESHOLD = 5;
@@ -26,6 +26,8 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
         // Lengths set in code follow the widget's size preference, like the stylesheet's (theme.js).
         const scale = settings.get_int(`${name}-size`) / 100;
         this.px = n => Math.round(n * scale);
+        // 'small' | 'medium' | 'large': what the card shows, not only how big it is.
+        this.layout = sizeClass(settings.get_int(`${name}-size`));
         this.body = new St.BoxLayout({style_class: `charcoal-widget charcoal-widget-${name}`,
             orientation: Clutter.Orientation.VERTICAL});
         this.add_child(this.body);

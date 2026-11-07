@@ -23,8 +23,10 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
             y_align: Clutter.ActorAlign.CENTER, style: `spacing: ${this.px(4)}px;`});
         this._title = new St.Label({style_class: 'charcoal-widget-title'});
         this._artist = new St.Label({style_class: 'charcoal-widget-dim'});
+        this._album = new St.Label({style_class: 'charcoal-widget-dim', visible: false});
         info.add_child(this._title);
         info.add_child(this._artist);
+        info.add_child(this._album);
         top.add_child(this._art);
         top.add_child(info);
 
@@ -62,8 +64,16 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
         this._repeat = button('media-playlist-repeat-symbolic', 'Repeat',
             () => this._watcher.setLoop(nextLoop(this._watcher.active?.LoopStatus)));
 
-        for (const child of [top, this._trough, times, controls])
-            this.body.add_child(child);
+        if (this.layout === 'small') {
+            // Small: artwork, title and play/pause in one row.
+            this.body.width = -1;
+            controls.remove_child(this._play);
+            top.add_child(this._play);
+            this.body.add_child(top);
+        } else {
+            for (const child of [top, this._trough, times, controls])
+                this.body.add_child(child);
+        }
         this._watcher = new MprisWatcher(() => this._refresh());
         this._artChanged = settings.connect('changed::idle-artwork', () => this._render());
         // Position is polled only while the card is on screen and something plays.
@@ -101,7 +111,9 @@ export const MusicCard = GObject.registerClass(class MusicCard extends Card {
         const {title, artist, artUrl, length} = this._track;
         this._title.text = player ? title : 'Nothing playing';
         this._artist.text = player ? artist : '';
-        this._artist.visible = !!this._artist.text;
+        this._artist.visible = !!this._artist.text && this.layout !== 'small';
+        this._album.text = player ? this._track.album : '';
+        this._album.visible = !!this._album.text && this.layout === 'large';
         this._art.gicon = player && artUrl ? Gio.FileIcon.new(Gio.File.new_for_uri(artUrl)) : this._idleArt();
         const position = player ? Math.min(this._position, length || this._position) : 0;
         this._elapsed.text = formatTime(position);

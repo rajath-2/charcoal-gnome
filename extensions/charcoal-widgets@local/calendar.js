@@ -8,7 +8,7 @@ import {DBusEventSource} from 'resource:///org/gnome/shell/ui/calendar.js';
 import {Card} from './card.js';
 import {monthGrid, weekStartDay} from './policy.js';
 
-const MAX_EVENTS = 3;
+const MAX_EVENTS = {small: 0, medium: 3, large: 6};
 const WIDTH = 280;
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 const addDays = (date, days) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
@@ -47,6 +47,7 @@ export const CalendarCard = GObject.registerClass(class CalendarCard extends Car
         const grid = new St.Widget({layout_manager: this._grid, style: `margin-top: ${this.px(8)}px;`});
         this._gridActor = grid;
         this._events = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style: `margin-top: ${this.px(8)}px; spacing: ${this.px(2)}px;`});
+        this._events.visible = MAX_EVENTS[this.layout] > 0;
         for (const child of [header, grid, this._events])
             this.body.add_child(child);
         this._source = new DBusEventSource();
@@ -119,11 +120,12 @@ export const CalendarCard = GObject.registerClass(class CalendarCard extends Car
             style_class: `charcoal-cal-event${dim ? ' charcoal-widget-dim' : ''}`}));
         if (!events.length)
             line('No events', true);
-        for (const event of events.slice(0, MAX_EVENTS)) {
+        const max = MAX_EVENTS[this.layout];
+        for (const event of events.slice(0, max)) {
             const allDay = event.date <= begin && event.end >= end;
             line(`${allDay ? 'All day' : time(event.date)}  ${event.summary}`, false);
         }
-        if (events.length > MAX_EVENTS)
-            line(`+${events.length - MAX_EVENTS} more`, true);
+        if (events.length > max)
+            line(`+${events.length - max} more`, true);
     }
 });
