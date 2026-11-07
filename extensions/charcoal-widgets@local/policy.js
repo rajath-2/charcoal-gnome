@@ -92,3 +92,14 @@ export function describeWeather(code, isDay) {
         [[], 'Unknown', 'weather-overcast-symbolic'];
     return {text, icon: isDay ? day : night};
 }
+
+// Calendar: whole weeks covering `month` (0-11), starting on `weekStart` (0 = Sunday).
+export function monthGrid(year, month, weekStart) {
+    const offset = (new Date(year, month, 1).getDay() - weekStart + 7) % 7;
+    const days = new Date(year, month + 1, 0).getDate();
+    const cells = Math.ceil((offset + days) / 7) * 7;
+    return Array.from({length: cells}, (_, i) => {
+        const date = new Date(year, month, 1 - offset + i);
+        return {date, inMonth: date.getMonth() === month};
+    });
+}

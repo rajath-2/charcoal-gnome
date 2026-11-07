@@ -10,6 +10,7 @@ import {Card} from './card.js';
 import {buildCss} from './theme.js';
 import {isDesktopClear} from './policy.js';
 import {WeatherCard} from './weather.js';
+import {CalendarCard} from './calendar.js';
 
 const NAMES = ['weather', 'calendar', 'music'];
 const Placeholder = GObject.registerClass(class Placeholder extends Card {
@@ -18,7 +19,7 @@ const Placeholder = GObject.registerClass(class Placeholder extends Card {
         this.body.add_child(new St.Label({text: name, style_class: 'charcoal-widget-title'}));
     }
 });
-const CARD_TYPES = {weather: WeatherCard, calendar: Placeholder, music: Placeholder};
+const CARD_TYPES = {weather: WeatherCard, calendar: CalendarCard, music: Placeholder};
 const REBUILD_KEYS = ['weather-enabled', 'calendar-enabled', 'music-enabled', 'blur', 'static-blur'];
 const OWN_KEYS = ['positions', 'locked', 'weather-city', 'weather-latitude', 'weather-longitude', 'idle-artwork'];
 

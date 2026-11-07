@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {buildCss} from '../extensions/charcoal-widgets@local/theme.js';
 import {DEFAULT_POSITIONS, readPositions, toFraction, fromFraction, isDesktopClear, effectBox,
-    geocodeUrl, parseGeocode, forecastUrl, parseForecast, describeWeather} from '../extensions/charcoal-widgets@local/policy.js';
+    geocodeUrl, parseGeocode, forecastUrl, parseForecast, describeWeather, monthGrid} from '../extensions/charcoal-widgets@local/policy.js';
 
 const schema = readFileSync(new URL('../extensions/charcoal-widgets@local/schemas/org.gnome.shell.extensions.charcoal-widgets.gschema.xml', import.meta.url), 'utf8');
 const defaults = Object.fromEntries([...schema.matchAll(/<key name="([^"]+)" type="(.)">[\s\S]*?<default>([^<]+)<\/default>/g)]
@@ -73,4 +73,16 @@ test('weather codes map to text and icons', () => {
     assert.equal(describeWeather(63, true).text, 'Rain');
     assert.equal(describeWeather(96, true).icon, 'weather-storm-symbolic');
     assert.equal(describeWeather(1234, true).text, 'Unknown');
+});
+
+test('month grid has the needed weeks for each week start', () => {
+    const nov = monthGrid(2026, 10, 1);              // Nov 1 2026 is a Sunday
+    assert.equal(nov.length, 42);
+    assert.equal(nov[0].date.getDate(), 26);         // Mon Oct 26
+    assert.equal(nov[0].inMonth, false);
+    assert.equal(nov[6].inMonth && nov[6].date.getDate(), 1);
+    assert.equal(monthGrid(2026, 10, 0).length, 35); // Sunday start
+    const feb = monthGrid(2027, 1, 1);               // Feb 1 2027 is a Monday
+    assert.equal(feb.length, 28);
+    assert.ok(feb.every(d => d.inMonth));
 });
