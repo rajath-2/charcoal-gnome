@@ -22,20 +22,26 @@ Re-running `./install.sh` puts back the bundled copy until the next check.
 
 ## Install
 
-Clone this repository (or use the existing downloaded folder), then run inside your GNOME session as your normal user:
+Clone this repository, then run inside your GNOME session as your normal user:
 
 ```bash
-git clone https://github.com/rajath-2/gnome-themes.git
-cd gnome-themes
-```
-
-From the downloaded folder, the equivalent install commands are:
-
-```bash
-cd ~/Downloads/gnome-themes
-./install.sh --dry-run
+git clone https://github.com/rajath-2/charcoal-gnome.git
+cd charcoal-gnome
+./install.sh --dry-run    # preview, changes nothing
 ./install.sh
 ```
+
+Install only some pieces with `--only` (any combination):
+
+```bash
+./install.sh --only topbar        # Charcoal Topbar + Blur My Shell
+./install.sh --only appearance    # Charcoal Appearance + GTK styling, icons, cursor
+./install.sh --only launchers     # Charcoal Launchers + Blur My Shell (for its blur)
+./install.sh --only topbar launchers
+```
+
+Pieces you leave out are not touched. Only `topbar` changes desktop settings (blur
+profiles, the starting layout) and retires an older top-bar setup.
 
 The default is **automatic** mode: a complete bar when no visible app on the
 current workspace/panel monitor is fully maximized; islands when one is maximized.
@@ -56,7 +62,7 @@ The layout can be changed any time in Charcoal Topbar's preferences.
 ./install.sh --no-activate     # copy files only, without changing desktop settings
 ```
 
-Each invocation installs the complete bundle and creates a new backup. The
+Each invocation installs the chosen pieces (all by default) and creates a new backup. The
 standalone compact mode retains generous 72px side margins. Automatic mode uses
 18px margins in both states so the outer controls remain stationary.
 

@@ -34,6 +34,12 @@ for name in EXTENSIONS:
 # Moved into the backup on install (not replaced), so restore can bring them back.
 LEGACY = {f'themes/{name}': HOME_DIR / '.themes' / name for name in OLD_THEMES}
 LEGACY[f'extensions/{AUTO}'] = DATA / 'gnome-shell/extensions' / AUTO
+# Installable pieces. Blur My Shell provides the blur for both the top bar and the launchers.
+COMPONENTS = {
+    'topbar': [f'extensions/{BLUR}', f'extensions/{TOPBAR}'],
+    'appearance': ['gtk-4.0', 'icons/GreyStone - circle', 'icons/Future-black-cursors', f'extensions/{APPEARANCE}'],
+    'launchers': [f'extensions/{BLUR}', f'extensions/{LAUNCHERS}'],
+}
 SCHEMA_DIRS = {'org.gnome.shell.extensions.blur-my-shell': BLUR, 'org.gnome.shell.extensions.user-theme': USER_THEME,
                'org.gnome.shell.extensions.charcoal-topbar': TOPBAR}
 
@@ -117,10 +123,16 @@ def preflight(activate):
 
 def install(args):
     preflight(not args.no_activate)
-    print('Mode:', args.mode, '(copy only)' if args.no_activate else '(activate)')
-    for label, target in TARGETS.items():
+    labels = {label for name in args.only for label in COMPONENTS[name]}
+    targets = {label: target for label, target in TARGETS.items() if label in labels}
+    extensions = [x for x in EXTENSIONS if f'extensions/{x}' in labels]
+    topbar = 'topbar' in args.only
+    # The old top bar (theme + adaptive panel) is only replaced when the new top bar is installed.
+    legacy = LEGACY if topbar else {}
+    print('Installing:', ', '.join(args.only), '(copy only)' if args.no_activate else f'(activate, top bar mode {args.mode})' if topbar else '(activate)')
+    for label, target in targets.items():
         print(f'  {label} -> {target}')
-    for target in LEGACY.values():
+    for target in legacy.values():
         if exists(target):
             print(f'  retire {target} (moved into the backup)')
     if args.dry_run:
@@ -136,8 +148,9 @@ def install(args):
             for key in ['enabled-extensions', 'disabled-extensions']:
                 manifest['settings'].append(['org.gnome.shell', key, gs('get', 'org.gnome.shell', key)])
             write_manifest(backup, manifest)
-            stop_launchers()
-        for label, target in TARGETS.items():
+            if LAUNCHERS in extensions:
+                stop_launchers()
+        for label, target in targets.items():
             manifest['targets'][label] = {'path': str(target), 'existed': exists(target), 'installed': False}
             write_manifest(backup, manifest)
             if exists(target):
@@ -150,19 +163,21 @@ def install(args):
             shutil.copytree(ROOT / label, target, symlinks=True, ignore=ignore)
             manifest['targets'][label]['installed'] = True
             write_manifest(backup, manifest)
-        for label, target in LEGACY.items():
+        for label, target in legacy.items():
             if exists(target):
                 manifest['targets'][label] = {'path': str(target), 'existed': True, 'installed': False}
                 saved = backup / 'files' / label
                 saved.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(target), str(saved))
                 write_manifest(backup, manifest)
-        for extension in EXTENSIONS:
+        for extension in extensions:
             run(['glib-compile-schemas', DATA / 'gnome-shell/extensions' / extension / 'schemas'])
         if not args.no_activate:
-            plan = setting_plan(args.mode)
-            special = [('org.gnome.shell', 'enabled-extensions'), ('org.gnome.shell', 'disabled-extensions'),
-                       ('org.gnome.shell.extensions.blur-my-shell', 'pipelines')]
+            # Only the top bar changes desktop settings; the other pieces just get enabled.
+            plan = setting_plan(args.mode) if topbar else []
+            special = [('org.gnome.shell', 'enabled-extensions'), ('org.gnome.shell', 'disabled-extensions')]
+            if topbar:
+                special.append(('org.gnome.shell.extensions.blur-my-shell', 'pipelines'))
             for schema, key in [(s, k) for s, k, _ in plan] + special:
                 if any(s == schema and k == key for s, k, _ in manifest['settings']):
                     continue
@@ -171,22 +186,24 @@ def install(args):
                     raise RuntimeError(f'Setting is locked: {schema} {key}')
                 manifest['settings'].append([schema, key, value])
             write_manifest(backup, manifest)
-            # Let running top-bar instances restore their blur state before applying settings.
-            current_disabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'disabled-extensions').removeprefix('@as '))
-            missing = [x for x in [AUTO, TOPBAR] if x not in current_disabled]
-            if missing:
-                gs('set', 'org.gnome.shell', 'disabled-extensions', repr(current_disabled + missing))
-                time.sleep(0.5)
-            run(['gjs', '-m', ROOT / 'configure-blur.js', DATA / 'gnome-shell/extensions' / BLUR / 'schemas'])
+            if topbar:
+                # Let running top-bar instances restore their blur state before applying settings.
+                current_disabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'disabled-extensions').removeprefix('@as '))
+                missing = [x for x in [AUTO, TOPBAR] if x not in current_disabled]
+                if missing:
+                    gs('set', 'org.gnome.shell', 'disabled-extensions', repr(current_disabled + missing))
+                    time.sleep(0.5)
+                run(['gjs', '-m', ROOT / 'configure-blur.js', DATA / 'gnome-shell/extensions' / BLUR / 'schemas'])
             for schema, key, value in plan:
                 gs('set', schema, key, value)
                 if gs('get', schema, key) != value:
                     raise RuntimeError(f'Setting did not persist: {schema} {key}')
             enabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'enabled-extensions').removeprefix('@as '))
             disabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'disabled-extensions').removeprefix('@as '))
-            wanted = EXTENSIONS
-            enabled = [x for x in enabled if x not in EXTENSIONS + [AUTO]] + wanted
-            disabled = [x for x in disabled if x not in wanted + [AUTO]]
+            wanted = extensions
+            retired = [AUTO] if topbar else []
+            enabled = [x for x in enabled if x not in wanted + retired] + wanted
+            disabled = [x for x in disabled if x not in wanted + retired]
             gs('set', 'org.gnome.shell', 'disabled-extensions', repr(disabled))
             gs('set', 'org.gnome.shell', 'enabled-extensions', repr(enabled))
         manifest['status'] = 'complete'
@@ -258,6 +275,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mode', choices=['auto', 'compact', 'islands'], default='auto',
                         help='initial top bar layout; change later in Charcoal Topbar preferences')
+    parser.add_argument('--only', nargs='+', choices=list(COMPONENTS), default=list(COMPONENTS), metavar='PIECE',
+                        help='install only some pieces: topbar, appearance, launchers (default: all)')
     parser.add_argument('--dry-run', action='store_true', help='show changes without writing')
     parser.add_argument('--no-activate', action='store_true', help='install files without desktop settings changes')
     parser.add_argument('--restore', metavar='BACKUP_DIR', help='restore a backup created by this installer')

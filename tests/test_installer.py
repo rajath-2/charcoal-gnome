@@ -70,6 +70,24 @@ class InstallerTest(unittest.TestCase):
             self.assertEqual((legacy / 'extension.js').read_text(), 'old')
             self.assertFalse(launcher.exists())
 
+    def test_only_installs_the_chosen_pieces(self):
+        with tempfile.TemporaryDirectory(prefix='gnome-theme-install-test-') as directory:
+            home = Path(directory)
+            env = dict(os.environ, HOME=str(home), XDG_DATA_HOME=str(home / '.local/share'),
+                       XDG_CONFIG_HOME=str(home / '.config'), XDG_STATE_HOME=str(home / '.local/state'))
+            extensions = home / '.local/share/gnome-shell/extensions'
+            legacy = extensions / 'adaptive-smoke-panel@local'
+            legacy.mkdir(parents=True)
+            result = subprocess.run([str(ROOT / 'install.sh'), '--no-activate', '--only', 'appearance'],
+                                    env=env, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue((home / '.config/gtk-4.0/gtk.css').is_file())
+            self.assertTrue((home / '.local/share/icons/GreyStone - circle/index.theme').is_file())
+            self.assertTrue((extensions / 'charcoal-appearance@local/schemas/gschemas.compiled').is_file())
+            for absent in ['charcoal-topbar@local', 'charcoal-launchers@local', 'blur-my-shell@aunetx']:
+                self.assertFalse((extensions / absent).exists(), absent)
+            self.assertTrue(legacy.exists(), 'the old top bar is only retired with --only topbar')
+
 
 if __name__ == '__main__':
     unittest.main()
