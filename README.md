@@ -201,6 +201,13 @@ including a focused application, Super+Left, selected/neutral release, Escape,
 shortcut conflict rejection, provider responses, Preferences, and blur. Physical
 keyboard behavior and mixed-DPI monitors still merit checking after login.
 
+## Look options
+
+The top bar, its menus, the search panel, the wheel and the widgets each have their own
+background, outline (color, width, strength) and shadow (color, size, strength; a bright
+color reads as a glow) in their Appearance preferences. The bar and the search panel also
+have a text size. The wheel's shadow applies to its window previews.
+
 ## Desktop widgets
 
 Charcoal Widgets puts three cards on the desktop: **weather** (top-left), a **month
@@ -219,6 +226,7 @@ screen; minimizing everything brings them back.
 - The music card follows the app that is playing (Spotify, browsers, any MPRIS
   player). Shuffle, repeat and seeking dim when the player does not support them.
   With nothing playing it shows "Nothing playing" and artwork you can choose.
+- Each widget has its own **Size** (70–150%).
 - Every color, border, glow, corner radius and the blur are in **Appearance**;
   **Restore reference look** returns the amber glass default.
 

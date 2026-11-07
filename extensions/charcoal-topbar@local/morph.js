@@ -47,7 +47,9 @@ export function morphShapes(width, height, boxes, progress, radius = 10) {
 // style: {color: [r,g,b] 0..1, line: [r,g,b], opacity, border (alphas 0..1), radius, shadow}
 // Both endpoints use the same opacity and outline so the split/join morph has no jumps.
 export const DEFAULT_STYLE = {color: [18 / 255, 18 / 255, 18 / 255], line: [235 / 255, 235 / 255, 235 / 255],
-    opacity: 0.78, border: 0.15, radius: 10, shadow: true};
+    opacity: 0.78, border: 0.15, borderWidth: 1, radius: 10, shadow: true, shadowColor: [0, 0, 0], shadowSize: 12, shadowOpacity: 0.22};
+// Room around the panel the surface paints into, for the shadow (logical px).
+export const BLEED = 40;
 
 export function paintMorph(cr, width, height, boxes, progress, scale = 1, style = DEFAULT_STYLE) {
     // Geometry is in logical CSS pixels, including on scaled displays.
@@ -55,35 +57,38 @@ export function paintMorph(cr, width, height, boxes, progress, scale = 1, style 
     const w = width / scale, h = height / scale;
     const t = Math.max(0, Math.min(1, progress));
     const shapes = morphShapes(w, h, boxes.map(b => ({x: b.x / scale, width: b.width / scale})), t, style.radius);
-    if (style.shadow) {
-        // Soft drop shadow like the compact bar's CSS (0 4px 12px), without a blur filter: stacked,
+    if (style.shadow && style.shadowSize > 0) {
+        // Soft drop shadow like the compact bar's CSS shadow, without a blur filter: stacked,
         // growing shapes whose alphas add up to a smooth falloff - half strength at the bar's edge,
         // fading to nothing SPREAD px out - so no hard-edged shape shows around the corners.
-        const SPREAD = 9, OFFSET = 3, STRENGTH = 0.22;
+        const SPREAD = Math.min(BLEED - 4, Math.round(style.shadowSize * 0.75)), OFFSET = Math.round(style.shadowSize / 4);
+        const STRENGTH = style.shadowOpacity;
         const coverage = d => 0.5 * STRENGTH * (1 - d / SPREAD) ** 2;
         for (let i = SPREAD; i >= 1; i--) {
             for (const rect of shapes)
                 roundedPath(cr, {...rect, x: rect.x - i, width: rect.width + 2 * i, height: rect.height + 2 * i,
-                    leftRadius: rect.leftRadius + i, rightRadius: rect.rightRadius + i}, 12, 12 + OFFSET - i);
-            cr.setSourceRGBA(0, 0, 0, coverage(i - 1) - coverage(i));
+                    leftRadius: rect.leftRadius + i, rightRadius: rect.rightRadius + i}, BLEED, BLEED + OFFSET - i);
+            cr.setSourceRGBA(...style.shadowColor, coverage(i - 1) - coverage(i));
             cr.fill();
         }
     }
     // One path: overlapping pieces would darken their seams.
-    for (const rect of shapes) roundedPath(cr, rect, 12, 12);
+    for (const rect of shapes) roundedPath(cr, rect, BLEED, BLEED);
     cr.setSourceRGBA(...style.color, style.opacity);
     cr.fill();
     // The joined outline hands over to the pieces' outlines while the gaps are still hairline-thin:
     // constant strength, no seam pop at the start, no line left across open gaps.
     const handover = Math.min(1, t / 0.15);
-    cr.setLineWidth(1);
+    if (!(style.borderWidth > 0))
+        return;
+    cr.setLineWidth(style.borderWidth);
     if (handover < 1) {
-        roundedPath(cr, joined(w, h, style.radius), 12, 12);
+        roundedPath(cr, joined(w, h, style.radius), BLEED, BLEED);
         cr.setSourceRGBA(...style.line, style.border * (1 - handover));
         cr.stroke();
     }
     if (t >= 0.001) {
-        for (const rect of shapes) roundedPath(cr, rect, 12, 12);
+        for (const rect of shapes) roundedPath(cr, rect, BLEED, BLEED);
         cr.setSourceRGBA(...style.line, style.border * handover);
         cr.stroke();
     }

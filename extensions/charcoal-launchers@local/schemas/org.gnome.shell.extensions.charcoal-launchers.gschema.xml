@@ -31,6 +31,19 @@
     <key name="wheel-foreground-color" type="s"><default>'#f0f0f2'</default></key>
     <key name="wheel-accent-color" type="s"><default>'#a6b5cc'</default></key>
     <key name="wheel-colors-split" type="b"><default>false</default><summary>Wheel colors copied from the formerly shared ones</summary></key>
+    <key name="border-color" type="s"><default>'#ffffff'</default></key>
+    <key name="border-width" type="i"><range min="0" max="4"/><default>1</default></key>
+    <key name="border-opacity" type="i"><range min="0" max="100"/><default>12</default></key>
+    <key name="shadow-color" type="s"><default>'#000000'</default></key>
+    <key name="shadow-size" type="i"><range min="0" max="60"/><default>32</default></key>
+    <key name="shadow-opacity" type="i"><range min="0" max="100"/><default>30</default></key>
+    <key name="wheel-border-color" type="s"><default>'#ffffff'</default></key>
+    <key name="wheel-border-width" type="i"><range min="0" max="4"/><default>1</default></key>
+    <key name="wheel-border-opacity" type="i"><range min="0" max="100"/><default>10</default></key>
+    <key name="wheel-shadow-color" type="s"><default>'#000000'</default></key>
+    <key name="wheel-shadow-size" type="i"><range min="0" max="60"/><default>0</default></key>
+    <key name="wheel-shadow-opacity" type="i"><range min="0" max="100"/><default>30</default></key>
+    <key name="text-size" type="i"><range min="70" max="150"/><default>100</default><summary>Search text size, percent</summary></key>
     <key name="background-opacity" type="i"><range min="40" max="100"/><default>94</default></key>
     <key name="corner-radius" type="i"><range min="0" max="40"/><default>20</default></key>
     <key name="launcher-width" type="i"><range min="360" max="1000"/><default>600</default></key>

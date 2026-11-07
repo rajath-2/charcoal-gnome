@@ -118,3 +118,17 @@ export function pickSector(x, y, center, rings) {
     const sector = wheelSelection(x, y, {...center, radius: Infinity}, rings[index].count, 0);
     return sector < 0 ? null : {ring: index, sector};
 }
+
+// Inline style of a launcher surface (search panel, wheel previews) from its preference values,
+// with the prefix already stripped from the key names.
+const hexOr = value => /^#[0-9a-f]{6}$/i.test(value) ? value : '#808080';
+const rgbaOf = (value, alpha) => `rgba(${[1, 3, 5].map(i => parseInt(hexOr(value).slice(i, i + 2), 16)).join(',')},${+alpha.toFixed(3)})`;
+export function surfaceCss(o) {
+    const border = o['border-width'] > 0
+        ? `${o['border-width']}px solid ${rgbaOf(o['border-color'], o['border-opacity'] / 100)}` : 'none';
+    const shadow = o['shadow-size'] > 0
+        ? `0 ${Math.round(o['shadow-size'] * 3 / 8)}px ${o['shadow-size']}px 2px ${rgbaOf(o['shadow-color'], o['shadow-opacity'] / 100)}` : 'none';
+    return `background-color: ${rgbaOf(o['background-color'], o['background-opacity'] / 100)};
+        color: ${hexOr(o['foreground-color'])}; border-radius: ${o['corner-radius']}px;
+        border: ${border}; box-shadow: ${shadow}; font-size: ${+(o['text-size'] / 100).toFixed(2)}em;`;
+}

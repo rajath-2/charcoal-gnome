@@ -2,6 +2,7 @@ import Clutter from 'gi://Clutter';
 import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import St from 'gi://St';
+import {surfaceCss} from './policy.js';
 
 export function color(settings, key) {
     const value = settings.get_string(key);
@@ -18,11 +19,13 @@ export function keepOnTop(actor) {
     actor.connect('destroy', () => global.compositor.enable_unredirect());
 }
 export function surfaceStyle(settings, prefix = '') {
-    const [r, g, b] = rgb(color(settings, `${prefix}background-color`)).map(v => Math.round(v * 255));
-    const opacity = settings.get_int(prefix ? 'wheel-opacity' : 'background-opacity') / 100;
-    return `background-color: rgba(${r},${g},${b},${opacity});
-        color: ${color(settings, `${prefix}foreground-color`)}; border-radius: ${settings.get_int('corner-radius')}px;
-        border: 1px solid rgba(255,255,255,0.12);`;
+    const get = key => settings.get_value(key).deepUnpack();
+    const o = Object.fromEntries(['background-color', 'foreground-color', 'border-color', 'border-width', 'border-opacity',
+        'shadow-color', 'shadow-size', 'shadow-opacity'].map(key => [key, get(prefix + key)]));
+    o['background-opacity'] = get(prefix ? 'wheel-opacity' : 'background-opacity');
+    o['corner-radius'] = get('corner-radius');
+    o['text-size'] = prefix ? 100 : get('text-size');
+    return surfaceCss(o);
 }
 export function animate(actor, settings, opening, done = () => {}) {
     actor.remove_all_transitions();

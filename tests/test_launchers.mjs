@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Gesture, wheelGeometry, wheelSelection, restoreBindings, QueryGeneration} from '../extensions/charcoal-launchers@local/policy.js';
+import {Gesture, wheelGeometry, wheelSelection, restoreBindings, QueryGeneration, surfaceCss} from '../extensions/charcoal-launchers@local/policy.js';
 
 test('a short Super tap opens overview once', () => {
     const g = new Gesture();
@@ -109,4 +109,17 @@ test('the pointer picks by direction: overshooting or ring gaps still select, on
     assert.deepEqual(pickSector(500, 100, center, rings), {ring: 1, sector: 0}, 'far beyond the wheel: outermost ring, same direction');
     assert.deepEqual(pickSector(900, 500, center, rings), {ring: 1, sector: 2}, 'beyond, to the right');
     assert.deepEqual(pickSector(900, 500, center, [rings[0]]), {ring: 0, sector: 1}, 'single ring: beyond picks it');
+});
+
+test('search and wheel surfaces take their own border, shadow and text size', () => {
+    const base = {'background-color': '#202127', 'foreground-color': '#f0f0f2', 'corner-radius': 20, 'background-opacity': 94,
+        'border-color': '#ffffff', 'border-width': 1, 'border-opacity': 12, 'shadow-color': '#000000', 'shadow-size': 32,
+        'shadow-opacity': 30, 'text-size': 100};
+    const css = surfaceCss(base);
+    for (const s of ['background-color: rgba(32,33,39,0.94)', 'border: 1px solid rgba(255,255,255,0.12)',
+        'box-shadow: 0 12px 32px 2px rgba(0,0,0,0.3)', 'font-size: 1em', 'border-radius: 20px'])
+        assert.ok(css.includes(s), s);
+    const custom = surfaceCss({...base, 'border-width': 0, 'shadow-size': 0, 'text-size': 125, 'foreground-color': 'bad'});
+    assert.ok(custom.includes('border: none') && custom.includes('box-shadow: none') && custom.includes('font-size: 1.25em'));
+    assert.ok(custom.includes('color: #808080'));
 });

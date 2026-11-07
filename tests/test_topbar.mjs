@@ -64,3 +64,25 @@ test('auto layout: islands while an app is maximized, swapped when inverted', ()
     assert.equal(useIslands(hidden, 0, true), true, 'a minimized maximized app does not count');
     assert.equal(useIslands([], 0, true), true);
 });
+
+test('border, shadow, text size and popup surfaces follow their own preferences', () => {
+    const css = buildCss({...defaults, 'border-color': '#ff0000', 'border-width': 2, 'border-opacity': 50,
+        'shadow-color': '#0000ff', 'shadow-size': 30, 'shadow-opacity': 40, 'text-size': 120,
+        'popup-text-color': '#00ff00', 'popup-border-color': '#ffff00', 'popup-border-width': 3, 'popup-border-opacity': 20,
+        'popup-shadow-color': '#ff00ff', 'popup-shadow-size': 36, 'popup-shadow-opacity': 50});
+    assert.ok(css.includes('border: 2px solid rgba(255,0,0,0.5)'));
+    assert.ok(css.includes('box-shadow: 0 10px 30px rgba(0,0,255,0.4)'));
+    assert.ok(css.includes('font-size: 1.2em'));
+    assert.ok(css.includes('border: 3px solid rgba(255,255,0,0.2)'));
+    assert.ok(css.includes('box-shadow: 0 12px 36px 0 rgba(255,0,255,0.5)'));
+    assert.match(css, /\.popup-menu-content[^}]*color: #00ff00/);
+    const none = buildCss({...defaults, 'border-width': 0, 'popup-border-width': 0});
+    assert.ok(none.includes('border: none'));
+});
+
+test('default shadows and borders stay as before', () => {
+    const css = buildCss(defaults);
+    for (const s of ['box-shadow: 0 4px 12px rgba(0,0,0,0.22)', 'box-shadow: 0 8px 24px 0 rgba(0,0,0,0.28)',
+        'border: 1px solid rgba(237,237,237,0.15)', 'border: 1px solid rgba(237,237,237,0.13)'])
+        assert.ok(css.includes(s), s);
+});

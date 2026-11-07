@@ -6,7 +6,7 @@ import Meta from 'gi://Meta';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {useIslands} from './policy.js';
-import {paintMorph, morphShapes, effectBox} from './morph.js';
+import {paintMorph, morphShapes, effectBox, BLEED} from './morph.js';
 import {PanelMask} from './panelmask.js';
 import {addBlur} from './blur.js';
 import {buildCss, rgb01} from './theme.js';
@@ -66,8 +66,10 @@ export default class CharcoalTopbar extends Extension {
     _loadStyle() {
         const values = Object.fromEntries(this._prefs.settings_schema.list_keys()
             .map(key => [key, this._prefs.get_value(key).deepUnpack()]));
-        this._style = {color: rgb01(values['bar-color']), line: rgb01(values['text-color']),
-            opacity: values['bar-opacity'] / 100, border: values['border-opacity'] / 100, radius: values['corner-radius'], shadow: values.shadow};
+        this._style = {color: rgb01(values['bar-color']), line: rgb01(values['border-color']),
+            opacity: values['bar-opacity'] / 100, border: values['border-opacity'] / 100, borderWidth: values['border-width'],
+            radius: values['corner-radius'], shadow: values.shadow, shadowColor: rgb01(values['shadow-color']),
+            shadowSize: values['shadow-size'], shadowOpacity: values['shadow-opacity'] / 100};
         const dir = GLib.build_filenamev([GLib.get_user_runtime_dir(), 'charcoal-topbar']);
         GLib.mkdir_with_parents(dir, 0o700);
         const file = Gio.File.new_for_path(`${dir}/style-${GLib.uuid_string_random()}.css`);
@@ -171,7 +173,7 @@ export default class CharcoalTopbar extends Extension {
         if (!this._surface || !Main.panel.has_allocation())
             return;
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-        const bleed = 12 * scale;
+        const bleed = BLEED * scale;
         const box = new Clutter.ActorBox({x1: -bleed, y1: -bleed,
             x2: Main.panel.width + bleed, y2: Main.panel.height + bleed});
         this._surface.allocate(box);

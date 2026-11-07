@@ -115,8 +115,7 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         const appearance = page('Appearance', 'applications-graphics-symbolic');
         const colorGroups = [[group(appearance, 'Wheel colors', 'Sectors, the running-app dot and window previews'), 'wheel-'],
             [group(appearance, 'Search colors', 'The search panel and its results'), '']];
-        for (const [colors, prefix] of colorGroups) for (const [name, title] of [['background-color', 'Background'], ['foreground-color', 'Text'], ['accent-color', 'Highlight']]) {
-            const key = prefix + name;
+        const colorRow = (colors, key, title) => {
             const row = new Adw.ActionRow({title});
             const picker = new Gtk.ColorDialogButton({dialog: new Gtk.ColorDialog({with_alpha: false}), valign: Gtk.Align.CENTER});
             const update = () => { const rgba = new Gdk.RGBA(); rgba.parse(settings.get_string(key)); picker.rgba = rgba; };
@@ -127,6 +126,19 @@ export default class CharcoalPreferences extends ExtensionPreferences {
                 if (settings.get_string(key) !== hex) settings.set_string(key, hex);
             });
             row.add_suffix(picker); colors.add(row);
+        };
+        for (const [colors, prefix] of colorGroups) for (const [name, title] of [['background-color', 'Background'], ['foreground-color', 'Text'], ['accent-color', 'Highlight']])
+            colorRow(colors, prefix + name, title);
+        spin(colorGroups[1][0], 'text-size', 'Text size', 70, 150, 5, 'Percent');
+        for (const [title, description, prefix] of [['Search outline and shadow', 'A bright shadow color reads as a glow.', ''],
+            ['Wheel outline and shadow', 'The outline is drawn around each sector; the shadow is under the window previews.', 'wheel-']]) {
+            const g = group(appearance, title, description);
+            colorRow(g, `${prefix}border-color`, 'Outline color');
+            spin(g, `${prefix}border-width`, 'Outline width', 0, 4, 1, 'Pixels, 0 hides the outline');
+            spin(g, `${prefix}border-opacity`, 'Outline strength', 0, 100, 1, 'Percent');
+            colorRow(g, `${prefix}shadow-color`, 'Shadow color');
+            spin(g, `${prefix}shadow-size`, 'Shadow size', 0, 60, 1, 'Pixels, 0 hides the shadow');
+            spin(g, `${prefix}shadow-opacity`, 'Shadow strength', 0, 100, 1, 'Percent');
         }
         const motion = group(appearance, 'Motion', 'The system’s reduced-animation setting always takes precedence.');
         toggle(motion, 'animations', 'Animate opening and closing');

@@ -113,7 +113,12 @@ export class FavoritesWheel {
         cr.arcNegative(r, r, ring.inner + 2, end, start); cr.closePath();
         const fill = id === this.selection ? background.map((v, c) => v * 0.68 + accent[c] * 0.32) : background;
         cr.setSourceRGBA(...fill, this.settings.get_int('wheel-opacity') / 100); cr.fillPreserve();
-        cr.setSourceRGBA(1, 1, 1, 0.10); cr.setLineWidth(1); cr.stroke(); cr.$dispose();
+        const lineWidth = this.settings.get_int('wheel-border-width');
+        if (lineWidth > 0) {
+            cr.setSourceRGBA(...rgb(color(this.settings, 'wheel-border-color')), this.settings.get_int('wheel-border-opacity') / 100);
+            cr.setLineWidth(lineWidth); cr.stroke();
+        }
+        cr.$dispose();
     }
     updatePointer(x, y) {
         if (!this.actor) return;
