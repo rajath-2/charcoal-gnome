@@ -93,15 +93,28 @@ export function describeWeather(code, isDay) {
     return {text, icon: isDay ? day : night};
 }
 
-// Calendar: whole weeks covering `month` (0-11), starting on `weekStart` (0 = Sunday).
+// Calendar: six weeks, padded exactly like the top bar's calendar (shell ui/calendar.js), so the
+// current month asks GNOME's calendar server for the same range as the date menu does.
 export function monthGrid(year, month, weekStart) {
     const offset = (new Date(year, month, 1).getDay() - weekStart + 7) % 7;
-    const days = new Date(year, month + 1, 0).getDate();
-    const cells = Math.ceil((offset + days) / 7) * 7;
-    return Array.from({length: cells}, (_, i) => {
-        const date = new Date(year, month, 1 - offset + i);
+    const start = 1 - offset - (offset === 0 ? 7 : 0);
+    return Array.from({length: 42}, (_, i) => {
+        const date = new Date(year, month, start + i);
         return {date, inMonth: date.getMonth() === month};
     });
+}
+
+// org.gnome.desktop.calendar week-start-day: 0 = locale default, 1 = Monday ... 7 = Sunday.
+export const weekStartDay = (setting, localeStart) => setting === 0 ? localeStart : setting % 7;
+
+// Weather schedule on wall-clock microseconds (it keeps running through suspend): every 30 minutes
+// after a success; after failures, retry in 1, 2, 4 ... minutes, at most 30.
+const REFRESH_US = 30 * 60e6;
+export function weatherDue({now, lastAttempt, lastSuccess, failures}) {
+    if (lastAttempt === null)
+        return true;
+    const wait = failures > 0 ? Math.min(REFRESH_US, 60e6 * 2 ** (failures - 1)) : REFRESH_US;
+    return now - (failures > 0 ? lastAttempt : lastSuccess) >= wait;
 }
 
 // Music: follow the playing player; with none playing, the one that changed most recently.

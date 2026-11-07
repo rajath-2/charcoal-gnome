@@ -69,6 +69,8 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
         if (shown === this._shown)
             return;
         this._shown = shown;
+        if (!shown)
+            this._cancelDrag();
         this.remove_transition('opacity');
         if (shown) {
             this.show();
@@ -84,7 +86,7 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
     }
 
     _startDrag(event) {
-        if (this.settings.get_boolean('locked') || event.get_button() !== Clutter.BUTTON_PRIMARY)
+        if (this._grab || this.settings.get_boolean('locked') || event.get_button() !== Clutter.BUTTON_PRIMARY)
             return Clutter.EVENT_PROPAGATE;
         const [px, py] = event.get_coords();
         this._offset = [px - this.x, py - this.y];
@@ -95,9 +97,21 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
     _drag(event) {
         if (!this._grab)
             return Clutter.EVENT_PROPAGATE;
+        // The release went elsewhere (another grab, a modal): finish here instead of following the pointer.
+        if (!(event.get_state() & Clutter.ModifierType.BUTTON1_MASK))
+            return this._endDrag();
         const [px, py] = event.get_coords();
         this.set_position(Math.round(px - this._offset[0]), Math.round(py - this._offset[1]));
         return Clutter.EVENT_STOP;
+    }
+
+    // Hidden mid-drag (a window opened): drop the grab, it would never see the release.
+    _cancelDrag() {
+        if (!this._grab)
+            return;
+        this._grab.dismiss();
+        this._grab = null;
+        this.place();
     }
 
     _endDrag() {

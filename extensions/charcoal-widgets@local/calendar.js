@@ -1,12 +1,15 @@
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import {DBusEventSource} from 'resource:///org/gnome/shell/ui/calendar.js';
 import {Card} from './card.js';
-import {monthGrid} from './policy.js';
+import {monthGrid, weekStartDay} from './policy.js';
 
 const MAX_EVENTS = 3;
+const WIDTH = 280;
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 const addDays = (date, days) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 const time = date => date.toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'});
@@ -16,7 +19,17 @@ const time = date => date.toLocaleTimeString(undefined, {hour: '2-digit', minute
 export const CalendarCard = GObject.registerClass(class CalendarCard extends Card {
     _init(name, settings, ext) {
         super._init(name, settings, ext);
-        this._weekStart = Shell.util_get_week_start();
+        this.body.width = WIDTH;
+        // Same first weekday as the top bar's calendar: the desktop setting, else the locale.
+        this._desktop = new Gio.Settings({schema_id: 'org.gnome.desktop.calendar'});
+        const readWeekStart = () => {
+            this._weekStart = weekStartDay(this._desktop.get_enum('week-start-day'), Shell.util_get_week_start());
+        };
+        readWeekStart();
+        this._weekStartChanged = this._desktop.connect('changed::week-start-day', () => {
+            readWeekStart();
+            this._render();
+        });
         this._selected = addDays(new Date(), 0);
         this._month = new Date(this._selected.getFullYear(), this._selected.getMonth(), 1);
         const header = new St.BoxLayout();
@@ -37,18 +50,32 @@ export const CalendarCard = GObject.registerClass(class CalendarCard extends Car
         for (const child of [header, grid, this._events])
             this.body.add_child(child);
         this._source = new DBusEventSource();
-        this._sourceChanged = this._source.connect('changed', () => this._render());
+        // The source can emit 'changed' from inside requestRange (during a render): render once, later.
+        this._sourceChanged = this._source.connect('changed', () => {
+            this._pendingRender ||= GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                this._pendingRender = 0;
+                this._render();
+                return GLib.SOURCE_REMOVE;
+            });
+        });
         this.connect('destroy', () => {
+            if (this._pendingRender) GLib.Source.remove(this._pendingRender);
+            this._desktop.disconnect(this._weekStartChanged);
             this._source.disconnect(this._sourceChanged);
             this._source.destroy();
         });
         this._render();
     }
 
-    // Today rolls over at midnight; re-render whenever the desktop is shown.
+    // Today rolls over at midnight; re-render whenever the desktop is shown. When hidden, go back to
+    // the current month: the calendar server watches one range, shared with the date menu.
     onShown(shown) {
-        if (shown)
-            this._render();
+        if (!shown) {
+            const today = new Date();
+            this._month = new Date(today.getFullYear(), today.getMonth(), 1);
+            this._selected = addDays(today, 0);
+        }
+        this._render();
     }
 
     _render() {

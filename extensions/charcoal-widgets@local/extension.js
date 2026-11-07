@@ -1,4 +1,3 @@
-import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
@@ -23,7 +22,8 @@ export default class CharcoalWidgets extends Extension {
         this._cards = new Map();
         this._settings = this.getSettings();
         // Above the wallpaper, below every window; the window group is hidden in the overview.
-        this._container = new Clutter.Actor({name: 'charcoal-widgets'});
+        // A BackgroundGroup: Mutter's restack keeps those under the windows (a plain actor ends up on top).
+        this._container = new Meta.BackgroundGroup({name: 'charcoal-widgets'});
         global.window_group.insert_child_above(this._container, Main.layoutManager._backgroundGroup);
         this._loadStyle();
         this._connect(this._settings, 'changed', (_, key) => this._settingChanged(key));

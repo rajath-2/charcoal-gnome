@@ -5,7 +5,7 @@ import {buildCss} from '../extensions/charcoal-widgets@local/theme.js';
 import {DEFAULT_POSITIONS, readPositions, toFraction, fromFraction, isDesktopClear, effectBox,
     geocodeUrl, parseGeocode, forecastUrl, parseForecast, describeWeather, monthGrid,
     pickPlayer, trackInfo, formatTime, nextLoop,
-    placeSearchUrl, parsePlaceSearch, mergePlaces} from '../extensions/charcoal-widgets@local/policy.js';
+    placeSearchUrl, parsePlaceSearch, mergePlaces, weekStartDay, weatherDue} from '../extensions/charcoal-widgets@local/policy.js';
 
 const schema = readFileSync(new URL('../extensions/charcoal-widgets@local/schemas/org.gnome.shell.extensions.charcoal-widgets.gschema.xml', import.meta.url), 'utf8');
 const defaults = Object.fromEntries([...schema.matchAll(/<key name="([^"]+)" type="(.)">[\s\S]*?<default>([^<]+)<\/default>/g)]
@@ -77,16 +77,38 @@ test('weather codes map to text and icons', () => {
     assert.equal(describeWeather(1234, true).text, 'Unknown');
 });
 
-test('month grid has the needed weeks for each week start', () => {
+test('month grid matches the top bar calendar: six weeks, same padding', () => {
     const nov = monthGrid(2026, 10, 1);              // Nov 1 2026 is a Sunday
     assert.equal(nov.length, 42);
     assert.equal(nov[0].date.getDate(), 26);         // Mon Oct 26
     assert.equal(nov[0].inMonth, false);
     assert.equal(nov[6].inMonth && nov[6].date.getDate(), 1);
-    assert.equal(monthGrid(2026, 10, 0).length, 35); // Sunday start
-    const feb = monthGrid(2027, 1, 1);               // Feb 1 2027 is a Monday
-    assert.equal(feb.length, 28);
-    assert.ok(feb.every(d => d.inMonth));
+    const sun = monthGrid(2026, 10, 0);              // starts on the week start: one padding week before
+    assert.equal(sun.length, 42);
+    assert.equal(sun[7].date.getDate(), 1);
+    const feb = monthGrid(2027, 1, 1);               // Feb 1 2027 is a Monday, 4 weeks: padded both sides
+    assert.equal(feb.length, 42);
+    assert.equal(feb[0].date.getDate(), 25);         // Mon Jan 25
+    assert.equal(feb.filter(d => d.inMonth).length, 28);
+});
+
+test('week start follows the desktop setting, else the locale', () => {
+    assert.equal(weekStartDay(0, 0), 0);             // 'default' -> locale (Sunday)
+    assert.equal(weekStartDay(1, 0), 1);             // 'monday'
+    assert.equal(weekStartDay(7, 1), 0);             // 'sunday'
+});
+
+test('weather refreshes every 30 min, retries failures sooner, and notices wall-clock jumps', () => {
+    const min = 60e6;
+    assert.equal(weatherDue({now: 0, lastAttempt: null, lastSuccess: null, failures: 0}), true);
+    assert.equal(weatherDue({now: 29 * min, lastAttempt: 0, lastSuccess: 0, failures: 0}), false);
+    assert.equal(weatherDue({now: 30 * min, lastAttempt: 0, lastSuccess: 0, failures: 0}), true);
+    assert.equal(weatherDue({now: 1 * min, lastAttempt: 0, lastSuccess: null, failures: 1}), true, 'first retry after a minute');
+    assert.equal(weatherDue({now: 1 * min, lastAttempt: 0, lastSuccess: null, failures: 2}), false);
+    assert.equal(weatherDue({now: 2 * min, lastAttempt: 0, lastSuccess: null, failures: 2}), true, 'backoff doubles');
+    assert.equal(weatherDue({now: 29 * min, lastAttempt: 0, lastSuccess: null, failures: 9}), false, 'capped at 30 min');
+    assert.equal(weatherDue({now: 30 * min, lastAttempt: 0, lastSuccess: null, failures: 9}), true);
+    assert.equal(weatherDue({now: 12 * 60 * min, lastAttempt: 0, lastSuccess: 0, failures: 0}), true, 'after an overnight suspend');
 });
 
 test('the playing player wins over a later-paused one', () => {
