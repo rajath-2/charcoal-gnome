@@ -2,6 +2,7 @@ import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
+import {THEME, SOURCE, installedVersion, updateIcons} from './update.js';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 // Installed icon themes; cursor themes are the ones with a cursors/ folder.
@@ -60,5 +61,28 @@ export default class CharcoalAppearancePreferences extends ExtensionPreferences 
             text: settings.get_string('button-layout')});
         buttons.connect('apply', () => settings.set_string('button-layout', buttons.text));
         group.add(buttons);
+
+        const updates = new Adw.PreferencesGroup({title: 'Icon updates', description: `${THEME} from ${SOURCE}`});
+        page.add(updates);
+        const auto = new Adw.SwitchRow({title: 'Update automatically', subtitle: 'Checks once a day in the background'});
+        settings.bind('icon-updates', auto, 'active', Gio.SettingsBindFlags.DEFAULT);
+        updates.add(auto);
+        const status = new Adw.ActionRow({title: 'Installed version', subtitle: installedVersion() ?? 'Not installed in your icons folder'});
+        const check = new Gtk.Button({label: 'Check now', valign: Gtk.Align.CENTER});
+        check.connect('clicked', async () => {
+            check.sensitive = false;
+            status.subtitle = 'Checking…';
+            try {
+                const version = await updateIcons();
+                settings.set_int64('icon-last-check', Math.floor(Date.now() / 1000));
+                status.subtitle = version ? `Updated to ${version}` : `${installedVersion() ?? 'Not installed'} (up to date)`;
+            } catch (error) {
+                status.subtitle = `Update failed: ${error.message}`;
+            } finally {
+                check.sensitive = true;
+            }
+        });
+        status.add_suffix(check);
+        updates.add(status);
     }
 }

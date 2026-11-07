@@ -10,6 +10,11 @@
       <default>'prefer-dark'</default>
     </key>
     <key name="button-layout" type="s"><default>'close,minimize:icon'</default></key>
+    <key name="icon-updates" type="b">
+      <default>true</default>
+      <summary>Download new GreyStone icon releases automatically</summary>
+    </key>
+    <key name="icon-last-check" type="x"><default>0</default></key>
     <key name="saved" type="a{ss}">
       <default>{}</default>
       <summary>Desktop values from before enabling, restored on disable</summary>

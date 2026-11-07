@@ -14,6 +14,12 @@ cursor, style and button settings you had before. Blur comes from the bundled
 Blur My Shell; static blur (wallpaper only, cheap) is the default everywhere, and
 live blur can be switched on per extension.
 
+Charcoal Appearance also keeps the GreyStone icons current: once a day it checks
+[upstream](https://codeberg.org/StormRosenaa/GreyStone) and, when a newer version is
+published, downloads it and swaps it into `~/.local/share/icons` (only after the new
+copy is fully extracted). Turn it off or run **Check now** in its preferences.
+Re-running `./install.sh` puts back the bundled copy until the next check.
+
 ## Install
 
 Clone this repository (or use the existing downloaded folder), then run inside your GNOME session as your normal user:
@@ -168,6 +174,7 @@ Additional verification:
 
 ```bash
 node --test tests/test_launchers.mjs
+gjs -m tests/test_icon_update.js    # ICON_UPDATE_NETWORK=1 XDG_DATA_HOME=/tmp/x also downloads
 glib-compile-schemas --strict extensions/charcoal-launchers@local/schemas
 ```
 
