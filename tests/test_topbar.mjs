@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {buildCss} from '../extensions/charcoal-topbar@local/theme.js';
 import {morphRects, morphShapes} from '../extensions/charcoal-topbar@local/morph.js';
+import {useIslands} from '../extensions/charcoal-topbar@local/policy.js';
 
 const schema = readFileSync(new URL('../extensions/charcoal-topbar@local/schemas/org.gnome.shell.extensions.charcoal-topbar.gschema.xml', import.meta.url), 'utf8');
 const defaults = Object.fromEntries([...schema.matchAll(/<key name="([^"]+)" type="(.)">[\s\S]*?<default>([^<]+)<\/default>/g)]
@@ -51,4 +52,15 @@ test('blur mask maps through the enlarged effect texture, not the bare layer box
     assert.deepEqual(effectBox(18, 3, 1244, 30), [-2, -2, 1247, 33]);
     const [x, y, w, h] = effectBox(18.4, 3.6, 1244.2, 30);
     assert.ok(x <= 0 && y <= 0 && x + w >= 1244.2 && y + h >= 30, 'texture always covers the layer');
+});
+
+test('auto layout: islands while an app is maximized, swapped when inverted', () => {
+    const win = (horizontal, vertical, minimized = false) => ({visible: true, normal: true, monitor: 0, minimized, horizontal, vertical});
+    const maximized = [win(true, true)], small = [win(false, false)], hidden = [win(true, true, true)];
+    assert.equal(useIslands(maximized, 0), true);
+    assert.equal(useIslands(small, 0), false);
+    assert.equal(useIslands(maximized, 0, true), false, 'inverted: full bar over a maximized app');
+    assert.equal(useIslands(small, 0, true), true, 'inverted: islands when nothing is maximized');
+    assert.equal(useIslands(hidden, 0, true), true, 'a minimized maximized app does not count');
+    assert.equal(useIslands([], 0, true), true);
 });

@@ -21,7 +21,7 @@ export default class CharcoalTopbarPreferences extends ExtensionPreferences {
         };
         const toggle = (g, key, title, subtitle = '') => {
             const row = new Adw.SwitchRow({title, subtitle});
-            settings.bind(key, row, 'active', Gio.SettingsBindFlags.DEFAULT); g.add(row);
+            settings.bind(key, row, 'active', Gio.SettingsBindFlags.DEFAULT); g.add(row); return row;
         };
         const spin = (g, key, title, min, max, step, subtitle = '') => {
             const row = Adw.SpinRow.new_with_range(min, max, step);
@@ -50,6 +50,10 @@ export default class CharcoalTopbarPreferences extends ExtensionPreferences {
         sync(); watch('mode', sync);
         mode.connect('notify::selected', () => settings.set_string('mode', MODES[mode.selected][0]));
         layout.add(mode);
+        const invert = toggle(layout, 'invert-auto', 'Invert automatic layout',
+            'Islands on the desktop, full bar while an app is maximized');
+        const syncInvert = () => { invert.sensitive = settings.get_string('mode') === 'auto'; };
+        syncInvert(); watch('mode', syncInvert);
         toggle(layout, 'static-blur', 'Static blur',
             'Blur only the wallpaper behind the bar and menus. Off: live blur of windows (more GPU)');
         const size = group(general, 'Size and spacing');
@@ -85,7 +89,7 @@ export default class CharcoalTopbarPreferences extends ExtensionPreferences {
             dialog.choose(window, null, (source, result) => {
                 if (source.choose_finish(result) !== 'reset') return;
                 for (const key of settings.settings_schema.list_keys())
-                    if (!['mode', 'static-blur'].includes(key)) settings.reset(key);
+                    if (!['mode', 'invert-auto', 'static-blur'].includes(key)) settings.reset(key);
             });
         });
         reset.add_suffix(button); defaults.add(reset);
