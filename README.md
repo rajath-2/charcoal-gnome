@@ -143,6 +143,9 @@ the test.
 - **Hold Super:** compact favorites wheel at the cursor. Move into a sector and
   release to launch. Release in its center or outside its boundary to cancel.
 - **Esc:** cancel. Other Super shortcuts cancel the wheel and retain their action.
+- **Window previews:** rest on a running app for a moment to see its windows beside the wheel.
+  Move out to them (the app stays selected along its direction) and release on one to bring
+  that exact window up. In dock mode, releasing on the focused window minimizes it.
 - **Three-finger touchpad:** rest three fingers (same hold delay) to open the wheel at the
   pointer, slide toward an app, and lift to open it. Lifting without sliding cancels. Quick
   three-finger swipes still switch workspaces and open the overview.

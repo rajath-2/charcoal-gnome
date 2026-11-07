@@ -1,17 +1,25 @@
 import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {wheelGeometry, wheelSelection, appRings} from './policy.js';
 import {color, rgb, addBlur} from './appearance.js';
 import {RingMask} from './ringmask.js';
+import {WindowPreviews} from './previews.js';
+
+const PREVIEW_DWELL = 350; // ms resting on a running app before its windows are shown
 
 export class FavoritesWheel {
     constructor(settings) {
         this.settings = settings;
         this.actor = null;
         this.selection = null;
+        this.selectedWindow = null;
         this.closing = new Set();
+        this.previews = new WindowPreviews(settings);
+        this.previewCell = null;
+        this.dwell = 0;
     }
     open(x, y) {
         this.close(true);
@@ -27,6 +35,7 @@ export class FavoritesWheel {
         const ringWidth = this.settings.get_int('ring-width') * scale;
         const desired = base + Math.max(0, groups.length - 1) * ringWidth;
         this.geometry = wheelGeometry([x, y], monitor, desired);
+        this.monitor = monitor;
         const ratio = this.geometry.radius / desired;
         this.inner = this.settings.get_int('neutral-radius') * scale * ratio;
         const r = this.geometry.radius;
@@ -107,17 +116,54 @@ export class FavoritesWheel {
     updatePointer(x, y) {
         if (!this.actor) return;
         if (Math.hypot(x - this.origin[0], y - this.origin[1]) >= 5) this.moved = true;
-        let selected = null;
-        if (this.moved) for (const ring of this.rings) {
+        let selected = null, window = null;
+        if (this.moved && this.previewCell) {
+            // On the preview panel, or heading out to it along the app's own sector: keep that app.
+            const {id, ring, index} = this.previewCell;
+            const hit = this.previews.hit(x, y);
+            const corridor = wheelSelection(x, y, {...this.geometry, radius: Infinity}, ring.ids.length, ring.outer) === index;
+            if (hit.inside || corridor) { selected = id; window = hit.window; }
+        }
+        if (this.moved && !selected) for (const ring of this.rings) {
             const index = wheelSelection(x, y, {...this.geometry, radius: ring.outer}, ring.ids.length, ring.inner);
             if (index >= 0) { selected = ring.ids[index]; break; }
         }
+        this.selectedWindow = window;
         if (selected === this.selection) return;
         this.selection = selected;
+        this._hover(selected);
         this.cells.forEach(cell => cell.disc.queue_repaint());
+    }
+    _hover(id) {
+        if (this.dwell) GLib.Source.remove(this.dwell);
+        this.dwell = 0;
+        if (id === this.previewCell?.id) return;
+        this.previews.destroy(); this.previewCell = null;
+        const cell = this.cells.find(c => c.id === id);
+        const app = id && Shell.AppSystem.get_default().lookup_app(id);
+        if (!cell || !app?.get_windows().length) return;
+        this.dwell = GLib.timeout_add(GLib.PRIORITY_DEFAULT, PREVIEW_DWELL, () => {
+            this.dwell = 0;
+            if (this.selection !== id || !this.actor) return GLib.SOURCE_REMOVE;
+            this.previewCell = cell;
+            this.previews.show(app, {center: [this.geometry.x, this.geometry.y], monitor: this.monitor,
+                angle: cell.index * Math.PI * 2 / cell.ring.ids.length - Math.PI / 2, radius: this.geometry.radius});
+            if (!this.previews.actor) this.previewCell = null;
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+    // How far a touchpad aim may travel from the centre: the wheel, or out to the preview panel.
+    reach() {
+        const outer = (this.rings?.at(-1)?.outer ?? 0) - 2;
+        return this.geometry ? Math.max(outer, this.previews.reachFrom(this.geometry.x, this.geometry.y)) : 0;
     }
     close(immediate = false) {
         this.selection = null;
+        this.selectedWindow = null;
+        if (this.dwell) GLib.Source.remove(this.dwell);
+        this.dwell = 0;
+        this.previews.destroy();
+        this.previewCell = null;
         if (immediate) { for (const actor of this.closing) actor.destroy(); this.closing.clear(); }
         if (!this.actor) return;
         const actor = this.actor; this.actor = null;

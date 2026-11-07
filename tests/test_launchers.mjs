@@ -87,3 +87,14 @@ test('touchpad wheel: quick swipes stay with GNOME, lifting without sliding canc
     pad.hold('begin'); pad.timer();
     assert.equal(pad.hold('end'), 'close', 'lifted without sliding');
 });
+
+test('window previews sit just outside the wheel in the hovered direction, inside the monitor', async () => {
+    const {previewPlacement} = await import('../extensions/charcoal-launchers@local/policy.js');
+    const monitor = {x: 0, y: 0, width: 1920, height: 1080};
+    const up = previewPlacement([960, 540], -Math.PI / 2, 120, [300, 100], monitor);
+    assert.deepEqual(up, {x: 810, y: 540 - 120 - 12 - 100});
+    const right = previewPlacement([960, 540], 0, 120, [300, 100], monitor);
+    assert.deepEqual(right, {x: 960 + 132, y: 490});
+    const clamped = previewPlacement([1900, 1060], 0, 120, [300, 100], monitor);
+    assert.deepEqual(clamped, {x: 1920 - 300 - 8, y: 1080 - 100 - 8});
+});

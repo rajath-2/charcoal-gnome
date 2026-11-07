@@ -92,3 +92,16 @@ export class TouchpadWheel {
     }
     reset() { this.state = 'idle'; this.offset = [0, 0]; }
 }
+
+// Where the window-preview panel goes: just outside the wheel, centred on the hovered sector's
+// direction (angle in radians, 0 = right, clockwise), clamped inside the monitor.
+export function previewPlacement(center, angle, radius, [width, height], monitor, gap = 12) {
+    const [dx, dy] = [Math.cos(angle), Math.sin(angle)];
+    // Distance from the panel's centre to its edge along the direction, so its near edge sits at radius + gap.
+    const edge = Math.min(Math.abs(dx) > 1e-6 ? width / 2 / Math.abs(dx) : Infinity,
+        Math.abs(dy) > 1e-6 ? height / 2 / Math.abs(dy) : Infinity);
+    const distance = radius + gap + edge;
+    const clamp = (v, low, high) => Math.min(Math.max(v, low), Math.max(low, high));
+    return {x: Math.round(clamp(center[0] + dx * distance - width / 2, monitor.x + 8, monitor.x + monitor.width - width - 8)),
+        y: Math.round(clamp(center[1] + dy * distance - height / 2, monitor.y + 8, monitor.y + monitor.height - height - 8))};
+}

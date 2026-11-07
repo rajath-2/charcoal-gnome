@@ -36,6 +36,21 @@ export function activateAtCursor(app, [x, y]) {
     Main.activateWindow(windows[0]);
 }
 
+// One specific window (picked from the previews). Dock mode: out of / into the cursor.
+export function activateWindowAt(window, [x, y], dockMode) {
+    if (!dockMode) {
+        Main.activateWindow(window);
+        return;
+    }
+    window.set_icon_geometry(new Mtk.Rectangle({x: Math.round(x) - 1, y: Math.round(y) - 1, width: 2, height: 2}));
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
+        if (window.get_compositor_private()) window.set_icon_geometry(null);
+        return GLib.SOURCE_REMOVE;
+    });
+    if (global.display.focus_window === window && !window.minimized) window.minimize();
+    else Main.activateWindow(window);
+}
+
 function growFromCursor(app, x, y) {
     const tracker = Shell.WindowTracker.get_default();
     let timeout = 0;
