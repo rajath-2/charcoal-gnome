@@ -151,7 +151,8 @@ the test.
   three-finger swipes still switch workspaces and open the overview.
 - **Radial dock mode** (Preferences): running apps join the wheel as outer rings. Windows
   open out of the cursor, and releasing on the focused app minimizes it into the cursor;
-  releasing on it again restores it from there.
+  releasing on it again restores it from there. Every minimize and restore in this mode
+  (Super+H, the title-bar button) also goes into and out of the cursor.
 
 Open **Extensions → Charcoal Launchers → Preferences**, or run:
 

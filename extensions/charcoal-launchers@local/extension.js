@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {FavoritesWheel} from './wheel.js';
+import {CursorMinimize} from './windows.js';
 import {SearchLauncher} from './search.js';
 import {InputController} from './input.js';
 import {DockIntegration} from './dock.js';
@@ -43,6 +44,12 @@ export default class CharcoalLaunchers extends Extension {
         this._input = new InputController(this._settings, this._wheel, this._search);
         this._input.enable();
         this._dock.update();
+        this._cursorMinimize?.disable();
+        this._cursorMinimize = null;
+        if (this._settings.get_boolean('wheel-enabled') && this._settings.get_boolean('dock-mode')) {
+            this._cursorMinimize = new CursorMinimize();
+            this._cursorMinimize.enable();
+        }
     }
     _cancel() { this._input?.cancel(); this._wheel?.close(true); this._search?.close(true); }
     disable() {
@@ -58,6 +65,7 @@ export default class CharcoalLaunchers extends Extension {
         this._extensionChanged = 0;
         this._dock?.destroy(); this._dock = null;
         this._input?.destroy(); this._input = null;
+        this._cursorMinimize?.disable(); this._cursorMinimize = null;
         this._wheel?.destroy(); this._wheel = null;
         this._search?.destroy(); this._search = null;
         this._settings = null;
