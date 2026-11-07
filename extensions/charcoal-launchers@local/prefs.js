@@ -106,7 +106,7 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         spin(colors, 'corner-radius', 'Search panel corner radius', 0, 40, 2);
         spin(colors, 'launcher-width', 'Search panel width', 360, 1000, 20);
         spin(colors, 'search-icon-size', 'Search result icon size', 20, 64, 2);
-        toggle(colors, 'blur', 'Background blur', 'Optional GNOME background effect; turn off for lower GPU use');
+        toggle(colors, 'blur', 'Search background blur', 'The wheel keeps its center and gaps fully transparent');
         spin(colors, 'blur-radius', 'Blur strength', 0, 60, 2);
         const motion = group(appearance, 'Motion', 'The system’s reduced-animation setting always takes precedence.');
         toggle(motion, 'animations', 'Animate opening and closing');

@@ -138,7 +138,8 @@ gnome-extensions prefs charcoal-launchers@local
 
 Preferences include favorite apps and order, wheel size/spacing, colors, opacity,
 optional blur, search categories, result limit, shortcut, hold delay, and animation
-speed. Defaults use a 240-pixel wheel and short fade/scale animations. The system's
+speed. Defaults use a 240-pixel ring with a transparent center, separate app sectors,
+and short fade/scale animations. Blur applies only to the search panel. The system's
 animation setting is respected. Settings survive reinstalling the bundle.
 
 Super+Space normally switches keyboard layouts. The extension temporarily removes
