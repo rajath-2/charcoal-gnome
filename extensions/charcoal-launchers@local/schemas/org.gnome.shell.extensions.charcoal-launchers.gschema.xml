@@ -1,6 +1,8 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.charcoal-launchers" path="/org/gnome/shell/extensions/charcoal-launchers/">
     <key name="search-enabled" type="b"><default>true</default></key>
+    <key name="dock-mode" type="b"><default>false</default></key>
+    <key name="desktop-dock" type="b"><default>false</default></key>
     <key name="wheel-enabled" type="b"><default>true</default></key>
     <key name="launcher-shortcut" type="as"><default>['&lt;Super&gt;space']</default></key>
     <key name="hold-delay" type="i"><range min="150" max="1500"/><default>300</default></key>
@@ -14,6 +16,11 @@
     <key name="wheel-radius" type="i"><range min="100" max="300"/><default>120</default></key>
     <key name="wheel-icon-size" type="i"><range min="20" max="64"/><default>32</default></key>
     <key name="neutral-radius" type="i"><range min="24" max="80"/><default>36</default></key>
+    <key name="ring-width" type="i"><range min="40" max="120"/><default>68</default></key>
+    <key name="wheel-opacity" type="i"><range min="40" max="100"/><default>94</default></key>
+    <key name="wheel-open-duration" type="i"><range min="0" max="500"/><default>220</default></key>
+    <key name="wheel-close-duration" type="i"><range min="0" max="400"/><default>140</default></key>
+    <key name="search-max-height" type="i"><range min="30" max="90"/><default>58</default></key>
     <key name="sector-gap" type="i"><range min="0" max="12"/><default>3</default></key>
     <key name="background-color" type="s"><default>'#202127'</default></key>
     <key name="foreground-color" type="s"><default>'#f0f0f2'</default></key>
@@ -26,7 +33,7 @@
     <key name="scale-animation" type="b"><default>true</default></key>
     <key name="open-duration" type="i"><range min="0" max="500"/><default>180</default></key>
     <key name="close-duration" type="i"><range min="0" max="400"/><default>120</default></key>
-    <key name="blur" type="b"><default>false</default></key>
+    <key name="blur" type="b"><default>true</default></key>
     <key name="blur-radius" type="i"><range min="0" max="60"/><default>18</default></key>
     <key name="owned-bindings" type="s"><default>'[]'</default></key>
     <key name="status" type="s"><default>''</default></key>

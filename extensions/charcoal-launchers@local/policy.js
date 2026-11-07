@@ -50,3 +50,13 @@ export class QueryGeneration {
     next() { return ++this._value; }
     current(value) { return this._value === value; }
 }
+
+export function appRings(favorites, running, dockMode, capacity = 8) {
+    const pinned = [...new Set(favorites)];
+    const rings = pinned.length ? [pinned] : [];
+    if (dockMode) {
+        const extra = [...new Set(running)].filter(id => !pinned.includes(id));
+        for (let i = 0; i < extra.length; i += capacity) rings.push(extra.slice(i, i + capacity));
+    }
+    return rings;
+}

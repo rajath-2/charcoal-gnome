@@ -52,3 +52,10 @@ test('old provider responses are invalid after query replacement or close', () =
     assert.equal(gate.current(second), true);
     gate.next(); assert.equal(gate.current(second), false);
 });
+
+test('dock rings retain favorites and add running apps without duplicates', async () => {
+    const {appRings} = await import('../extensions/charcoal-launchers@local/policy.js');
+    assert.deepEqual(appRings(['a','b'], ['b','c','d','e'], true, 2), [['a','b'],['c','d'],['e']]);
+    assert.deepEqual(appRings(['a'], ['b'], false, 2), [['a']]);
+    assert.deepEqual(appRings([], ['a','b','c'], true, 2), [['a','b'],['c']]);
+});

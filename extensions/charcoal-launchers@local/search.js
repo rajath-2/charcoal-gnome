@@ -50,7 +50,7 @@ export class SearchLauncher {
             height: global.stage.height, style: 'background-color: rgba(0,0,0,0.16);'});
         this.panel = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL,
             reactive: true, style_class: 'charcoal-search', style: surfaceStyle(this.settings)});
-        addBlur(this.panel, this.settings);
+
         this.entry = new St.Entry({style_class: 'charcoal-search-entry',
             hint_text: 'Search apps, files, calculations…', can_focus: true, x_expand: true});
         this.entry.set_primary_icon(new St.Icon({icon_name: 'system-search-symbolic', icon_size: 18}));
@@ -68,6 +68,9 @@ export class SearchLauncher {
         prefs.connect('clicked', () => { this.close(); this.openPreferences(); });
         footer.add_child(prefs);
         this.panel.add_child(footer);
+        this.backdrop = new St.Widget({width: global.stage.width, height: global.stage.height, reactive: false});
+        this.actor.add_child(this.backdrop);
+        addBlur(this.backdrop, this.settings);
         this.actor.add_child(this.panel);
         Main.layoutManager.addTopChrome(this.actor);
         this.actor.connect('captured-event', (_, event) => this._event(event));
@@ -75,7 +78,13 @@ export class SearchLauncher {
         this.modal = Main.pushModal(this.actor, {actionMode: Shell.ActionMode.POPUP});
         global.stage.set_key_focus(this.entry.clutter_text);
         this._query();
-        animate(this.panel, this.settings, true);
+        this._place();
+        // Grow after the first frame: building the app list makes it slow enough to swallow the animation.
+        this.panel.opacity = 0;
+        this.paintSource = global.stage.connect('after-paint', () => {
+            global.stage.disconnect(this.paintSource); this.paintSource = 0;
+            if (this.isOpen) animate(this.panel, this.settings, true);
+        });
     }
     _event(event) {
         if (event.type() === Clutter.EventType.BUTTON_PRESS) {
@@ -124,6 +133,13 @@ export class SearchLauncher {
         if (!text) {
             this.groups.set('favorites', {title: 'Favorites', results: this.settings.get_strv('favorites')
                 .map(id => apps.lookup_app(id)).filter(Boolean).map(app => this._appResult(app))});
+            if (this.settings.get_boolean('search-apps')) {
+                const pinned = new Set(this.settings.get_strv('favorites'));
+                const all = apps.get_installed().filter(info => info.should_show() && !pinned.has(info.get_id()))
+                    .sort((a,b) => a.get_name().localeCompare(b.get_name()));
+                this.groups.set('apps', {title: 'All applications', results: all.map(info => apps.lookup_app(info.get_id()))
+                    .filter(Boolean).map(app => this._appResult(app))});
+            }
             this._render('Start typing to search');
             return;
         }
@@ -219,17 +235,20 @@ export class SearchLauncher {
         if (this.layoutSource) GLib.Source.remove(this.layoutSource);
         this.layoutSource = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             this.layoutSource = 0;
-            if (!this.isOpen) return GLib.SOURCE_REMOVE;
-            const m = this.monitor;
-            const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-            const width = Math.min(this.settings.get_int('launcher-width') * scale, m.width - 40);
-            this.panel.width = width;
-            const natural = this.resultBox.get_preferred_height(width - 40 * scale)[1];
-            this.scroll.height = Math.max(50, Math.min(natural, m.height - 240 * scale, m.height * 0.58));
-            const height = this.panel.get_preferred_height(width)[1];
-            this.panel.set_position(m.x + (m.width - width) / 2, m.y + Math.max(20, (m.height - height) / 2));
+            this._place();
             return GLib.SOURCE_REMOVE;
         });
+    }
+    _place() {
+        if (!this.isOpen) return;
+        const m = this.monitor;
+        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+        const width = Math.min(this.settings.get_int('launcher-width') * scale, m.width - 40);
+        this.panel.width = width;
+        const natural = this.resultBox.get_preferred_height(width - 40 * scale)[1];
+        this.scroll.height = Math.max(50, Math.min(natural, m.height - 240 * scale, m.height * this.settings.get_int('search-max-height') / 100));
+        const height = this.panel.get_preferred_height(width)[1];
+        this.panel.set_position(m.x + (m.width - width) / 2, m.y + Math.max(20, (m.height - height) / 2));
     }
     _activate(result) {
         if (!result) return;
@@ -241,6 +260,8 @@ export class SearchLauncher {
         this.generation.next(); this.cancellable?.cancel(); this.cancellable = null;
         for (const source of [this.debounce, this.layoutSource]) if (source) GLib.Source.remove(source);
         this.debounce = 0; this.layoutSource = 0;
+        if (this.paintSource) global.stage.disconnect(this.paintSource);
+        this.paintSource = 0;
         if (immediate) { for (const actor of this.closing) actor.destroy(); this.closing.clear(); }
         if (!this.isOpen) return;
         this.isOpen = false;

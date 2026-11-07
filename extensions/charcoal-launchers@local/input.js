@@ -25,9 +25,10 @@ class BindingOwner {
         if (!target.set_value(key, new GLib.Variant(target.get_value(key).get_type_string(), applied)))
             throw new Error(`Could not update ${key}`);
     }
-    restore() {
+    restore(schemaOnly = null) {
         const failed = [];
         for (const record of [...this.records].reverse()) {
+            if (schemaOnly && record.schema !== schemaOnly) { failed.unshift(record); continue; }
             try {
                 const {schema, key, original, applied} = record;
                 const target = new Gio.Settings({schema_id: schema});
@@ -111,23 +112,24 @@ export class InputController {
         });
         this._connect(global.display, 'notify::focus-window', () => this.cancel());
         // Mutter applies overlay-key changes in an idle callback before these grabs.
-        this.setup = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
-            this.setup = 0;
-            this.searchActions = [];
-            if (this.settings.get_boolean('search-enabled')) {
+        let attempts = 0;
+        this.searchActions = [];
+        this.setup = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
+            attempts++;
+            if (attempts === 1 && this.settings.get_boolean('search-enabled')) {
                 for (const shortcut of this.settings.get_strv('launcher-shortcut')) {
                     const action = global.display.grab_accelerator(shortcut, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
                     if (!action) {
                         this.settings.set_string('status', 'Search shortcut is already in use. Choose another in Preferences.');
-                        this.destroy();
-                        return GLib.SOURCE_REMOVE;
+                        this.owner.restore('org.gnome.desktop.wm.keybindings');
+                        break;
                     }
                     this.searchActions.push(action);
                     Main.wm.allowKeybinding(Meta.external_binding_name_for_action(action),
                         Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP);
                 }
             }
-            if (!this.settings.get_boolean('wheel-enabled')) return GLib.SOURCE_REMOVE;
+            if (!this.settings.get_boolean('wheel-enabled')) { this.setup = 0; return GLib.SOURCE_REMOVE; }
             for (const key of ['Super_L', 'Super_R']) {
                 const action = global.display.grab_accelerator(key, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
                 if (action !== Meta.KeyBindingAction.NONE) {
@@ -136,9 +138,11 @@ export class InputController {
                         Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW);
                 }
             }
+            if (!this.actions.length && attempts < 12) return GLib.SOURCE_CONTINUE;
+            this.setup = 0;
             if (!this.actions.length) {
                 this.settings.set_string('status', 'Super is already claimed by another component. The wheel could not start.');
-                this.destroy();
+                this.owner.restore('org.gnome.mutter');
             }
             return GLib.SOURCE_REMOVE;
         });

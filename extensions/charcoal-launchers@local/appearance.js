@@ -1,5 +1,5 @@
 import Clutter from 'gi://Clutter';
-import Shell from 'gi://Shell';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import St from 'gi://St';
 
 export function color(settings, key) {
@@ -19,7 +19,7 @@ export function animate(actor, settings, opening, done = () => {}) {
     actor.remove_all_transitions();
     const duration = settings.get_boolean('animations') && St.Settings.get().enable_animations
         ? settings.get_int(opening ? 'open-duration' : 'close-duration') : 0;
-    const scale = settings.get_boolean('scale-animation') ? (opening ? 0.94 : 0.96) : 1;
+    const scale = settings.get_boolean('scale-animation') ? (opening ? 0.78 : 0.92) : 1;
     actor.set_pivot_point(0.5, 0.5);
     if (opening) {
         actor.opacity = duration ? 0 : 255;
@@ -35,13 +35,23 @@ export function animate(actor, settings, opening, done = () => {}) {
         scale_y: opening ? 1 : scale, duration,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC, onComplete: done});
 }
-export function addBlur(actor, settings) {
+export async function addBlur(actor, settings) {
     if (!settings.get_boolean('blur')) return;
+    const ext = Main.extensionManager.lookup('blur-my-shell@aunetx');
+    const bms = ext?.stateObj;
+    if (!bms?._effects_manager || !bms?._pipelines_manager) return;
+    let destroyed = false;
+    const id = actor.connect('destroy', () => { destroyed = true; });
     try {
-        actor.add_effect_with_name('charcoal-blur', new Shell.BlurEffect({
-            mode: Shell.BlurMode.BACKGROUND, radius: settings.get_int('blur-radius'), brightness: 0.8,
-        }));
+        const {DynamicPipeline} = await import(`file://${ext.path}/render/dynamic_surface.js`);
+        if (destroyed || !bms._effects_manager) return;
+        const pipeline = new DynamicPipeline(bms._effects_manager, bms._pipelines_manager,
+            bms._settings.popup.PIPELINE, {corner_radius: 0});
+        pipeline.attach_to_container(actor, 'charcoal-search-backdrop');
+        actor.connect('destroy', () => pipeline.destroy());
     } catch (error) {
-        console.warn(`Charcoal Launchers: blur unavailable: ${error.message}`);
+        console.warn(`Charcoal Launchers: Blur My Shell backdrop unavailable: ${error.message}`);
+    } finally {
+        if (!destroyed) actor.disconnect(id);
     }
 }
