@@ -4,6 +4,7 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {activateAtCursor} from './windows.js';
 import {Gesture, restoreBindings} from './policy.js';
 
 // Journal before changing a setting, so an interrupted Shell can restore it.
@@ -173,7 +174,9 @@ export class InputController {
                 if (result.type === 'tap') Main.overview.toggle();
                 else if (result.type === 'launch') {
                     Main.overview.hide();
-                    Shell.AppSystem.get_default().lookup_app(result.app)?.activate();
+                    const app = Shell.AppSystem.get_default().lookup_app(result.app);
+                    if (app && this.settings.get_boolean('dock-mode')) activateAtCursor(app, [x, y]);
+                    else app?.activate();
                 }
                 return GLib.SOURCE_REMOVE;
             }

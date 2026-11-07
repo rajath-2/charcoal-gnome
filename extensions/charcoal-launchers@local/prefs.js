@@ -35,7 +35,7 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         const wheelPage = page('Wheel', 'starred-symbolic');
         const behaviour = group(wheelPage, 'Behaviour');
         spin(behaviour, 'hold-delay', 'Super hold delay', 150, 1500, 50, 'Milliseconds before the wheel appears');
-        toggle(behaviour, 'dock-mode', 'Radial dock mode', 'Add running apps in outer rings; hide the normal desktop dock');
+        toggle(behaviour, 'dock-mode', 'Radial dock mode', 'Running apps in outer rings, normal dock hidden. Windows open from and minimize into the cursor: release on the focused app to minimize it');
         toggle(behaviour, 'desktop-dock', 'Also show desktop dock', 'Keep your bottom dock alongside the hold-Super wheel');
         const appGroup = group(wheelPage, 'Favorite applications', 'Up to 12 apps, arranged clockwise from the top. This list is independent of your dock.');
         const add = new Gtk.Button({label: 'Add application', css_classes: ['suggested-action'], valign: Gtk.Align.CENTER});

@@ -143,6 +143,9 @@ the test.
 - **Hold Super:** compact favorites wheel at the cursor. Move into a sector and
   release to launch. Release in its center or outside its boundary to cancel.
 - **Esc:** cancel. Other Super shortcuts cancel the wheel and retain their action.
+- **Radial dock mode** (Preferences): running apps join the wheel as outer rings. Windows
+  open out of the cursor, and releasing on the focused app minimizes it into the cursor;
+  releasing on it again restores it from there.
 
 Open **Extensions → Charcoal Launchers → Preferences**, or run:
 
