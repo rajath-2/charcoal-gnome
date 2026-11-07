@@ -1,0 +1,8 @@
+{
+  "uuid": "charcoal-widgets@local",
+  "name": "Charcoal Widgets",
+  "description": "Weather, calendar and music on your empty desktop. Drag them anywhere; customize in Preferences.",
+  "shell-version": ["51"],
+  "settings-schema": "org.gnome.shell.extensions.charcoal-widgets",
+  "version": 1
+}

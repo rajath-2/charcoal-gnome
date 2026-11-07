@@ -1,0 +1,26 @@
+<schemalist>
+  <schema id="org.gnome.shell.extensions.charcoal-widgets" path="/org/gnome/shell/extensions/charcoal-widgets/">
+    <key name="weather-enabled" type="b"><default>true</default></key>
+    <key name="calendar-enabled" type="b"><default>true</default></key>
+    <key name="music-enabled" type="b"><default>true</default></key>
+    <key name="locked" type="b"><default>false</default></key>
+    <key name="positions" type="s"><default>'{}'</default><summary>JSON {name: {monitor, x, y}}, x/y as fractions of the free space</summary></key>
+    <key name="weather-city" type="s"><default>''</default></key>
+    <key name="weather-latitude" type="d"><default>0</default></key>
+    <key name="weather-longitude" type="d"><default>0</default></key>
+    <key name="idle-artwork" type="s"><default>''</default><summary>Image shown when nothing plays; empty = bundled artwork</summary></key>
+    <key name="background-color" type="s"><default>'#15110d'</default></key>
+    <key name="background-opacity" type="i"><range min="0" max="100"/><default>70</default></key>
+    <key name="border-color" type="s"><default>'#d9903d'</default></key>
+    <key name="border-width" type="i"><range min="0" max="6"/><default>1</default></key>
+    <key name="border-opacity" type="i"><range min="0" max="100"/><default>45</default></key>
+    <key name="shadow-color" type="s"><default>'#d9903d'</default></key>
+    <key name="shadow-size" type="i"><range min="0" max="60"/><default>18</default></key>
+    <key name="shadow-opacity" type="i"><range min="0" max="100"/><default>25</default></key>
+    <key name="corner-radius" type="i"><range min="0" max="40"/><default>18</default></key>
+    <key name="accent-color" type="s"><default>'#f0a24a'</default></key>
+    <key name="text-color" type="s"><default>'#f2ece4'</default></key>
+    <key name="blur" type="b"><default>true</default></key>
+    <key name="static-blur" type="b"><default>true</default></key>
+  </schema>
+</schemalist>
