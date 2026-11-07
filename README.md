@@ -154,9 +154,9 @@ gnome-extensions prefs charcoal-launchers@local
 ```
 
 Preferences include favorite apps and order, wheel size/spacing, colors, opacity,
-optional blur, search categories, result limit, shortcut, hold delay, and animation
+blur (search panel and wheel, static or live), search categories, result limit, shortcut, hold delay, and animation
 speed. Defaults use a 240-pixel ring with a transparent center, separate app sectors,
-and short fade/scale animations. Blur applies only to the search panel. The system's
+and short fade/scale animations. The wheel's blur follows its sector shapes. The system's
 animation setting is respected. Settings survive reinstalling the bundle.
 
 Super+Space normally switches keyboard layouts. The extension temporarily removes
@@ -173,7 +173,7 @@ results open their application or file. Unavailable providers are shown separate
 Additional verification:
 
 ```bash
-node --test tests/test_launchers.mjs
+node --test tests/test_launchers.mjs tests/test_topbar.mjs
 gjs -m tests/test_icon_update.js    # ICON_UPDATE_NETWORK=1 XDG_DATA_HOME=/tmp/x also downloads
 glib-compile-schemas --strict extensions/charcoal-launchers@local/schemas
 ```

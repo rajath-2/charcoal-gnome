@@ -77,7 +77,8 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         spin(wheelSize, 'neutral-radius', 'Empty center size', 24, 80, 4, 'Move here and release Super to cancel');
         spin(wheelSize, 'sector-gap', 'Spacing between sectors', 0, 12, 1);
         const wheelLook = group(wheelPage, 'Look and motion');
-        spin(wheelLook, 'wheel-opacity', 'Sector opacity', 40, 100, 1, 'Percent');
+        spin(wheelLook, 'wheel-opacity', 'Sector opacity', 40, 100, 1, 'Percent. Lower shows more of the blur');
+        toggle(wheelLook, 'wheel-blur', 'Background blur', 'Blur behind the sectors. Static/live follows the search setting');
         spin(wheelLook, 'wheel-open-duration', 'Grow-out duration', 0, 500, 10, 'Milliseconds');
         spin(wheelLook, 'wheel-close-duration', 'Collapse duration', 0, 400, 10, 'Milliseconds');
 
@@ -106,7 +107,7 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         const searchLook = group(searchPage, 'Look and motion');
         spin(searchLook, 'background-opacity', 'Panel opacity', 40, 100, 1, 'Percent');
         toggle(searchLook, 'blur', 'Background blur', 'Uses your Blur My Shell popup pipeline');
-        toggle(searchLook, 'static-blur', 'Static blur', 'Blur the wallpaper only. Off: live blur of windows behind (more GPU)');
+        toggle(searchLook, 'static-blur', 'Static blur', 'Search and wheel: blur the wallpaper only. Off: live blur of windows behind (more GPU)');
         spin(searchLook, 'open-duration', 'Grow-in duration', 0, 500, 10, 'Milliseconds');
         spin(searchLook, 'close-duration', 'Closing duration', 0, 400, 10, 'Milliseconds');
 

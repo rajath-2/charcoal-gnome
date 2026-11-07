@@ -3,7 +3,8 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {wheelGeometry, wheelSelection, appRings} from './policy.js';
-import {color, rgb} from './appearance.js';
+import {color, rgb, addBlur} from './appearance.js';
+import {RingMask} from './ringmask.js';
 
 export class FavoritesWheel {
     constructor(settings) {
@@ -68,13 +69,29 @@ export class FavoritesWheel {
                 }
             });
         });
+        if (this.settings.get_boolean('wheel-blur')) this._addBlur(r);
+    }
+    _addBlur(r) {
+        // shortcut: the mask covers the first MAX_RINGS rings; outer dock rings beyond that stay unblurred.
+        const blur = new St.Widget({width: r * 2, height: r * 2, reactive: false, clip_to_allocation: true});
+        blur.add_effect(new RingMask(r * 2, this.rings.map(ring =>
+            [ring.inner + 2, ring.outer - 2, ring.ids.length, this._gap(ring)])));
+        this.actor.insert_child_at_index(blur, 0);
+        addBlur(blur, this.settings, 'wheel-blur', [this.geometry.x - r, this.geometry.y - r]);
+        if (this._animated()) {
+            blur.opacity = 0;
+            blur.ease({opacity: 255, duration: this.settings.get_int('wheel-open-duration'), mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
+        }
+    }
+    _gap(ring) {
+        return Math.min(this.settings.get_int('sector-gap') / ring.outer, Math.PI / ring.ids.length / 2);
     }
     _paint({id, index, ring, disc}) {
         const cr = disc.get_context(), r = this.geometry.radius;
         const background = rgb(color(this.settings, 'background-color'));
         const accent = rgb(color(this.settings, 'accent-color'));
         const step = Math.PI * 2 / ring.ids.length;
-        const gap = Math.min(this.settings.get_int('sector-gap') / ring.outer, step / 4);
+        const gap = this._gap(ring);
         const start = index * step - Math.PI / 2 - step / 2 + gap;
         const end = start + step - gap * 2;
         cr.arc(r, r, ring.outer - 2, start, end);

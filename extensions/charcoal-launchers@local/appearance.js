@@ -36,8 +36,9 @@ export function animate(actor, settings, opening, done = () => {}) {
         scale_y: opening ? 1 : scale, duration,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC, onComplete: done});
 }
-export async function addBlur(actor, settings) {
-    if (!settings.get_boolean('blur')) return;
+// origin: the actor's stage position, so the static wallpaper copy lines up with what is behind it.
+export async function addBlur(actor, settings, key = 'blur', origin = [0, 0]) {
+    if (!settings.get_boolean(key)) return;
     const ext = Main.extensionManager.lookup('blur-my-shell@aunetx');
     const bms = ext?.stateObj;
     if (!bms?._effects_manager || !bms?._pipelines_manager) return;
@@ -45,7 +46,7 @@ export async function addBlur(actor, settings) {
     const id = actor.connect('destroy', () => { destroyed = true; });
     try {
         if (settings.get_boolean('static-blur')) {
-            addStaticBlur(actor, bms, await import(`file://${ext.path}/pipelines/pipeline.js`), () => destroyed);
+            addStaticBlur(actor, bms, await import(`file://${ext.path}/pipelines/pipeline.js`), () => destroyed, origin);
             return;
         }
         const {DynamicPipeline} = await import(`file://${ext.path}/render/dynamic_surface.js`);
@@ -61,9 +62,9 @@ export async function addBlur(actor, settings) {
     }
 }
 // Blurred wallpaper copy per monitor: no per-frame capture of the windows behind (cheap).
-function addStaticBlur(actor, bms, {Pipeline}, destroyed) {
+function addStaticBlur(actor, bms, {Pipeline}, destroyed, [x, y]) {
     if (destroyed() || !bms._effects_manager) return;
-    const group = new Meta.BackgroundGroup({name: 'charcoal-search-static-blur'});
+    const group = new Meta.BackgroundGroup({name: 'charcoal-static-blur', x: -x, y: -y});
     actor.add_child(group);
     const managers = [];
     const pipelines = Main.layoutManager.monitors.map(monitor => {
@@ -72,7 +73,8 @@ function addStaticBlur(actor, bms, {Pipeline}, destroyed) {
         return pipeline;
     });
     actor.connect('destroy', () => {
-        pipelines.forEach(pipeline => pipeline.destroy());
+        // When Blur My Shell went first (disable, shutdown) it already released these.
+        if (bms._pipelines_manager) pipelines.forEach(pipeline => pipeline.destroy());
         managers.forEach(manager => manager.destroy());
     });
 }
