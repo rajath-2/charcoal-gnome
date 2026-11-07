@@ -1,8 +1,8 @@
 # Charcoal GNOME theme bundle
 
-<video src="media/demo.mp4" controls width="100%"></video>
+[![Demo](media/demo.gif)](media/demo.mp4)
 
-[Watch the demo](media/demo.mp4) if the video doesn't play above.
+Click the animation for the full-quality video.
 
 Personal GNOME **51** setup, packaged as four extensions plus GTK4 styling:
 
