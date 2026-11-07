@@ -5,7 +5,7 @@ import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {activateAtCursor} from './windows.js';
-import {Gesture, restoreBindings} from './policy.js';
+import {Gesture, TouchpadWheel, restoreBindings} from './policy.js';
 
 // Journal before changing a setting, so an interrupted Shell can restore it.
 class BindingOwner {
@@ -56,6 +56,8 @@ export class InputController {
         this.wheel = wheel;
         this.search = search;
         this.gesture = new Gesture();
+        this.pad = new TouchpadWheel();
+        this.padTimer = 0;
         this.owner = new BindingOwner(settings);
         this.signals = [];
         this.actions = [];
@@ -69,6 +71,7 @@ export class InputController {
     enable() {
         this.owner.restore();
         this.settings.set_string('status', '');
+        this._connect(global.stage, 'captured-event::touchpad', (_, event) => this._touchpad(event));
         try {
             if (this.settings.get_boolean('search-enabled')) {
                 const shortcuts = this.settings.get_strv('launcher-shortcut');
@@ -149,7 +152,7 @@ export class InputController {
         });
     }
     _press() {
-        if (this.search.isOpen || !Main.sessionMode.hasWindows || Main.sessionMode.isLocked ||
+        if (this.pad.state !== 'idle' || this.search.isOpen || !Main.sessionMode.hasWindows || Main.sessionMode.isLocked ||
             !this.gesture.press()) return;
         const started = GLib.get_monotonic_time();
         const userTime = global.display.get_last_user_time();
@@ -172,12 +175,7 @@ export class InputController {
                 this.poll = 0;
                 this._closeWheel();
                 if (result.type === 'tap') Main.overview.toggle();
-                else if (result.type === 'launch') {
-                    Main.overview.hide();
-                    const app = Shell.AppSystem.get_default().lookup_app(result.app);
-                    if (app && this.settings.get_boolean('dock-mode')) activateAtCursor(app, [x, y]);
-                    else app?.activate();
-                }
+                else if (result.type === 'launch') this._launch(result.app, [x, y]);
                 return GLib.SOURCE_REMOVE;
             }
             if (this.gesture.state === 'pending' &&
@@ -193,6 +191,58 @@ export class InputController {
             return GLib.SOURCE_CONTINUE;
         });
     }
+    _launch(id, point) {
+        Main.overview.hide();
+        const app = Shell.AppSystem.get_default().lookup_app(id);
+        if (app && this.settings.get_boolean('dock-mode')) activateAtCursor(app, point);
+        else app?.activate();
+    }
+    // Runs before GNOME's own (bubbling) touchpad gestures, so an open wheel can keep the swipe.
+    _touchpad(event) {
+        const type = event.type();
+        if (type !== Clutter.EventType.TOUCHPAD_HOLD && type !== Clutter.EventType.TOUCHPAD_SWIPE)
+            return Clutter.EVENT_PROPAGATE;
+        const wasOpen = this.pad.state === 'open';
+        if (event.get_touchpad_gesture_finger_count() !== 3 && !wasOpen) return Clutter.EVENT_PROPAGATE;
+        const phase = ['begin', 'update', 'end', 'cancel'][event.get_gesture_phase()];
+        let action;
+        if (type === Clutter.EventType.TOUCHPAD_HOLD) {
+            const allowed = this.settings.get_boolean('touchpad-wheel') && this.settings.get_boolean('wheel-enabled') &&
+                this.gesture.state === 'idle' && !this.search.isOpen && Main.sessionMode.hasWindows &&
+                !Main.sessionMode.isLocked && (Main.actionMode & (Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW));
+            action = phase !== 'begin' || allowed ? this.pad.hold(phase) : 'none';
+        } else {
+            // shortcut: fixed 1.5x finger-to-wheel gain; make it a preference if it feels off on some touchpads.
+            const [dx, dy] = event.get_gesture_motion_delta();
+            const outer = this.wheel.rings?.at(-1)?.outer ?? 0;
+            action = this.pad.swipe(phase, dx * 1.5, dy * 1.5, Math.max(0, outer - 2));
+        }
+        if (action === 'start-timer') {
+            this.padTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, this.settings.get_int('hold-delay'), () => {
+                this.padTimer = 0;
+                if (this.pad.timer() === 'open') {
+                    const [x, y] = global.get_pointer();
+                    this.wheel.open(x, y);
+                }
+                return GLib.SOURCE_REMOVE;
+            });
+        } else if (action === 'stop-timer') {
+            this._stopPadTimer();
+        } else if (action === 'aim' && this.wheel.geometry) {
+            this.wheel.updatePointer(this.wheel.geometry.x + this.pad.offset[0], this.wheel.geometry.y + this.pad.offset[1]);
+        } else if (action === 'launch') {
+            const id = this.wheel.selection;
+            this.wheel.close();
+            if (id) this._launch(id, global.get_pointer().slice(0, 2));
+        } else if (action === 'close') {
+            this.wheel.close();
+        }
+        return wasOpen || this.pad.state === 'open' ? Clutter.EVENT_STOP : Clutter.EVENT_PROPAGATE;
+    }
+    _stopPadTimer() {
+        if (this.padTimer) GLib.Source.remove(this.padTimer);
+        this.padTimer = 0;
+    }
     _ungrab(action) {
         if (!action) return;
         global.display.ungrab_accelerator(action);
@@ -206,6 +256,8 @@ export class InputController {
     cancel() {
         if (this.poll) GLib.Source.remove(this.poll);
         this.poll = 0;
+        this._stopPadTimer();
+        this.pad.reset();
         this.gesture.cancel();
         this._closeWheel();
     }

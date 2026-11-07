@@ -143,6 +143,9 @@ the test.
 - **Hold Super:** compact favorites wheel at the cursor. Move into a sector and
   release to launch. Release in its center or outside its boundary to cancel.
 - **Esc:** cancel. Other Super shortcuts cancel the wheel and retain their action.
+- **Three-finger touchpad:** rest three fingers (same hold delay) to open the wheel at the
+  pointer, slide toward an app, and lift to open it. Lifting without sliding cancels. Quick
+  three-finger swipes still switch workspaces and open the overview.
 - **Radial dock mode** (Preferences): running apps join the wheel as outer rings. Windows
   open out of the cursor, and releasing on the focused app minimizes it into the cursor;
   releasing on it again restores it from there.

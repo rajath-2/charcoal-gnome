@@ -34,7 +34,8 @@ export default class CharcoalPreferences extends ExtensionPreferences {
 
         const wheelPage = page('Wheel', 'starred-symbolic');
         const behaviour = group(wheelPage, 'Behaviour');
-        spin(behaviour, 'hold-delay', 'Super hold delay', 150, 1500, 50, 'Milliseconds before the wheel appears');
+        spin(behaviour, 'hold-delay', 'Hold delay', 150, 1500, 50, 'Milliseconds of holding Super, or resting three fingers, before the wheel appears');
+        toggle(behaviour, 'touchpad-wheel', 'Three-finger touchpad wheel', 'Rest three fingers on the touchpad, slide toward an app, lift to open it. Quick three-finger swipes keep their GNOME actions');
         toggle(behaviour, 'dock-mode', 'Radial dock mode', 'Running apps in outer rings, normal dock hidden. Windows open from and minimize into the cursor: release on the focused app to minimize it');
         toggle(behaviour, 'desktop-dock', 'Also show desktop dock', 'Keep your bottom dock alongside the hold-Super wheel');
         const appGroup = group(wheelPage, 'Favorite applications', 'Up to 12 apps, arranged clockwise from the top. This list is independent of your dock.');

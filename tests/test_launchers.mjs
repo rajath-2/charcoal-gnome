@@ -59,3 +59,31 @@ test('dock rings retain favorites and add running apps without duplicates', asyn
     assert.deepEqual(appRings(['a'], ['b'], false, 2), [['a']]);
     assert.deepEqual(appRings([], ['a','b','c'], true, 2), [['a','b'],['c']]);
 });
+
+test('touchpad wheel: hold opens, slide aims within the wheel, lift launches', async () => {
+    const {TouchpadWheel} = await import('../extensions/charcoal-launchers@local/policy.js');
+    const pad = new TouchpadWheel();
+    assert.equal(pad.hold('begin'), 'start-timer');
+    assert.equal(pad.timer(), 'open');
+    assert.equal(pad.hold('cancel'), 'none', 'fingers starting to move keep the wheel open');
+    assert.equal(pad.swipe('begin'), 'aim');
+    assert.equal(pad.swipe('update', 30, 40, 1000), 'aim');
+    assert.deepEqual(pad.offset, [30, 40]);
+    pad.swipe('update', 300, 400, 100);
+    assert.ok(Math.abs(Math.hypot(...pad.offset) - 100) < 1e-9, 'aim stays inside the wheel');
+    assert.equal(pad.swipe('end'), 'launch');
+    assert.equal(pad.state, 'idle');
+});
+
+test('touchpad wheel: quick swipes stay with GNOME, lifting without sliding cancels', async () => {
+    const {TouchpadWheel} = await import('../extensions/charcoal-launchers@local/policy.js');
+    const pad = new TouchpadWheel();
+    pad.hold('begin');
+    assert.equal(pad.swipe('begin'), 'stop-timer', 'moved before the delay: a normal workspace swipe');
+    assert.equal(pad.timer(), 'none');
+    assert.equal(pad.swipe('update', 10, 0), 'none');
+    pad.hold('begin');
+    assert.equal(pad.hold('end'), 'stop-timer', 'tap-and-lift before the delay does nothing');
+    pad.hold('begin'); pad.timer();
+    assert.equal(pad.hold('end'), 'close', 'lifted without sliding');
+});

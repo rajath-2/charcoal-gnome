@@ -60,3 +60,35 @@ export function appRings(favorites, running, dockMode, capacity = 8) {
     }
     return rings;
 }
+
+// Three-finger touchpad wheel: rest the fingers to open, slide to aim, lift to launch.
+// A swipe that starts before the hold delay is left to GNOME (workspaces, overview).
+export class TouchpadWheel {
+    constructor() { this.state = 'idle'; this.offset = [0, 0]; }
+    hold(phase) {
+        if (phase === 'begin') {
+            if (this.state !== 'idle') return 'none';
+            this.state = 'holding'; return 'start-timer';
+        }
+        if (this.state === 'holding') { this.state = 'idle'; return 'stop-timer'; }
+        // Lifted without sliding. A cancelled hold just means the fingers started moving.
+        if (this.state === 'open' && phase === 'end') { this.state = 'idle'; return 'close'; }
+        return 'none';
+    }
+    timer() {
+        if (this.state !== 'holding') return 'none';
+        this.state = 'open'; this.offset = [0, 0]; return 'open';
+    }
+    swipe(phase, dx = 0, dy = 0, limit = Infinity) {
+        if (this.state === 'holding' && phase === 'begin') { this.state = 'idle'; return 'stop-timer'; }
+        if (this.state !== 'open') return 'none';
+        if (phase === 'end') { this.state = 'idle'; return 'launch'; }
+        if (phase === 'cancel') { this.state = 'idle'; return 'close'; }
+        let [x, y] = [this.offset[0] + dx, this.offset[1] + dy];
+        const length = Math.hypot(x, y);
+        if (length > limit) [x, y] = [x * limit / length, y * limit / length];
+        this.offset = [x, y];
+        return 'aim';
+    }
+    reset() { this.state = 'idle'; this.offset = [0, 0]; }
+}
