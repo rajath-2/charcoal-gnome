@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {buildCss} from '../extensions/charcoal-widgets@local/theme.js';
 import {DEFAULT_POSITIONS, readPositions, toFraction, fromFraction, isDesktopClear, effectBox,
-    geocodeUrl, parseGeocode, forecastUrl, parseForecast, describeWeather, monthGrid} from '../extensions/charcoal-widgets@local/policy.js';
+    geocodeUrl, parseGeocode, forecastUrl, parseForecast, describeWeather, monthGrid,
+    pickPlayer, trackInfo, formatTime, nextLoop} from '../extensions/charcoal-widgets@local/policy.js';
 
 const schema = readFileSync(new URL('../extensions/charcoal-widgets@local/schemas/org.gnome.shell.extensions.charcoal-widgets.gschema.xml', import.meta.url), 'utf8');
 const defaults = Object.fromEntries([...schema.matchAll(/<key name="([^"]+)" type="(.)">[\s\S]*?<default>([^<]+)<\/default>/g)]
@@ -85,4 +86,27 @@ test('month grid has the needed weeks for each week start', () => {
     const feb = monthGrid(2027, 1, 1);               // Feb 1 2027 is a Monday
     assert.equal(feb.length, 28);
     assert.ok(feb.every(d => d.inMonth));
+});
+
+test('the playing player wins over a later-paused one', () => {
+    assert.equal(pickPlayer([{name: 'spotify', status: 'Playing', changedAt: 1},
+        {name: 'firefox', status: 'Paused', changedAt: 9}]), 'spotify');
+    assert.equal(pickPlayer([{name: 'a', status: 'Paused', changedAt: 1}, {name: 'b', status: 'Stopped', changedAt: 5}]), 'b');
+    assert.equal(pickPlayer([]), null);
+});
+
+test('track info survives malformed metadata', () => {
+    assert.deepEqual(trackInfo({'xesam:artist': 'Amber Street', 'mpris:length': 'x'}),
+        {title: 'Unknown title', artist: '', artUrl: '', length: 0, trackId: ''});
+    assert.deepEqual(trackInfo(undefined), {title: 'Unknown title', artist: '', artUrl: '', length: 0, trackId: ''});
+    assert.equal(trackInfo({'xesam:title': 'Midnight Drive', 'xesam:artist': ['A', 'B']}).artist, 'A, B');
+    assert.equal(trackInfo({'mpris:length': 268000000}).length, 268000000);
+});
+
+test('time and loop helpers', () => {
+    assert.equal(formatTime(134_000_000), '2:14');
+    assert.equal(formatTime(3_725_000_000), '1:02:05');
+    assert.equal(formatTime(NaN), '0:00');
+    assert.equal(formatTime(-5), '0:00');
+    assert.deepEqual(['None', 'Playlist', 'Track', 'weird'].map(nextLoop), ['Playlist', 'Track', 'None', 'Playlist']);
 });

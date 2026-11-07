@@ -1,25 +1,18 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {Card} from './card.js';
 import {buildCss} from './theme.js';
 import {isDesktopClear} from './policy.js';
 import {WeatherCard} from './weather.js';
 import {CalendarCard} from './calendar.js';
+import {MusicCard} from './music.js';
 
 const NAMES = ['weather', 'calendar', 'music'];
-const Placeholder = GObject.registerClass(class Placeholder extends Card {
-    _init(name, settings, ext) {
-        super._init(name, settings, ext);
-        this.body.add_child(new St.Label({text: name, style_class: 'charcoal-widget-title'}));
-    }
-});
-const CARD_TYPES = {weather: WeatherCard, calendar: CalendarCard, music: Placeholder};
+const CARD_TYPES = {weather: WeatherCard, calendar: CalendarCard, music: MusicCard};
 const REBUILD_KEYS = ['weather-enabled', 'calendar-enabled', 'music-enabled', 'blur', 'static-blur'];
 const OWN_KEYS = ['positions', 'locked', 'weather-city', 'weather-latitude', 'weather-longitude', 'idle-artwork'];
 

@@ -103,3 +103,32 @@ export function monthGrid(year, month, weekStart) {
         return {date, inMonth: date.getMonth() === month};
     });
 }
+
+// Music: follow the playing player; with none playing, the one that changed most recently.
+export function pickPlayer(players) {
+    const latest = list => list.reduce((best, p) => !best || p.changedAt > best.changedAt ? p : best, null);
+    return (latest(players.filter(p => p.status === 'Playing')) ?? latest(players))?.name ?? null;
+}
+
+// Players send buggy metadata (MPRIS spec says artist is a string array, some send a string).
+export function trackInfo(metadata) {
+    const m = metadata ?? {};
+    const artists = m['xesam:artist'];
+    const length = Number(m['mpris:length']);
+    return {
+        title: typeof m['xesam:title'] === 'string' && m['xesam:title'] ? m['xesam:title'] : 'Unknown title',
+        artist: Array.isArray(artists) && artists.every(a => typeof a === 'string') ? artists.join(', ') : '',
+        artUrl: typeof m['mpris:artUrl'] === 'string' ? m['mpris:artUrl'] : '',
+        length: Number.isFinite(length) && length > 0 ? length : 0,
+        trackId: typeof m['mpris:trackid'] === 'string' ? m['mpris:trackid'] : '',
+    };
+}
+
+export function formatTime(us) {
+    const total = Number.isFinite(us) && us > 0 ? Math.floor(us / 1e6) : 0;
+    const h = Math.floor(total / 3600), m = Math.floor(total / 60) % 60, s = String(total % 60).padStart(2, '0');
+    return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
+
+const LOOPS = ['None', 'Playlist', 'Track'];
+export const nextLoop = status => LOOPS.includes(status) ? LOOPS[(LOOPS.indexOf(status) + 1) % 3] : 'Playlist';
