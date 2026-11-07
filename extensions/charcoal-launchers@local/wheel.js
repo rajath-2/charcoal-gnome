@@ -46,7 +46,7 @@ export class FavoritesWheel {
             ids.forEach((id, index) => {
                 const group = new St.Widget({width: r * 2, height: r * 2, reactive: false});
                 const disc = new St.DrawingArea({width: r * 2, height: r * 2, reactive: false});
-                const cell = {id, index, ring, disc}; this.cells.push(cell);
+                const cell = {id, index, ring, disc, group}; this.cells.push(cell);
                 disc.connect('repaint', () => this._paint(cell)); group.add_child(disc);
                 const angle = index * Math.PI * 2 / ids.length - Math.PI / 2;
                 const cx = r + Math.cos(angle) * orbit, cy = r + Math.sin(angle) * orbit;
@@ -72,16 +72,20 @@ export class FavoritesWheel {
         if (this.settings.get_boolean('wheel-blur')) this._addBlur(r);
     }
     _addBlur(r) {
-        // shortcut: the mask covers the first MAX_RINGS rings; outer dock rings beyond that stay unblurred.
+        // shortcut: the mask covers 4 rings / 32 sectors (ringmask.js); larger dock wheels leave the rest unblurred.
         const blur = new St.Widget({width: r * 2, height: r * 2, reactive: false, clip_to_allocation: true});
-        blur.add_effect(new RingMask(r * 2, this.rings.map(ring =>
-            [ring.inner + 2, ring.outer - 2, ring.ids.length, this._gap(ring)])));
+        const mask = new RingMask(r * 2, this.rings.map(ring =>
+            [ring.inner + 2, ring.outer - 2, ring.ids.length, this._gap(ring)]));
+        blur.add_effect(mask);
+        // The layer itself never animates: each sector's blur mirrors that sector's scale and fade.
+        const cells = this.cells;
+        const sync = () => mask.setSectors(cells.map(({group}) => [group.scale_x, group.opacity / 255]));
+        for (const {group} of cells)
+            for (const property of ['notify::scale-x', 'notify::opacity']) group.connect(property, sync);
+        sync();
         this.actor.insert_child_at_index(blur, 0);
+        this.blurLayer = blur;
         addBlur(blur, this.settings, 'wheel-blur', [this.geometry.x - r, this.geometry.y - r]);
-        if (this._animated()) {
-            blur.opacity = 0;
-            blur.ease({opacity: 255, duration: this.settings.get_int('wheel-open-duration'), mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
-        }
     }
     _gap(ring) {
         return Math.min(this.settings.get_int('sector-gap') / ring.outer, Math.PI / ring.ids.length / 2);
@@ -117,7 +121,8 @@ export class FavoritesWheel {
         if (immediate) { for (const actor of this.closing) actor.destroy(); this.closing.clear(); }
         if (!this.actor) return;
         const actor = this.actor; this.actor = null;
-        const groups = actor.get_children();
+        const groups = actor.get_children().filter(child => child !== this.blurLayer);
+        this.blurLayer = null;
         if (immediate || !this._animated() || !groups.length) { actor.destroy(); return; }
         // Compress each sector back toward the centre, mirroring the grow-out.
         this.closing.add(actor);
