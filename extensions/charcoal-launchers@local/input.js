@@ -138,22 +138,28 @@ export class InputController {
         // Mutter applies overlay-key changes in an idle callback before these grabs.
         let attempts = 0;
         this.searchActions = [];
+        let searchPending = this.settings.get_boolean('search-enabled') ? this.settings.get_strv('launcher-shortcut') : [];
+        const finish = () => {
+            if (searchPending.length && attempts < 12) return GLib.SOURCE_CONTINUE;
+            this.setup = 0; return GLib.SOURCE_REMOVE;
+        };
         this.setup = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
             attempts++;
-            if (attempts === 1 && this.settings.get_boolean('search-enabled')) {
-                for (const shortcut of this.settings.get_strv('launcher-shortcut')) {
-                    const action = global.display.grab_accelerator(shortcut, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
-                    if (!action) {
-                        this.settings.set_string('status', 'Search shortcut is already in use. Choose another in Preferences.');
-                        this.owner.restore('org.gnome.desktop.wm.keybindings');
-                        break;
-                    }
-                    this.searchActions.push(action);
-                    Main.wm.allowKeybinding(Meta.external_binding_name_for_action(action),
-                        Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP);
-                }
+            // Mutter releases the input-source binding we just took asynchronously, so retry until it lets go.
+            searchPending = searchPending.filter(shortcut => {
+                const action = global.display.grab_accelerator(shortcut, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
+                if (!action) return true;
+                this.searchActions.push(action);
+                Main.wm.allowKeybinding(Meta.external_binding_name_for_action(action),
+                    Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP);
+                return false;
+            });
+            if (searchPending.length && attempts >= 12) {
+                this.settings.set_string('status', 'Search shortcut is already in use. Choose another in Preferences.');
+                this.owner.restore('org.gnome.desktop.wm.keybindings');
+                searchPending = [];
             }
-            if (!this.settings.get_boolean('wheel-enabled')) { this.setup = 0; return GLib.SOURCE_REMOVE; }
+            if (!this.settings.get_boolean('wheel-enabled')) return finish();
             if (attempts === 1) {
                 for (const key of this.settings.get_strv('wheel-keys')) {
                     const action = global.display.grab_accelerator(key, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
@@ -166,8 +172,8 @@ export class InputController {
                         Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW);
                 }
             }
-            if (!this.settings.get_boolean('wheel-super')) { this.setup = 0; return GLib.SOURCE_REMOVE; }
-            for (const key of ['Super_L', 'Super_R']) {
+            if (!this.settings.get_boolean('wheel-super')) return finish();
+            if (!this.actions.length) for (const key of ['Super_L', 'Super_R']) {
                 const action = global.display.grab_accelerator(key, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
                 if (action !== Meta.KeyBindingAction.NONE) {
                     this.actions.push(action);
@@ -175,7 +181,7 @@ export class InputController {
                         Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW);
                 }
             }
-            if (!this.actions.length && attempts < 12) return GLib.SOURCE_CONTINUE;
+            if ((!this.actions.length || searchPending.length) && attempts < 12) return GLib.SOURCE_CONTINUE;
             this.setup = 0;
             if (!this.actions.length) {
                 this.settings.set_string('status', 'Super is already claimed by another component. The wheel could not start.');
