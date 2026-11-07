@@ -9,3 +9,6 @@ __pycache__/
 .superpowers/
 
 **/schemas/gschemas.compiled
+
+# Local AI session logs
+codex-session-*.md

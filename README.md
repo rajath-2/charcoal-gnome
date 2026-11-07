@@ -91,10 +91,7 @@ Activation requires GNOME Shell 51, Python 3, `gsettings`, `gjs`, and
 `glib-compile-schemas`. Other GNOME versions may copy files with `--no-activate`,
 but the custom extension and CSS have only been prepared for 51.
 
-The original GTK4 folder is preserved in this bundle. Historical `gtk.css.*`
-snapshots are not installed as live configuration. Its active `gtk.css` is
-self-contained; the separate `window_decorations.css` refers to SVG assets absent
-from the original folder and is **not imported or enabled** by the installer.
+`gtk-4.0/gtk.css` is self-contained (header bars and window buttons for GTK4 apps).
 
 `settings.ini` is copied as supplied. It mentions JetBrains Mono, Breeze, and the
 Ocean sound theme, which are not included in the supplied folder. They are optional
@@ -182,3 +179,12 @@ The new UI and gestures were exercised in an isolated GNOME 51.1 Wayland session
 including a focused application, Super+Left, selected/neutral release, Escape,
 shortcut conflict rejection, provider responses, Preferences, and blur. Physical
 keyboard behavior and mixed-DPI monitors still merit checking after login.
+
+## License
+
+GPL-3.0-or-later; see [LICENSE](LICENSE). Bundled third-party work keeps its own
+license and credits, all GPL-3.0:
+
+- [Blur My Shell](https://github.com/aunetx/blur-my-shell) by aunetx — `extensions/blur-my-shell@aunetx/LICENSE`
+- [GreyStone icons](https://codeberg.org/StormRosenaa/GreyStone) by Seth Storm Rosenaa — `icons/GreyStone - circle/LICENSE`
+- [Future cursors](https://github.com/yeyushengfan258/Future-cursors) by yeyushengfan258 — `icons/Future-black-cursors/LICENSE`
