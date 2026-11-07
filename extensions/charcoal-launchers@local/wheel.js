@@ -4,7 +4,7 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {wheelGeometry, wheelSelection, appRings, pickSector} from './policy.js';
-import {color, rgb, addBlur} from './appearance.js';
+import {color, rgb, addBlur, keepOnTop} from './appearance.js';
 import {RingMask} from './ringmask.js';
 import {WindowPreviews} from './previews.js';
 
@@ -44,7 +44,9 @@ export class FavoritesWheel {
         this.actor = new St.Widget({reactive: false, width: r * 2, height: r * 2,
             x: this.geometry.x - r, y: this.geometry.y - r});
         // Must be on stage before easing: Clutter skips transitions on unmapped actors.
-        Main.layoutManager.addTopChrome(this.actor, {trackFullscreen: true});
+        // Not trackFullscreen: that hides chrome over fullscreen windows (e.g. a video).
+        Main.layoutManager.addTopChrome(this.actor);
+        keepOnTop(this.actor);
         groups.forEach((ids, ringIndex) => {
             const inner = ringIndex ? (base + (ringIndex - 1) * ringWidth + 5 * scale) * ratio : this.inner;
             const outer = (base + ringIndex * ringWidth) * ratio;

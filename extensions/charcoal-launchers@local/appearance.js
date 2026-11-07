@@ -11,6 +11,12 @@ export function rgb(hex) {
     return [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16) / 255);
 }
 // prefix '' = the search panel's colors, 'wheel-' = the wheel's (used by its window previews).
+// Show `actor` above everything, fullscreen video included: fullscreen windows can bypass the
+// compositor (unredirect), which would hide Shell actors drawn over them. Undone when it is destroyed.
+export function keepOnTop(actor) {
+    global.compositor.disable_unredirect();
+    actor.connect('destroy', () => global.compositor.enable_unredirect());
+}
 export function surfaceStyle(settings, prefix = '') {
     const [r, g, b] = rgb(color(settings, `${prefix}background-color`)).map(v => Math.round(v * 255));
     const opacity = settings.get_int(prefix ? 'wheel-opacity' : 'background-opacity') / 100;

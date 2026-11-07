@@ -6,7 +6,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {loadRemoteSearchProviders} from 'resource:///org/gnome/shell/ui/remoteSearch.js';
 import {QueryGeneration} from './policy.js';
-import {animate, color, surfaceStyle, addBlur} from './appearance.js';
+import {animate, color, surfaceStyle, addBlur, keepOnTop} from './appearance.js';
 
 const PROVIDERS = {
     'org.gnome.Calculator.desktop': ['calculator', 'Calculator'],
@@ -73,6 +73,7 @@ export class SearchLauncher {
         addBlur(this.backdrop, this.settings);
         this.actor.add_child(this.panel);
         Main.layoutManager.addTopChrome(this.actor);
+        keepOnTop(this.actor);
         this.actor.connect('captured-event', (_, event) => this._event(event));
         this.entry.clutter_text.connect('text-changed', () => this._schedule());
         this.modal = Main.pushModal(this.actor, {actionMode: Shell.ActionMode.POPUP});
