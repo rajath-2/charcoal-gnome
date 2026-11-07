@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {wheelGeometry, wheelSelection, appRings} from './policy.js';
+import {wheelGeometry, wheelSelection, appRings, pickSector} from './policy.js';
 import {color, rgb, addBlur} from './appearance.js';
 import {RingMask} from './ringmask.js';
 import {WindowPreviews} from './previews.js';
@@ -124,9 +124,9 @@ export class FavoritesWheel {
             const corridor = wheelSelection(x, y, {...this.geometry, radius: Infinity}, ring.ids.length, ring.outer) === index;
             if (hit.inside || corridor) { selected = id; window = hit.window; }
         }
-        if (this.moved && !selected) for (const ring of this.rings) {
-            const index = wheelSelection(x, y, {...this.geometry, radius: ring.outer}, ring.ids.length, ring.inner);
-            if (index >= 0) { selected = ring.ids[index]; break; }
+        if (this.moved && !selected) {
+            const pick = pickSector(x, y, this.geometry, this.rings.map(r => ({inner: r.inner, outer: r.outer, count: r.ids.length})));
+            if (pick) selected = this.rings[pick.ring].ids[pick.sector];
         }
         this.selectedWindow = window;
         if (selected === this.selection) return;

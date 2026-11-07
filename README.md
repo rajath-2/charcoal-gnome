@@ -146,8 +146,9 @@ the test.
 
 - **Super+Space:** centered search for applications, files, calculations, and settings.
 - **Tap Super:** workspace overview.
-- **Hold Super:** compact favorites wheel at the cursor. Move into a sector and
-  release to launch. Release in its center or outside its boundary to cancel.
+- **Hold Super:** compact favorites wheel at the cursor. Move toward an app and release
+  to launch: the direction picks it, so overshooting past the wheel still selects the
+  outermost app that way. Release in the center (or press Esc) to cancel.
 - **Esc:** cancel. Other Super shortcuts cancel the wheel and retain their action.
 - **Window previews:** rest on a running app for a moment to see its windows beside the wheel.
   Move out to them (the app stays selected along its direction) and release on one to bring

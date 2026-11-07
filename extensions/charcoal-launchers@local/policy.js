@@ -105,3 +105,16 @@ export function previewPlacement(center, angle, radius, [width, height], monitor
     return {x: Math.round(clamp(center[0] + dx * distance - width / 2, monitor.x + 8, monitor.x + monitor.width - width - 8)),
         y: Math.round(clamp(center[1] + dy * distance - height / 2, monitor.y + 8, monitor.y + monitor.height - height - 8))};
 }
+
+// Which sector the pointer picks. Rings are [{inner, outer, count}], innermost first, sharing
+// one centre. Only the centre (inside the first ring) picks nothing: gaps between rings belong to
+// the outer ring, and anywhere beyond the wheel picks the outermost ring in that direction, so
+// overshooting or being slightly off still selects the app the pointer is aimed at.
+export function pickSector(x, y, center, rings) {
+    const distance = Math.hypot(x - center.x, y - center.y);
+    if (!rings.length || distance <= rings[0].inner) return null;
+    const ring = rings.findIndex(r => distance <= r.outer);
+    const index = ring < 0 ? rings.length - 1 : ring;
+    const sector = wheelSelection(x, y, {...center, radius: Infinity}, rings[index].count, 0);
+    return sector < 0 ? null : {ring: index, sector};
+}

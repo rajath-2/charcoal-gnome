@@ -98,3 +98,15 @@ test('window previews sit just outside the wheel in the hovered direction, insid
     const clamped = previewPlacement([1900, 1060], 0, 120, [300, 100], monitor);
     assert.deepEqual(clamped, {x: 1920 - 300 - 8, y: 1080 - 100 - 8});
 });
+
+test('the pointer picks by direction: overshooting or ring gaps still select, only the centre cancels', async () => {
+    const {pickSector} = await import('../extensions/charcoal-launchers@local/policy.js');
+    const center = {x: 500, y: 500};
+    const rings = [{inner: 36, outer: 120, count: 4}, {inner: 125, outer: 188, count: 8}];
+    assert.equal(pickSector(500, 480, center, rings), null, 'centre cancels');
+    assert.deepEqual(pickSector(500, 420, center, rings), {ring: 0, sector: 0}, 'inside the first ring, top');
+    assert.deepEqual(pickSector(500, 500 - 122, center, rings), {ring: 1, sector: 0}, 'gap between rings belongs to the outer ring');
+    assert.deepEqual(pickSector(500, 100, center, rings), {ring: 1, sector: 0}, 'far beyond the wheel: outermost ring, same direction');
+    assert.deepEqual(pickSector(900, 500, center, rings), {ring: 1, sector: 2}, 'beyond, to the right');
+    assert.deepEqual(pickSector(900, 500, center, [rings[0]]), {ring: 0, sector: 1}, 'single ring: beyond picks it');
+});
