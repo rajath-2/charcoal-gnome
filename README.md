@@ -1,12 +1,13 @@
 # Charcoal GNOME theme bundle
 
-Personal GNOME **51** setup, packaged as three extensions plus GTK4 styling:
+Personal GNOME **51** setup, packaged as four extensions plus GTK4 styling:
 
 | Extension | What it does | Preferences |
 | --- | --- | --- |
 | `charcoal-topbar@local` | Top bar and popup styling; auto / compact / islands layout | Layout, static or live blur |
 | `charcoal-appearance@local` | GreyStone icons, Future Black cursor, dark style, left window buttons | Icons, cursor, size, style, buttons |
 | `charcoal-launchers@local` | Super+Space search and hold-Super favorites wheel | See below |
+| `charcoal-widgets@local` | Weather, calendar and music on the empty desktop | See below |
 
 Each is configured from **Extensions → (name) → Preferences** or
 `gnome-extensions prefs <uuid>`. Disabling Charcoal Appearance restores the icon,
@@ -37,6 +38,7 @@ Install only some pieces with `--only` (any combination):
 ./install.sh --only topbar        # Charcoal Topbar + Blur My Shell
 ./install.sh --only appearance    # Charcoal Appearance + GTK styling, icons, cursor
 ./install.sh --only launchers     # Charcoal Launchers + Blur My Shell (for its blur)
+./install.sh --only widgets       # Charcoal Widgets + Blur My Shell (for its blur)
 ./install.sh --only topbar launchers
 ```
 
@@ -77,7 +79,8 @@ standalone compact mode retains generous 72px side margins. Automatic mode uses
 
 Extensions bundled for offline installation:
 
-- `charcoal-topbar@local`, `charcoal-appearance@local`, `charcoal-launchers@local` (above).
+- `charcoal-topbar@local`, `charcoal-appearance@local`, `charcoal-launchers@local`,
+  `charcoal-widgets@local` (above).
 - `blur-my-shell@aunetx`: the exact installed version used with this setup, including
   its popup blur support. Its license and metadata are included.
 
@@ -85,7 +88,7 @@ The top bar no longer needs a Shell theme or the User Themes extension. Installi
 moves an older bundle's `adaptive-smoke-panel@local` and `~/.themes/Waybar-GNOME*`
 into the backup, and clears a User Themes selection that pointed at them.
 
-Activation enables the four extensions, sets the starting layout, and configures
+Activation enables the five extensions, sets the starting layout, and configures
 Blur My Shell: a separate radius-16 popup profile, and static blur for the dock and
 windows. Other existing blur profiles are retained. Unrelated extensions remain in
 the activation lists. A globally disabled extensions setting is respected.
@@ -187,7 +190,7 @@ results open their application or file. Unavailable providers are shown separate
 Additional verification:
 
 ```bash
-node --test tests/test_launchers.mjs tests/test_topbar.mjs
+node --test tests/test_launchers.mjs tests/test_topbar.mjs tests/test_widgets.mjs
 gjs -m tests/test_icon_update.js    # ICON_UPDATE_NETWORK=1 XDG_DATA_HOME=/tmp/x also downloads
 glib-compile-schemas --strict extensions/charcoal-launchers@local/schemas
 ```
@@ -196,6 +199,27 @@ The new UI and gestures were exercised in an isolated GNOME 51.1 Wayland session
 including a focused application, Super+Left, selected/neutral release, Escape,
 shortcut conflict rejection, provider responses, Preferences, and blur. Physical
 keyboard behavior and mixed-DPI monitors still merit checking after login.
+
+## Desktop widgets
+
+Charcoal Widgets puts three cards on the desktop: **weather** (top-left), a **month
+calendar** (top-right) and a **music player** (bottom-center). They sit above the
+wallpaper and below every window, and show only while no window is open on that
+screen; minimizing everything brings them back.
+
+- Drag a card by its background to move it; positions are remembered per monitor.
+  **Lock widgets** and **Reset positions** are in Preferences.
+- Weather comes from [Open-Meteo](https://open-meteo.com) (no account). Search for your
+  city in Preferences; the search also uses OpenStreetMap, so names like "Bangalore"
+  find Bengaluru. Updates every 30 minutes, °C. Nothing is fetched while the weather
+  card is off.
+- The calendar shows the events from your top bar's date menu (GNOME Online Accounts)
+  as a dot under the date; click a date to list its events.
+- The music card follows the app that is playing (Spotify, browsers, any MPRIS
+  player). Shuffle, repeat and seeking dim when the player does not support them.
+  With nothing playing it shows "Nothing playing" and artwork you can choose.
+- Every color, border, glow, corner radius and the blur are in **Appearance**;
+  **Restore reference look** returns the amber glass default.
 
 ## License
 

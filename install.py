@@ -21,7 +21,8 @@ BLUR = 'blur-my-shell@aunetx'
 TOPBAR = 'charcoal-topbar@local'
 APPEARANCE = 'charcoal-appearance@local'
 LAUNCHERS = 'charcoal-launchers@local'
-EXTENSIONS = [BLUR, TOPBAR, APPEARANCE, LAUNCHERS]
+WIDGETS = 'charcoal-widgets@local'
+EXTENSIONS = [BLUR, TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS]
 # Earlier bundles: the top bar was a Shell theme plus this extension, loaded by user-theme.
 AUTO = 'adaptive-smoke-panel@local'
 USER_THEME = 'user-theme@gnome-shell-extensions.gcampax.github.com'
@@ -34,11 +35,12 @@ for name in EXTENSIONS:
 # Moved into the backup on install (not replaced), so restore can bring them back.
 LEGACY = {f'themes/{name}': HOME_DIR / '.themes' / name for name in OLD_THEMES}
 LEGACY[f'extensions/{AUTO}'] = DATA / 'gnome-shell/extensions' / AUTO
-# Installable pieces. Blur My Shell provides the blur for both the top bar and the launchers.
+# Installable pieces. Blur My Shell provides the blur for the top bar, the launchers and the widgets.
 COMPONENTS = {
     'topbar': [f'extensions/{BLUR}', f'extensions/{TOPBAR}'],
     'appearance': ['gtk-4.0', 'icons/GreyStone - circle', 'icons/Future-black-cursors', f'extensions/{APPEARANCE}'],
     'launchers': [f'extensions/{BLUR}', f'extensions/{LAUNCHERS}'],
+    'widgets': [f'extensions/{BLUR}', f'extensions/{WIDGETS}'],
 }
 SCHEMA_DIRS = {'org.gnome.shell.extensions.blur-my-shell': BLUR, 'org.gnome.shell.extensions.user-theme': USER_THEME,
                'org.gnome.shell.extensions.charcoal-topbar': TOPBAR}
@@ -276,7 +278,7 @@ def main():
     parser.add_argument('--mode', choices=['auto', 'compact', 'islands'], default='auto',
                         help='initial top bar layout; change later in Charcoal Topbar preferences')
     parser.add_argument('--only', nargs='+', choices=list(COMPONENTS), default=list(COMPONENTS), metavar='PIECE',
-                        help='install only some pieces: topbar, appearance, launchers (default: all)')
+                        help='install only some pieces: topbar, appearance, launchers, widgets (default: all)')
     parser.add_argument('--dry-run', action='store_true', help='show changes without writing')
     parser.add_argument('--no-activate', action='store_true', help='install files without desktop settings changes')
     parser.add_argument('--restore', metavar='BACKUP_DIR', help='restore a backup created by this installer')

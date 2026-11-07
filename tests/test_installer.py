@@ -88,6 +88,21 @@ class InstallerTest(unittest.TestCase):
                 self.assertFalse((extensions / absent).exists(), absent)
             self.assertTrue(legacy.exists(), 'the old top bar is only retired with --only topbar')
 
+    def test_only_widgets_installs_widgets_and_blur(self):
+        with tempfile.TemporaryDirectory(prefix='gnome-theme-install-test-') as directory:
+            home = Path(directory)
+            env = dict(os.environ, HOME=str(home), XDG_DATA_HOME=str(home / '.local/share'),
+                       XDG_CONFIG_HOME=str(home / '.config'), XDG_STATE_HOME=str(home / '.local/state'))
+            extensions = home / '.local/share/gnome-shell/extensions'
+            result = subprocess.run([str(ROOT / 'install.sh'), '--no-activate', '--only', 'widgets'],
+                                    env=env, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue((extensions / 'charcoal-widgets@local/schemas/gschemas.compiled').is_file())
+            self.assertTrue((extensions / 'charcoal-widgets@local/assets/idle.svg').is_file())
+            self.assertTrue((extensions / 'blur-my-shell@aunetx').is_dir())
+            for absent in ['charcoal-topbar@local', 'charcoal-launchers@local', 'charcoal-appearance@local']:
+                self.assertFalse((extensions / absent).exists(), absent)
+
 
 if __name__ == '__main__':
     unittest.main()
