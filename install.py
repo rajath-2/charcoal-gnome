@@ -120,6 +120,9 @@ def install(args):
     print('Mode:', args.mode, '(copy only)' if args.no_activate else '(activate)')
     for label, target in TARGETS.items():
         print(f'  {label} -> {target}')
+    for target in LEGACY.values():
+        if exists(target):
+            print(f'  retire {target} (moved into the backup)')
     if args.dry_run:
         print('Dry run: no files or settings changed.')
         return
