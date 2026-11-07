@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import St from 'gi://St';
 
@@ -43,6 +44,10 @@ export async function addBlur(actor, settings) {
     let destroyed = false;
     const id = actor.connect('destroy', () => { destroyed = true; });
     try {
+        if (settings.get_boolean('static-blur')) {
+            addStaticBlur(actor, bms, await import(`file://${ext.path}/pipelines/pipeline.js`), () => destroyed);
+            return;
+        }
         const {DynamicPipeline} = await import(`file://${ext.path}/render/dynamic_surface.js`);
         if (destroyed || !bms._effects_manager) return;
         const pipeline = new DynamicPipeline(bms._effects_manager, bms._pipelines_manager,
@@ -54,4 +59,20 @@ export async function addBlur(actor, settings) {
     } finally {
         if (!destroyed) actor.disconnect(id);
     }
+}
+// Blurred wallpaper copy per monitor: no per-frame capture of the windows behind (cheap).
+function addStaticBlur(actor, bms, {Pipeline}, destroyed) {
+    if (destroyed() || !bms._effects_manager) return;
+    const group = new Meta.BackgroundGroup({name: 'charcoal-search-static-blur'});
+    actor.add_child(group);
+    const managers = [];
+    const pipelines = Main.layoutManager.monitors.map(monitor => {
+        const pipeline = new Pipeline(bms._effects_manager, bms._pipelines_manager, bms._settings.popup.PIPELINE, null);
+        pipeline.create_background_with_effects(monitor.index, managers, group, 'charcoal-search-static-blur-monitor');
+        return pipeline;
+    });
+    actor.connect('destroy', () => {
+        pipelines.forEach(pipeline => pipeline.destroy());
+        managers.forEach(manager => manager.destroy());
+    });
 }

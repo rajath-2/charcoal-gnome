@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.charcoal-appearance" path="/org/gnome/shell/extensions/charcoal-appearance/">
+    <!-- Key names and types mirror the desktop keys in extension.js TARGETS. -->
+    <key name="icon-theme" type="s"><default>'GreyStone - circle'</default></key>
+    <key name="cursor-theme" type="s"><default>'Future-black-cursors'</default></key>
+    <key name="cursor-size" type="i"><range min="16" max="96"/><default>24</default></key>
+    <key name="color-scheme" type="s">
+      <choices><choice value="default"/><choice value="prefer-dark"/><choice value="prefer-light"/></choices>
+      <default>'prefer-dark'</default>
+    </key>
+    <key name="button-layout" type="s"><default>'close,minimize:icon'</default></key>
+    <key name="saved" type="a{ss}">
+      <default>{}</default>
+      <summary>Desktop values from before enabling, restored on disable</summary>
+    </key>
+  </schema>
+</schemalist>

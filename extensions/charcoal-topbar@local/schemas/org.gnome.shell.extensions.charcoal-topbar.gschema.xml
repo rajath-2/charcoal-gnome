@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.charcoal-topbar" path="/org/gnome/shell/extensions/charcoal-topbar/">
+    <key name="mode" type="s">
+      <choices><choice value="auto"/><choice value="compact"/><choice value="islands"/></choices>
+      <default>'auto'</default>
+      <summary>Bar layout</summary>
+    </key>
+    <key name="static-blur" type="b">
+      <default>true</default>
+      <summary>Blur only the wallpaper behind the bar and popups (cheaper than live blur)</summary>
+    </key>
+  </schema>
+</schemalist>

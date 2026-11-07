@@ -17,18 +17,25 @@ HOME_DIR = Path.home()
 DATA = Path(os.environ.get('XDG_DATA_HOME', HOME_DIR / '.local/share'))
 CONFIG = Path(os.environ.get('XDG_CONFIG_HOME', HOME_DIR / '.config'))
 STATE = Path(os.environ.get('XDG_STATE_HOME', HOME_DIR / '.local/state')) / 'gnome-themes/backups'
-AUTO = 'adaptive-smoke-panel@local'
 BLUR = 'blur-my-shell@aunetx'
-USER_THEME = 'user-theme@gnome-shell-extensions.gcampax.github.com'
+TOPBAR = 'charcoal-topbar@local'
+APPEARANCE = 'charcoal-appearance@local'
 LAUNCHERS = 'charcoal-launchers@local'
-EXTENSIONS = [USER_THEME, BLUR, AUTO, LAUNCHERS]
+EXTENSIONS = [BLUR, TOPBAR, APPEARANCE, LAUNCHERS]
+# Earlier bundles: the top bar was a Shell theme plus this extension, loaded by user-theme.
+AUTO = 'adaptive-smoke-panel@local'
+USER_THEME = 'user-theme@gnome-shell-extensions.gcampax.github.com'
+OLD_THEMES = ['Waybar-GNOME', 'Waybar-GNOME-Islands']
 TARGETS = {'gtk-4.0': CONFIG / 'gtk-4.0'}
 for name in ['GreyStone - circle', 'Future-black-cursors']:
     TARGETS[f'icons/{name}'] = DATA / 'icons' / name
-for name in ['Waybar-GNOME', 'Waybar-GNOME-Islands']:
-    TARGETS[f'themes/{name}'] = HOME_DIR / '.themes' / name
 for name in EXTENSIONS:
     TARGETS[f'extensions/{name}'] = DATA / 'gnome-shell/extensions' / name
+# Moved into the backup on install (not replaced), so restore can bring them back.
+LEGACY = {f'themes/{name}': HOME_DIR / '.themes' / name for name in OLD_THEMES}
+LEGACY[f'extensions/{AUTO}'] = DATA / 'gnome-shell/extensions' / AUTO
+SCHEMA_DIRS = {'org.gnome.shell.extensions.blur-my-shell': BLUR, 'org.gnome.shell.extensions.user-theme': USER_THEME,
+               'org.gnome.shell.extensions.charcoal-topbar': TOPBAR}
 
 
 def run(args):
@@ -37,10 +44,9 @@ def run(args):
 
 def gs(action, schema, key, value=None):
     args = ['gsettings']
-    if schema.startswith('org.gnome.shell.extensions.blur-my-shell'):
-        args += ['--schemadir', DATA / 'gnome-shell/extensions' / BLUR / 'schemas']
-    elif schema == 'org.gnome.shell.extensions.user-theme':
-        args += ['--schemadir', DATA / 'gnome-shell/extensions' / USER_THEME / 'schemas']
+    for prefix, extension in SCHEMA_DIRS.items():
+        if schema.startswith(prefix):
+            args += ['--schemadir', DATA / 'gnome-shell/extensions' / extension / 'schemas']
     args += [action, schema, key]
     if value is not None:
         args.append(value)
@@ -48,24 +54,24 @@ def gs(action, schema, key, value=None):
 
 
 def setting_plan(mode):
-    interface = 'org.gnome.desktop.interface'
-    panel = 'org.gnome.shell.extensions.blur-my-shell.panel'
-    popup = 'org.gnome.shell.extensions.blur-my-shell.popup'
+    # Icons/cursor/style: charcoal-appearance. Panel blur on/off and static/dynamic: charcoal-topbar.
+    bms = 'org.gnome.shell.extensions.blur-my-shell'
+    panel, popup = f'{bms}.panel', f'{bms}.popup'
     plan = [
-        (interface, 'icon-theme', repr('GreyStone - circle')),
-        (interface, 'cursor-theme', repr('Future-black-cursors')),
-        (interface, 'cursor-size', '24'),
-        (interface, 'color-scheme', repr('prefer-dark')),
-        ('org.gnome.desktop.wm.preferences', 'button-layout', repr('close,minimize:icon')),
-        ('org.gnome.shell.extensions.user-theme', 'name', repr('Waybar-GNOME' if mode == 'compact' else 'Waybar-GNOME-Islands')),
-        (panel, 'blur', 'true' if mode == 'compact' else 'false'),
-        (panel, 'static-blur', 'true'), (panel, 'override-background', 'false'),
+        ('org.gnome.shell.extensions.charcoal-topbar', 'mode', repr(mode)),
+        (panel, 'override-background', 'false'),
         (panel, 'override-background-dynamically', 'false'), (panel, 'gradient-panel', 'false'),
         (panel, 'corner-radius', '10'), (panel, 'rounded-corners', '0'),
-        (popup, 'blur', 'true'), (popup, 'static-blur', 'true'),
-        (popup, 'override-background', 'false'),
+        (popup, 'blur', 'true'), (popup, 'override-background', 'false'),
         (popup, 'pipeline', repr('pipeline_charcoal_popup_light')),
+        # Live (dynamic) blur re-renders what is behind every frame; keep it opt-in.
+        (f'{bms}.dash-to-dock', 'static-blur', 'true'),
+        (f'{bms}.applications', 'static-blur', 'true'),
     ]
+    theme = 'org.gnome.shell.extensions.user-theme'
+    if (DATA / 'gnome-shell/extensions' / USER_THEME / 'schemas').is_dir() and \
+            gs('get', theme, 'name').strip("'") in OLD_THEMES:
+        plan.append((theme, 'name', "''"))  # Charcoal Topbar now carries this styling.
     for key, value in [('menu-corner-radius', 22), ('quick-settings-corner-radius', 22),
                        ('calendar-corner-radius', 22), ('notification-corner-radius', 16),
                        ('submenu-corner-radius', 16)]:
@@ -141,7 +147,14 @@ def install(args):
             shutil.copytree(ROOT / label, target, symlinks=True, ignore=ignore)
             manifest['targets'][label]['installed'] = True
             write_manifest(backup, manifest)
-        for extension in [USER_THEME, BLUR, LAUNCHERS]:
+        for label, target in LEGACY.items():
+            if exists(target):
+                manifest['targets'][label] = {'path': str(target), 'existed': True, 'installed': False}
+                saved = backup / 'files' / label
+                saved.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(target), str(saved))
+                write_manifest(backup, manifest)
+        for extension in EXTENSIONS:
             run(['glib-compile-schemas', DATA / 'gnome-shell/extensions' / extension / 'schemas'])
         if not args.no_activate:
             plan = setting_plan(args.mode)
@@ -155,10 +168,11 @@ def install(args):
                     raise RuntimeError(f'Setting is locked: {schema} {key}')
                 manifest['settings'].append([schema, key, value])
             write_manifest(backup, manifest)
-            # Let the existing adaptive instance restore its blur state before applying a mode.
+            # Let running top-bar instances restore their blur state before applying settings.
             current_disabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'disabled-extensions').removeprefix('@as '))
-            if AUTO not in current_disabled:
-                gs('set', 'org.gnome.shell', 'disabled-extensions', repr(current_disabled + [AUTO]))
+            missing = [x for x in [AUTO, TOPBAR] if x not in current_disabled]
+            if missing:
+                gs('set', 'org.gnome.shell', 'disabled-extensions', repr(current_disabled + missing))
                 time.sleep(0.5)
             run(['gjs', '-m', ROOT / 'configure-blur.js', DATA / 'gnome-shell/extensions' / BLUR / 'schemas'])
             for schema, key, value in plan:
@@ -167,11 +181,9 @@ def install(args):
                     raise RuntimeError(f'Setting did not persist: {schema} {key}')
             enabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'enabled-extensions').removeprefix('@as '))
             disabled = ast.literal_eval(gs('get', 'org.gnome.shell', 'disabled-extensions').removeprefix('@as '))
-            wanted = [USER_THEME, BLUR, LAUNCHERS] + ([AUTO] if args.mode == 'auto' else [])
-            enabled = [x for x in enabled if x not in EXTENSIONS] + wanted
-            disabled = [x for x in disabled if x not in wanted]
-            if args.mode != 'auto' and AUTO not in disabled:
-                disabled.append(AUTO)
+            wanted = EXTENSIONS
+            enabled = [x for x in enabled if x not in EXTENSIONS + [AUTO]] + wanted
+            disabled = [x for x in disabled if x not in wanted + [AUTO]]
             gs('set', 'org.gnome.shell', 'disabled-extensions', repr(disabled))
             gs('set', 'org.gnome.shell', 'enabled-extensions', repr(enabled))
         manifest['status'] = 'complete'
@@ -213,8 +225,9 @@ def restore(args):
     data = json.loads((backup / 'manifest.json').read_text())
     if data.get('format') != 1 or data.get('home') != str(HOME_DIR) or data.get('status') == 'restored':
         raise RuntimeError('Not an unrestored backup for this user.')
+    known = {**TARGETS, **LEGACY}
     for label, entry in data['targets'].items():
-        if label not in TARGETS or Path(entry['path']) != TARGETS[label]:
+        if label not in known or Path(entry['path']) != known[label]:
             raise RuntimeError('Backup destinations do not match current HOME/XDG directories.')
     if args.dry_run:
         print(f'Would restore files and {len(data["settings"])} settings from {backup}')
@@ -225,7 +238,7 @@ def restore(args):
     for schema, key, value in reversed(data['settings']):
         gs('set', schema, key, value)
     for label, entry in reversed(list(data['targets'].items())):
-        target = TARGETS[label]
+        target = known[label]
         saved = backup / 'files' / label
         if exists(saved):
             remove(target)
@@ -240,7 +253,8 @@ def restore(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', choices=['auto', 'compact', 'islands'], default='auto')
+    parser.add_argument('--mode', choices=['auto', 'compact', 'islands'], default='auto',
+                        help='initial top bar layout; change later in Charcoal Topbar preferences')
     parser.add_argument('--dry-run', action='store_true', help='show changes without writing')
     parser.add_argument('--no-activate', action='store_true', help='install files without desktop settings changes')
     parser.add_argument('--restore', metavar='BACKUP_DIR', help='restore a backup created by this installer')

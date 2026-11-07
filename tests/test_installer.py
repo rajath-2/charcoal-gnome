@@ -25,6 +25,10 @@ class InstallerTest(unittest.TestCase):
             theme = home / '.themes/Waybar-GNOME'
             theme.parent.mkdir()
             theme.symlink_to(original_theme, target_is_directory=True)
+            # A previous bundle's extension is retired into the backup, then restored.
+            legacy = home / '.local/share/gnome-shell/extensions/adaptive-smoke-panel@local'
+            legacy.mkdir(parents=True)
+            (legacy / 'extension.js').write_text('old')
 
             def run(*args):
                 result = subprocess.run([str(ROOT / 'install.sh'), *args], env=env,
@@ -39,9 +43,12 @@ class InstallerTest(unittest.TestCase):
             self.assertFalse((gtk / 'gtk.css.backup').exists())
             self.assertFalse(theme.is_symlink())
             self.assertEqual((original_theme / 'sentinel').read_text(), 'untouched')
-            extension = home / '.local/share/gnome-shell/extensions/adaptive-smoke-panel@local'
+            self.assertFalse(legacy.exists())
+            extension = home / '.local/share/gnome-shell/extensions/charcoal-topbar@local'
             self.assertEqual((extension / 'extension.js').read_bytes(),
-                             (ROOT / 'extensions/adaptive-smoke-panel@local/extension.js').read_bytes())
+                             (ROOT / 'extensions/charcoal-topbar@local/extension.js').read_bytes())
+            for name in ['charcoal-topbar@local', 'charcoal-appearance@local']:
+                self.assertTrue((home / '.local/share/gnome-shell/extensions' / name / 'schemas/gschemas.compiled').is_file())
             launcher = home / '.local/share/gnome-shell/extensions/charcoal-launchers@local'
             self.assertTrue((launcher / 'prefs.js').is_file())
             self.assertTrue((launcher / 'schemas/gschemas.compiled').is_file())
@@ -60,6 +67,7 @@ class InstallerTest(unittest.TestCase):
             self.assertTrue(theme.is_symlink())
             self.assertEqual(theme.resolve(), original_theme)
             self.assertFalse(extension.exists())
+            self.assertEqual((legacy / 'extension.js').read_text(), 'old')
             self.assertFalse(launcher.exists())
 
 

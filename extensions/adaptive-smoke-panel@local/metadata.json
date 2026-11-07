@@ -1,7 +1,0 @@
-{
-  "uuid": "adaptive-smoke-panel@local",
-  "name": "Adaptive Smoke Panel",
-  "description": "Your complete floating bar on the desktop; your existing islands when a visible app on the panel monitor is fully maximized.",
-  "shell-version": ["51"],
-  "version": 1
-}

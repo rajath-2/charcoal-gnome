@@ -9,7 +9,9 @@ import {useIslands} from './policy.js';
 import {paintMorph} from './morph.js';
 import {installMenuHandoff} from './menuHandoff.js';
 
-export default class AdaptiveSmokePanel extends Extension {
+const MODE_CLASSES = ['charcoal-compact', 'charcoal-islands', 'adaptive-smoke'];
+
+export default class CharcoalTopbar extends Extension {
     enable() {
         this._signals = [];
         this._windows = new Map();
@@ -18,9 +20,12 @@ export default class AdaptiveSmokePanel extends Extension {
         this._timeline = null;
         this._progress = null;
         this._blurGroup = null;
+        this._prefs = this.getSettings();
         this._blur = this._settings('blur-my-shell@aunetx', 'org.gnome.shell.extensions.blur-my-shell.panel');
-        this._theme = this._settings('user-theme@gnome-shell-extensions.gcampax.github.com', 'org.gnome.shell.extensions.user-theme');
-        this._savedBlur = this._blur.get_boolean('blur');
+        this._popupBlur = this._settings('blur-my-shell@aunetx', 'org.gnome.shell.extensions.blur-my-shell.popup');
+        // Restored on disable; lock screen keeps us enabled (session-modes), so this is a real toggle-off.
+        this._saved = [[this._blur, 'blur'], [this._blur, 'static-blur'], [this._popupBlur, 'static-blur']]
+            .map(([settings, key]) => [settings, key, settings.get_boolean(key)]);
         this._surface = new St.DrawingArea({reactive: false});
         Main.panel.insert_child_at_index(this._surface, 0);
         this._surface.connect('repaint', () => this._paint());
@@ -28,7 +33,7 @@ export default class AdaptiveSmokePanel extends Extension {
         for (const box of [Main.panel._leftBox, Main.panel._centerBox, Main.panel._rightBox])
             this._connect(box, 'notify::allocation', () => this._surface.queue_repaint());
         this._connect(Main.panel.get_parent(), 'child-added', () => this._syncBlur());
-        this._connect(this._theme, 'changed::name', () => this._queue());
+        this._connect(this._prefs, 'changed', () => this._applyPrefs());
         this._connect(global.display, 'window-created', (_, window) => {
             this._watch(window);
             this._queue();
@@ -39,11 +44,30 @@ export default class AdaptiveSmokePanel extends Extension {
         this._connect(Main.layoutManager, 'monitors-changed', () => this._queue());
         for (const actor of global.get_window_actors())
             this._watch(actor.meta_window);
-        this._update();
+        this._applyPrefs();
         this._restoreMenuHandoff = installMenuHandoff(Main.panel.menuManager, [
             Main.panel.statusArea.dateMenu?.menu,
             Main.panel.statusArea.quickSettings?.menu,
         ]);
+    }
+
+    _applyPrefs() {
+        const mode = this._prefs.get_string('mode');
+        const staticBlur = this._prefs.get_boolean('static-blur');
+        for (const settings of [this._blur, this._popupBlur])
+            if (settings.get_boolean('static-blur') !== staticBlur)
+                settings.set_boolean('static-blur', staticBlur);
+        // Islands leave gaps a full-width blur strip would show through; auto hides it per state.
+        const blur = mode !== 'islands';
+        if (this._blur.get_boolean('blur') !== blur)
+            this._blur.set_boolean('blur', blur);
+        this._clear();
+        Main.panel.remove_style_class_name('charcoal-compact');
+        Main.panel.remove_style_class_name('charcoal-islands');
+        if (mode === 'auto')
+            this._update();
+        else
+            Main.panel.add_style_class_name(`charcoal-${mode}`);
     }
 
     _settings(uuid, schema) {
@@ -82,10 +106,8 @@ export default class AdaptiveSmokePanel extends Extension {
     }
 
     _update() {
-        if (!['Waybar-GNOME', 'Waybar-GNOME-Islands'].includes(this._theme.get_string('name'))) {
-            this._clear();
+        if (this._prefs.get_string('mode') !== 'auto')
             return;
-        }
         const monitor = Main.layoutManager.primaryIndex;
         const windows = global.workspace_manager.get_active_workspace().list_windows();
         const islands = useIslands(windows.map(window => ({
@@ -98,8 +120,6 @@ export default class AdaptiveSmokePanel extends Extension {
         })), monitor);
         if (islands === this._lastMode)
             return;
-        if (this._lastMode === null && !this._blur.get_boolean('blur'))
-            this._blur.set_boolean('blur', true);
         Main.panel.add_style_class_name('adaptive-smoke');
         this._surface.show();
         this._animateShape(islands ? 1 : 0);
@@ -185,10 +205,7 @@ export default class AdaptiveSmokePanel extends Extension {
         if (group && group === this._blurGroup)
             group.opacity = this._originalBlurOpacity;
         this._blurGroup = null;
-        Main.panel.remove_style_class_name('adaptive-islands');
         Main.panel.remove_style_class_name('adaptive-smoke');
-        if (this._lastMode !== null)
-            this._blur.set_boolean('blur', this._savedBlur);
         this._lastMode = null;
     }
 
@@ -204,11 +221,17 @@ export default class AdaptiveSmokePanel extends Extension {
             for (const id of ids)
                 window.disconnect(id);
         this._clear();
+        for (const name of MODE_CLASSES)
+            Main.panel.remove_style_class_name(name);
+        for (const [settings, key, value] of this._saved ?? [])
+            settings.set_boolean(key, value);
+        this._saved = null;
         this._surface?.destroy();
         this._surface = null;
         this._signals = [];
         this._windows = null;
-        this._theme = null;
+        this._prefs = null;
         this._blur = null;
+        this._popupBlur = null;
     }
 }

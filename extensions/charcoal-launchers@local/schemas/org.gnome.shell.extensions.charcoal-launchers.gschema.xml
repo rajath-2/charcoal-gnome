@@ -34,6 +34,7 @@
     <key name="open-duration" type="i"><range min="0" max="500"/><default>180</default></key>
     <key name="close-duration" type="i"><range min="0" max="400"/><default>120</default></key>
     <key name="blur" type="b"><default>true</default></key>
+    <key name="static-blur" type="b"><default>true</default></key>
     <key name="blur-radius" type="i"><range min="0" max="60"/><default>18</default></key>
     <key name="owned-bindings" type="s"><default>'[]'</default></key>
     <key name="status" type="s"><default>''</default></key>

@@ -1,0 +1,9 @@
+{
+  "uuid": "charcoal-topbar@local",
+  "name": "Charcoal Topbar",
+  "description": "Charcoal top bar and popup styling. Modes: auto (full bar on the desktop, islands when an app is maximized), compact, or islands. Uses Blur My Shell for blur.",
+  "shell-version": ["51"],
+  "session-modes": ["user", "unlock-dialog"],
+  "settings-schema": "org.gnome.shell.extensions.charcoal-topbar",
+  "version": 1
+}

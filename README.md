@@ -1,7 +1,18 @@
 # Charcoal GNOME theme bundle
 
-Personal GNOME **51** setup: compact GTK4 header bars and colored window buttons,
-GreyStone icons, Future Black cursors, charcoal Shell menus, and an adaptive top bar.
+Personal GNOME **51** setup, packaged as three extensions plus GTK4 styling:
+
+| Extension | What it does | Preferences |
+| --- | --- | --- |
+| `charcoal-topbar@local` | Top bar and popup styling; auto / compact / islands layout | Layout, static or live blur |
+| `charcoal-appearance@local` | GreyStone icons, Future Black cursor, dark style, left window buttons | Icons, cursor, size, style, buttons |
+| `charcoal-launchers@local` | Super+Space search and hold-Super favorites wheel | See below |
+
+Each is configured from **Extensions → (name) → Preferences** or
+`gnome-extensions prefs <uuid>`. Disabling Charcoal Appearance restores the icon,
+cursor, style and button settings you had before. Blur comes from the bundled
+Blur My Shell; static blur (wallpaper only, cheap) is the default everywhere, and
+live blur can be switched on per extension.
 
 ## Install
 
@@ -29,12 +40,13 @@ Log out and back in after installation. GNOME caches extension JavaScript for th
 session, so toggling an extension is not sufficient to load updated code.
 Restart open GTK applications to load their CSS. The installer never logs you out.
 
-Other modes:
+The layout can be changed any time in Charcoal Topbar's preferences.
+`--mode` only picks the starting layout:
 
 ```bash
 ./install.sh --mode compact    # fixed compact floating bar
 ./install.sh --mode islands    # fixed floating islands
-./install.sh --mode auto       # automatic split/join
+./install.sh --mode auto       # automatic split/join (default)
 ./install.sh --no-activate     # copy files only, without changing desktop settings
 ```
 
@@ -49,23 +61,22 @@ standalone compact mode retains generous 72px side margins. Automatic mode uses
 | `gtk-4.0/` | `$XDG_CONFIG_HOME/gtk-4.0` (normally `~/.config/gtk-4.0`) |
 | `icons/GreyStone - circle/` | `$XDG_DATA_HOME/icons/GreyStone - circle` |
 | `icons/Future-black-cursors/` | `$XDG_DATA_HOME/icons/Future-black-cursors` |
-| `themes/Waybar-GNOME/` | `~/.themes/Waybar-GNOME` |
-| `themes/Waybar-GNOME-Islands/` | `~/.themes/Waybar-GNOME-Islands` |
 | `extensions/` | `$XDG_DATA_HOME/gnome-shell/extensions/` |
 
 Extensions bundled for offline installation:
 
-- `charcoal-launchers@local`: centered multipurpose search and a configurable hold-Super favorites wheel.
-- `adaptive-smoke-panel@local`: the custom automatic bar and menu handoff behavior.
-- `user-theme@gnome-shell-extensions.gcampax.github.com`: loads the Shell stylesheets.
+- `charcoal-topbar@local`, `charcoal-appearance@local`, `charcoal-launchers@local` (above).
 - `blur-my-shell@aunetx`: the exact installed version used with this setup, including
   its popup blur support. Its license and metadata are included.
 
-Activation selects the icon/cursor themes, a 24px cursor, dark preference, the
-current left-side close/minimize button layout, the selected Shell mode, and the
-matching panel/popup blur settings. Popup blur gets a separate radius-16 profile;
-other existing blur profiles are retained. Unrelated extensions remain in the
-activation lists. A globally disabled extensions setting is respected.
+The top bar no longer needs a Shell theme or the User Themes extension. Installing
+moves an older bundle's `adaptive-smoke-panel@local` and `~/.themes/Waybar-GNOME*`
+into the backup, and clears a User Themes selection that pointed at them.
+
+Activation enables the four extensions, sets the starting layout, and configures
+Blur My Shell: a separate radius-16 popup profile, and static blur for the dock and
+windows. Other existing blur profiles are retained. Unrelated extensions remain in
+the activation lists. A globally disabled extensions setting is respected.
 
 ## Prerequisites and scope
 

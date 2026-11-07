@@ -106,6 +106,7 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         const searchLook = group(searchPage, 'Look and motion');
         spin(searchLook, 'background-opacity', 'Panel opacity', 40, 100, 1, 'Percent');
         toggle(searchLook, 'blur', 'Background blur', 'Uses your Blur My Shell popup pipeline');
+        toggle(searchLook, 'static-blur', 'Static blur', 'Blur the wallpaper only. Off: live blur of windows behind (more GPU)');
         spin(searchLook, 'open-duration', 'Grow-in duration', 0, 500, 10, 'Milliseconds');
         spin(searchLook, 'close-duration', 'Closing duration', 0, 400, 10, 'Milliseconds');
 
