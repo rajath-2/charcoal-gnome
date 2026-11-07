@@ -5,6 +5,8 @@
     <key name="desktop-dock" type="b"><default>false</default></key>
     <key name="wheel-enabled" type="b"><default>true</default></key>
     <key name="launcher-shortcut" type="as"><default>['&lt;Super&gt;space']</default></key>
+    <key name="wheel-super" type="b"><default>true</default><summary>Holding Super opens the wheel</summary></key>
+    <key name="wheel-keys" type="as"><default>[]</default><summary>More keys that open the wheel while held</summary></key>
     <key name="touchpad-wheel" type="b"><default>true</default></key>
     <key name="hold-delay" type="i"><range min="150" max="1500"/><default>300</default></key>
     <key name="search-apps" type="b"><default>true</default></key>

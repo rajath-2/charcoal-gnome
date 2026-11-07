@@ -1,5 +1,8 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import St from 'gi://St';
+import {searchColorCss} from './policy.js';
+import {color} from './appearance.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {FavoritesWheel} from './wheel.js';
@@ -46,6 +49,7 @@ export default class CharcoalLaunchers extends Extension {
         });
     }
     _configure() {
+        this._loadStyle();
         this._input?.destroy();
         this._input = new InputController(this._settings, this._wheel, this._search);
         this._input.enable();
@@ -56,6 +60,23 @@ export default class CharcoalLaunchers extends Extension {
             this._cursorMinimize = new CursorMinimize();
             this._cursorMinimize.enable();
         }
+    }
+    // Generated from preferences; a new file per change makes St reparse it.
+    _loadStyle() {
+        const dir = GLib.build_filenamev([GLib.get_user_runtime_dir(), 'charcoal-launchers']);
+        GLib.mkdir_with_parents(dir, 0o700);
+        const file = Gio.File.new_for_path(`${dir}/style-${GLib.uuid_string_random()}.css`);
+        const css = searchColorCss(color(this._settings, 'foreground-color'), color(this._settings, 'accent-color'));
+        file.replace_contents(new TextEncoder().encode(css), null, false, Gio.FileCreateFlags.NONE, null);
+        St.ThemeContext.get_for_stage(global.stage).get_theme().load_stylesheet(file);
+        this._unloadStyle();
+        this._styleFile = file;
+    }
+    _unloadStyle() {
+        if (!this._styleFile) return;
+        St.ThemeContext.get_for_stage(global.stage).get_theme().unload_stylesheet(this._styleFile);
+        this._styleFile.delete(null);
+        this._styleFile = null;
     }
     _cancel() { this._input?.cancel(); this._wheel?.close(true); this._search?.close(true); }
     disable() {
@@ -74,6 +95,7 @@ export default class CharcoalLaunchers extends Extension {
         this._cursorMinimize?.disable(); this._cursorMinimize = null;
         this._wheel?.destroy(); this._wheel = null;
         this._search?.destroy(); this._search = null;
+        this._unloadStyle();
         this._settings = null;
     }
 }

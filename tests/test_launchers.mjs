@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Gesture, wheelGeometry, wheelSelection, restoreBindings, QueryGeneration, surfaceCss} from '../extensions/charcoal-launchers@local/policy.js';
+import {Gesture, wheelGeometry, wheelSelection, restoreBindings, appHotkeyIndex, QueryGeneration, surfaceCss, searchColorCss} from '../extensions/charcoal-launchers@local/policy.js';
 
 test('a short Super tap opens overview once', () => {
     const g = new Gesture();
@@ -122,4 +122,19 @@ test('search and wheel surfaces take their own border, shadow and text size', ()
     const custom = surfaceCss({...base, 'border-width': 0, 'shadow-size': 0, 'text-size': 125, 'foreground-color': 'bad'});
     assert.ok(custom.includes('border: none') && custom.includes('box-shadow: none') && custom.includes('font-size: 1.25em'));
     assert.ok(custom.includes('color: #808080'));
+});
+
+test('search panel details follow the text and highlight colors', () => {
+    const css = searchColorCss('#101010', '#d9903d');
+    assert.ok(css.includes('.charcoal-heading { color: rgba(16,16,16,0.55); }'));
+    assert.ok(css.includes('border-color: rgba(217,144,61,0.6)'));
+    assert.doesNotMatch(css, /235,235,240|NaN|undefined/);
+    assert.ok(searchColorCss('bad', 'bad').includes('rgba(128,128,128,'));
+});
+
+test('Super+N shortcut names map to favorite indexes', () => {
+    assert.equal(appHotkeyIndex('app-hotkey-1'), 0);
+    assert.equal(appHotkeyIndex('switch-to-application-9'), 8);
+    assert.equal(appHotkeyIndex('app-ctrl-hotkey-1'), -1);
+    assert.equal(appHotkeyIndex('switch-to-workspace-1'), -1);
 });

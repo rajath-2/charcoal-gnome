@@ -30,9 +30,35 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         const general = page('General', 'preferences-system-symbolic');
         const launchers = group(general, 'Launchers');
         toggle(launchers, 'search-enabled', 'Multipurpose search', 'Open apps, files, calculations and settings');
-        toggle(launchers, 'wheel-enabled', 'Favorites wheel', 'Hold Super, point at an app, release to launch. Release in the center to cancel.');
+        toggle(launchers, 'wheel-enabled', 'Favorites wheel', 'Hold Super (or your own trigger key), point at an app, release to launch. Release in the center to cancel.');
 
         const wheelPage = page('Wheel', 'starred-symbolic');
+        const trigger = group(wheelPage, 'Trigger', 'Hold any of these to open the wheel. Mouse side buttons: GNOME doesn’t show extensions clicks made on app windows, so map the button to a key (for example F13) in your mouse’s software, Piper or Input Remapper, then add that key here.');
+        toggle(trigger, 'wheel-super', 'Hold Super', 'A quick tap still opens the overview');
+        const addKey = new Gtk.Button({label: 'Add key', valign: Gtk.Align.CENTER});
+        trigger.header_suffix = addKey;
+        addKey.connect('clicked', () => this._record(window, 'Add a wheel key', accel => {
+            const keys = settings.get_strv('wheel-keys');
+            if (!keys.includes(accel)) settings.set_strv('wheel-keys', [...keys, accel]);
+        }));
+        let keyRows = [];
+        const rebuildKeys = () => {
+            keyRows.forEach(row => trigger.remove(row)); keyRows = [];
+            settings.get_strv('wheel-keys').forEach((accel, index) => {
+                const row = new Adw.ActionRow({title: `Hold ${this._label(accel)}`, use_markup: false});
+                const edit = new Gtk.Button({icon_name: 'document-edit-symbolic', tooltip_text: 'Change key', valign: Gtk.Align.CENTER});
+                edit.connect('clicked', () => this._record(window, 'Change wheel key', newAccel => {
+                    const keys = settings.get_strv('wheel-keys');
+                    keys[index] = newAccel;
+                    settings.set_strv('wheel-keys', [...new Set(keys)]);
+                }));
+                const remove = new Gtk.Button({icon_name: 'user-trash-symbolic', tooltip_text: 'Remove key', valign: Gtk.Align.CENTER});
+                remove.connect('clicked', () => settings.set_strv('wheel-keys', settings.get_strv('wheel-keys').filter((_, i) => i !== index)));
+                row.add_suffix(edit); row.add_suffix(remove);
+                trigger.add(row); keyRows.push(row);
+            });
+        };
+        rebuildKeys(); watch('wheel-keys', rebuildKeys);
         const behaviour = group(wheelPage, 'Behaviour');
         spin(behaviour, 'hold-delay', 'Hold delay', 150, 1500, 50, 'Milliseconds of holding Super, or resting three fingers, before the wheel appears');
         toggle(behaviour, 'touchpad-wheel', 'Three-finger touchpad wheel', 'Rest three fingers on the touchpad, slide toward an app, lift to open it. Quick three-finger swipes keep their GNOME actions');
@@ -87,9 +113,9 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         const keys = group(searchPage, 'Shortcut');
         const shortcut = new Adw.ActionRow({title: 'Search shortcut', subtitle: 'Super+Space replaces keyboard layout switching while enabled'});
         const shortcutButton = new Gtk.Button({valign: Gtk.Align.CENTER});
-        const updateShortcut = () => { shortcutButton.label = settings.get_strv('launcher-shortcut').join(', ') || 'Set shortcut'; };
+        const updateShortcut = () => { shortcutButton.label = settings.get_strv('launcher-shortcut').map(a => this._label(a)).join(', ') || 'Set shortcut'; };
         updateShortcut(); watch('launcher-shortcut', updateShortcut);
-        shortcutButton.connect('clicked', () => this._shortcut(window, settings));
+        shortcutButton.connect('clicked', () => this._record(window, 'Set search shortcut', accel => settings.set_strv('launcher-shortcut', [accel])));
         shortcut.add_suffix(shortcutButton); keys.add(shortcut);
         const status = new Adw.ActionRow({title: 'Shortcut status'});
         const updateStatus = () => { status.subtitle = settings.get_string('status') || 'No conflicts reported'; };
@@ -161,18 +187,32 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         });
         reset.add_suffix(resetButton); resetGroup.add(reset);
     }
-    _shortcut(parent, settings) {
-        const dialog = new Adw.Window({title: 'Set search shortcut', transient_for: parent, modal: true,
+    _label(accel) {
+        const [ok, keyval, mods] = Gtk.accelerator_parse(accel);
+        return ok && keyval ? Gtk.accelerator_get_label(keyval, mods) : accel;
+    }
+    // Records one key or combination. Plain letters need a modifier; keys like F13 (what mouse
+    // software usually sends for a side button) work alone.
+    _record(parent, title, done) {
+        const dialog = new Adw.Window({title, transient_for: parent, modal: true,
             default_width: 420, default_height: 180, resizable: false});
         const view = new Adw.ToolbarView(); view.add_top_bar(new Adw.HeaderBar());
-        const label = new Gtk.Label({label: 'Press a key combination\nEscape cancels', margin_top: 32, margin_bottom: 32});
+        const label = new Gtk.Label({label: 'Press a key or key combination\nEscape cancels', margin_top: 32, margin_bottom: 32,
+            justify: Gtk.Justification.CENTER});
         view.content = label; dialog.content = view;
+        // Without this GNOME runs its own Super shortcuts (and ours) instead of letting us record them.
+        dialog.connect('map', () => dialog.get_surface()?.inhibit_system_shortcuts(null));
+        dialog.connect('close-request', () => { dialog.get_surface()?.restore_system_shortcuts(); return false; });
         const controller = new Gtk.EventControllerKey();
         controller.connect('key-pressed', (_, keyval, keycode, state) => {
-            if (keyval === Gdk.KEY_Escape) { dialog.close(); return true; }
             const mods = state & Gtk.accelerator_get_default_mod_mask();
-            if (!mods || !Gtk.accelerator_valid(keyval, mods)) return true;
-            settings.set_strv('launcher-shortcut', [Gtk.accelerator_name(keyval, mods)]);
+            if (keyval === Gdk.KEY_Escape && !mods) { dialog.close(); return true; }
+            if (!Gtk.accelerator_valid(keyval, mods)) return true; // A modifier on its own: wait for the key.
+            if (!mods && Gdk.keyval_to_unicode(keyval)) {
+                label.label = 'Add Super, Ctrl or Alt to that key\nEscape cancels';
+                return true;
+            }
+            done(Gtk.accelerator_name(keyval, mods));
             dialog.close(); return true;
         });
         dialog.add_controller(controller); dialog.present();

@@ -3,9 +3,10 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
+import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {activateAtCursor, activateWindowAt} from './windows.js';
-import {Gesture, TouchpadWheel, restoreBindings} from './policy.js';
+import {Gesture, TouchpadWheel, restoreBindings, appHotkeyIndex} from './policy.js';
 
 // Journal before changing a setting, so an interrupted Shell can restore it.
 class BindingOwner {
@@ -61,6 +62,7 @@ export class InputController {
         this.owner = new BindingOwner(settings);
         this.signals = [];
         this.actions = [];
+        this.keyActions = [];
         this.poll = 0;
         this.setup = 0;
         this.escapeAction = 0;
@@ -84,7 +86,7 @@ export class InputController {
                         this.owner.claim('org.gnome.desktop.wm.keybindings', key, applied);
                 }
             }
-            if (this.settings.get_boolean('wheel-enabled'))
+            if (this.settings.get_boolean('wheel-enabled') && this.settings.get_boolean('wheel-super'))
                 this.owner.claim('org.gnome.mutter', 'overlay-key', '');
         } catch (error) {
             this.settings.set_string('status', error.message);
@@ -100,21 +102,38 @@ export class InputController {
                 GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => { this.cancel(); return GLib.SOURCE_REMOVE; });
             }
             else if (this.actions.includes(action)) this._press();
+            else if (this.keyActions.includes(action)) this._pressKey();
         });
         this._connect(global.window_manager, 'filter-keybinding', (_, binding) => {
+            // Radial dock mode hides the dock that Super+1..9 activate, so launch the Nth wheel favorite instead.
+            const index = appHotkeyIndex(binding.get_name());
+            if (index >= 0 && this.settings.get_boolean('wheel-enabled') && this.settings.get_boolean('dock-mode') &&
+                !this.settings.get_boolean('desktop-dock')) {
+                // Mutter filters the same key press more than once (and its release); launch once per press.
+                const event = Clutter.get_current_event();
+                const fresh = event?.type() === Clutter.EventType.KEY_PRESS &&
+                    !(event.get_flags() & Clutter.EventFlags.FLAG_REPEATED) && event.get_time() !== this.hotkeyTime;
+                const id = this.settings.get_strv('favorites')[index];
+                if (id && fresh) {
+                    this.hotkeyTime = event.get_time();
+                    this.cancel(); this._launch(id, global.get_pointer().slice(0, 2));
+                }
+                return true;
+            }
             if (this.escapeAction && Meta.external_binding_name_for_action(this.escapeAction) === binding.get_name())
                 return false;
-            if (!this.actions.some(a => Meta.external_binding_name_for_action(a) === binding.get_name()))
+            if (![...this.actions, ...this.keyActions].some(a => Meta.external_binding_name_for_action(a) === binding.get_name()))
                 this.cancel();
             return false; // Observe; never suppress the desktop's shortcut.
         });
         this._connect(global.stage, 'captured-event', (_, event) => {
-            if (event.type() === Clutter.EventType.KEY_PRESS &&
+            // A grabbed trigger key's own presses (autorepeat) go to its catcher instead.
+            if (event.type() === Clutter.EventType.KEY_PRESS && !this.keyGrab &&
                 ![Clutter.KEY_Super_L, Clutter.KEY_Super_R].includes(event.get_key_symbol()))
                 this.cancel();
             return Clutter.EVENT_PROPAGATE;
         });
-        this._connect(global.display, 'notify::focus-window', () => this.cancel());
+        this._connect(global.display, 'notify::focus-window', () => { if (!this.keyGrab) this.cancel(); });
         // Mutter applies overlay-key changes in an idle callback before these grabs.
         let attempts = 0;
         this.searchActions = [];
@@ -134,6 +153,19 @@ export class InputController {
                 }
             }
             if (!this.settings.get_boolean('wheel-enabled')) { this.setup = 0; return GLib.SOURCE_REMOVE; }
+            if (attempts === 1) {
+                for (const key of this.settings.get_strv('wheel-keys')) {
+                    const action = global.display.grab_accelerator(key, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
+                    if (!action) {
+                        this.settings.set_string('status', `${key} is already in use; it cannot open the wheel.`);
+                        continue;
+                    }
+                    this.keyActions.push(action);
+                    Main.wm.allowKeybinding(Meta.external_binding_name_for_action(action),
+                        Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW);
+                }
+            }
+            if (!this.settings.get_boolean('wheel-super')) { this.setup = 0; return GLib.SOURCE_REMOVE; }
             for (const key of ['Super_L', 'Super_R']) {
                 const action = global.display.grab_accelerator(key, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
                 if (action !== Meta.KeyBindingAction.NONE) {
@@ -151,31 +183,54 @@ export class InputController {
             return GLib.SOURCE_REMOVE;
         });
     }
+    _canPress() {
+        return this.pad.state === 'idle' && !this.search.isOpen && Main.sessionMode.hasWindows && !Main.sessionMode.isLocked &&
+            this.gesture.press();
+    }
+    // Any other key: the shell only sees its release over an app window while it holds the keyboard,
+    // so take it at press time (the app gets a focus-out, not a stuck key) and release on any key-up.
+    _pressKey() {
+        if (!this._canPress()) return;
+        this.catcher = new St.Widget({reactive: true, can_focus: true});
+        Main.uiGroup.add_child(this.catcher);
+        this.keyGrab = Main.pushModal(this.catcher, {actionMode: Shell.ActionMode.POPUP});
+        let held = true;
+        this.catcher.connect('key-release-event', () => { held = false; return Clutter.EVENT_STOP; });
+        this.catcher.connect('key-press-event', (_, event) => {
+            if (event.get_key_symbol() === Clutter.KEY_Escape) this.cancel();
+            return Clutter.EVENT_STOP;
+        });
+        this._hold(() => held, false);
+    }
     _press() {
-        if (this.pad.state !== 'idle' || this.search.isOpen || !Main.sessionMode.hasWindows || Main.sessionMode.isLocked ||
-            !this.gesture.press()) return;
-        const started = GLib.get_monotonic_time();
-        const userTime = global.display.get_last_user_time();
+        if (!this._canPress()) return;
         const otherModifiers = Clutter.ModifierType.SHIFT_MASK | Clutter.ModifierType.CONTROL_MASK |
             Clutter.ModifierType.MOD1_MASK | Clutter.ModifierType.MOD5_MASK;
+        this._hold(mods => mods & Clutter.ModifierType.MOD4_MASK, true, otherModifiers);
+    }
+    // Polls the pointer while the trigger is held. `superKey`: the ungrabbed Super path, which watches
+    // for chords (Super+key) and taps (overview); a grabbed key has neither.
+    _hold(held, superKey, otherModifiers = 0) {
+        const started = GLib.get_monotonic_time();
+        const userTime = global.display.get_last_user_time();
         this.poll = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 16, () => {
             const [x, y, mods] = global.get_pointer();
             // User timestamps change on key/button presses, not pointer motion.
             // Combined with the binding observer this catches chords inside apps
             // without grabbing their keyboard or interfering with window tiling.
-            if (global.display.get_last_user_time() !== userTime || (mods & otherModifiers) ||
-                Main.sessionMode.isLocked || !(Main.actionMode & (Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW))) {
+            if (Main.sessionMode.isLocked || (superKey && (global.display.get_last_user_time() !== userTime ||
+                (mods & otherModifiers) || !(Main.actionMode & (Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW))))) {
                 this.poll = 0;
                 this.cancel();
                 return GLib.SOURCE_REMOVE;
             }
-            if (!(mods & Clutter.ModifierType.MOD4_MASK)) {
+            if (!held(mods)) {
                 if (this.gesture.state === 'open') this.wheel.updatePointer(x, y);
                 const result = this.gesture.release(this.wheel.selection);
                 const window = this.wheel.selectedWindow;
                 this.poll = 0;
                 this._closeWheel();
-                if (result.type === 'tap') Main.overview.toggle();
+                if (result.type === 'tap' && superKey) Main.overview.toggle();
                 else if (result.type === 'launch') this._launch(result.app, [x, y], window);
                 return GLib.SOURCE_REMOVE;
             }
@@ -250,6 +305,10 @@ export class InputController {
         Main.wm.allowKeybinding(Meta.external_binding_name_for_action(action), Shell.ActionMode.NONE);
     }
     _closeWheel() {
+        if (this.keyGrab) Main.popModal(this.keyGrab);
+        this.keyGrab = null;
+        this.catcher?.destroy();
+        this.catcher = null;
         this._ungrab(this.escapeAction);
         this.escapeAction = 0;
         this.wheel.close();
@@ -268,8 +327,9 @@ export class InputController {
         this.setup = 0;
         for (const [object, id] of this.signals) object.disconnect(id);
         this.signals = [];
-        for (const action of this.actions) this._ungrab(action);
+        for (const action of [...this.actions, ...this.keyActions]) this._ungrab(action);
         this.actions = [];
+        this.keyActions = [];
         if (this.searchBinding) Main.wm.removeKeybinding('launcher-shortcut');
         this.searchBinding = 0;
         for (const action of this.searchActions ?? []) this._ungrab(action);

@@ -122,7 +122,20 @@ export function pickSector(x, y, center, rings) {
 // Inline style of a launcher surface (search panel, wheel previews) from its preference values,
 // with the prefix already stripped from the key names.
 const hexOr = value => /^#[0-9a-f]{6}$/i.test(value) ? value : '#808080';
-const rgbaOf = (value, alpha) => `rgba(${[1, 3, 5].map(i => parseInt(hexOr(value).slice(i, i + 2), 16)).join(',')},${+alpha.toFixed(3)})`;
+export const rgbaOf = (value, alpha) => `rgba(${[1, 3, 5].map(i => parseInt(hexOr(value).slice(i, i + 2), 16)).join(',')},${+alpha.toFixed(3)})`;
+// The search panel's secondary colors, derived from its text and highlight colors
+// (a fixed light grey would vanish on a light panel).
+export function searchColorCss(text, accent) {
+    const t = alpha => rgbaOf(text, alpha);
+    return `.charcoal-search-entry { background-color: ${t(0.07)}; border: 1px solid ${t(0.1)}; }
+.charcoal-search-entry:focus { border-color: ${rgbaOf(accent, 0.6)}; }
+.charcoal-search-entry .hint-text { color: ${t(0.5)}; }
+.charcoal-result:hover { background-color: ${t(0.08)}; }
+.charcoal-detail, .charcoal-empty { color: ${t(0.65)}; }
+.charcoal-heading { color: ${t(0.55)}; }
+.charcoal-hint { color: ${t(0.6)}; }
+`;
+}
 export function surfaceCss(o) {
     const border = o['border-width'] > 0
         ? `${o['border-width']}px solid ${rgbaOf(o['border-color'], o['border-opacity'] / 100)}` : 'none';
@@ -131,4 +144,10 @@ export function surfaceCss(o) {
     return `background-color: ${rgbaOf(o['background-color'], o['background-opacity'] / 100)};
         color: ${hexOr(o['foreground-color'])}; border-radius: ${o['corner-radius']}px;
         border: ${border}; box-shadow: ${shadow}; font-size: ${+(o['text-size'] / 100).toFixed(2)}em;`;
+}
+
+// Super+N shortcut names from dash-to-dock and GNOME -> zero-based favorite index, or -1.
+export function appHotkeyIndex(name) {
+    const match = /^(?:app-hotkey|switch-to-application)-(\d+)$/.exec(name);
+    return match ? Number(match[1]) - 1 : -1;
 }

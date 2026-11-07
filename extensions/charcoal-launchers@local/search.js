@@ -5,7 +5,7 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {loadRemoteSearchProviders} from 'resource:///org/gnome/shell/ui/remoteSearch.js';
-import {QueryGeneration} from './policy.js';
+import {QueryGeneration, rgbaOf} from './policy.js';
 import {animate, color, surfaceStyle, addBlur, keepOnTop} from './appearance.js';
 
 const PROVIDERS = {
@@ -222,7 +222,7 @@ export class SearchLauncher {
     }
     _highlight() {
         this.rows.forEach(({row}, i) => row.set_style(i === this.selected
-            ? `background-color: rgba(166,181,204,0.16); border-left: 2px solid ${color(this.settings, 'accent-color')};` : ''));
+            ? `background-color: ${rgbaOf(color(this.settings, 'accent-color'), 0.16)}; border-left: 2px solid ${color(this.settings, 'accent-color')};` : ''));
         const row = this.rows[this.selected]?.row;
         if (row?.has_allocation()) {
             const adjustment = this.scroll.vadjustment;

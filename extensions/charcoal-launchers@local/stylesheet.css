@@ -1,13 +1,12 @@
 .charcoal-search { padding: 18px; spacing: 10px; }
-.charcoal-search-entry { padding: 13px 16px; border-radius: 14px; background-color: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); color: inherit; font-size: 1.15em; }
-.charcoal-search-entry:focus { border-color: rgba(255,255,255,0.3); }
+/* Colors of the search panel's parts come from preferences: searchColorCss in policy.js. */
+.charcoal-search-entry { padding: 13px 16px; border-radius: 14px; color: inherit; font-size: 1.15em; }
 .charcoal-results { spacing: 4px; }
 .charcoal-result { padding: 9px 12px; border-radius: 10px; text-align: left; }
-.charcoal-result:hover { background-color: rgba(255,255,255,0.08); }
 .charcoal-result-content { spacing: 12px; }
 .charcoal-result-text { spacing: 3px; }
-.charcoal-detail { font-size: 0.8em; color: rgba(235,235,240,0.65); }
-.charcoal-heading { font-size: 0.8em; font-weight: bold; color: rgba(235,235,240,0.55); padding: 8px 10px 4px; }
-.charcoal-hint { font-size: 0.8em; color: rgba(235,235,240,0.6); }
-.charcoal-empty { padding: 20px 8px; color: rgba(235,235,240,0.65); }
+.charcoal-detail { font-size: 0.8em; }
+.charcoal-heading { font-size: 0.8em; font-weight: bold; padding: 8px 10px 4px; }
+.charcoal-hint { font-size: 0.8em; }
+.charcoal-empty { padding: 20px 8px; }
 .charcoal-wheel-label { font-size: 10px; text-align: center; }
