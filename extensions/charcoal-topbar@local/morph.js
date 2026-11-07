@@ -56,11 +56,18 @@ export function paintMorph(cr, width, height, boxes, progress, scale = 1, style 
     const t = Math.max(0, Math.min(1, progress));
     const shapes = morphShapes(w, h, boxes.map(b => ({x: b.x / scale, width: b.width / scale})), t, style.radius);
     if (style.shadow) {
-        for (const rect of shapes) roundedPath(cr, rect, 12, 15);
-        cr.setSourceRGBA(0, 0, 0, 0.12);
-        cr.fillPreserve();
-        cr.setLineWidth(6);
-        cr.stroke();
+        // Soft drop shadow like the compact bar's CSS (0 4px 12px), without a blur filter: stacked,
+        // growing shapes whose alphas add up to a smooth falloff - half strength at the bar's edge,
+        // fading to nothing SPREAD px out - so no hard-edged shape shows around the corners.
+        const SPREAD = 9, OFFSET = 3, STRENGTH = 0.22;
+        const coverage = d => 0.5 * STRENGTH * (1 - d / SPREAD) ** 2;
+        for (let i = SPREAD; i >= 1; i--) {
+            for (const rect of shapes)
+                roundedPath(cr, {...rect, x: rect.x - i, width: rect.width + 2 * i, height: rect.height + 2 * i,
+                    leftRadius: rect.leftRadius + i, rightRadius: rect.rightRadius + i}, 12, 12 + OFFSET - i);
+            cr.setSourceRGBA(0, 0, 0, coverage(i - 1) - coverage(i));
+            cr.fill();
+        }
     }
     // One path: overlapping pieces would darken their seams.
     for (const rect of shapes) roundedPath(cr, rect, 12, 12);
