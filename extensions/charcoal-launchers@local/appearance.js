@@ -74,7 +74,9 @@ function addStaticBlur(actor, bms, {Pipeline}, destroyed, [x, y]) {
     });
     actor.connect('destroy', () => {
         // When Blur My Shell went first (disable, shutdown) it already released these.
+        // Otherwise drop its own actor-destroy cleanup, which would touch released effects.
         if (bms._pipelines_manager) pipelines.forEach(pipeline => pipeline.destroy());
+        else pipelines.forEach(pipeline => pipeline.disconnect_actor_destroy());
         managers.forEach(manager => manager.destroy());
     });
 }

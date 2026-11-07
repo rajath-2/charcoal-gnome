@@ -6,7 +6,9 @@ import Meta from 'gi://Meta';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {useIslands} from './policy.js';
-import {paintMorph} from './morph.js';
+import {paintMorph, morphShapes} from './morph.js';
+import {PanelMask} from './panelmask.js';
+import {addBlur} from './blur.js';
 import {buildCss, rgb01} from './theme.js';
 import {installMenuHandoff} from './menuHandoff.js';
 
@@ -20,13 +22,12 @@ export default class CharcoalTopbar extends Extension {
         this._lastMode = null;
         this._timeline = null;
         this._progress = null;
-        this._blurGroup = null;
         this._prefs = this.getSettings();
         this._blur = this._settings('blur-my-shell@aunetx', 'org.gnome.shell.extensions.blur-my-shell.panel');
         this._popupBlur = this._settings('blur-my-shell@aunetx', 'org.gnome.shell.extensions.blur-my-shell.popup');
         // Restored on disable; lock screen keeps us enabled (session-modes), so this is a real toggle-off.
-        this._saved = [[this._blur, 'blur'], [this._blur, 'static-blur'], [this._popupBlur, 'static-blur']]
-            .map(([settings, key]) => [settings, key, settings.get_boolean(key)]);
+        this._saved = [[this._blur, 'blur'], [this._blur, 'static-blur'], [this._blur, 'corner-radius'],
+            [this._popupBlur, 'static-blur']].map(([settings, key]) => [settings, key, settings.get_value(key)]);
         this._surface = new St.DrawingArea({reactive: false});
         Main.panel.insert_child_at_index(this._surface, 0);
         this._surface.connect('repaint', () => this._paint());
@@ -66,8 +67,7 @@ export default class CharcoalTopbar extends Extension {
         const values = Object.fromEntries(this._prefs.settings_schema.list_keys()
             .map(key => [key, this._prefs.get_value(key).deepUnpack()]));
         this._style = {color: rgb01(values['bar-color']), line: rgb01(values['text-color']),
-            full: values['bar-opacity'] / 100, islands: values['islands-opacity'] / 100,
-            border: values['border-opacity'] / 100, radius: values['corner-radius'], shadow: values.shadow};
+            opacity: values['bar-opacity'] / 100, border: values['border-opacity'] / 100, radius: values['corner-radius'], shadow: values.shadow};
         const dir = GLib.build_filenamev([GLib.get_user_runtime_dir(), 'charcoal-topbar']);
         GLib.mkdir_with_parents(dir, 0o700);
         const file = Gio.File.new_for_path(`${dir}/style-${GLib.uuid_string_random()}.css`);
@@ -94,10 +94,14 @@ export default class CharcoalTopbar extends Extension {
         for (const settings of [this._blur, this._popupBlur])
             if (settings.get_boolean('static-blur') !== staticBlur)
                 settings.set_boolean('static-blur', staticBlur);
-        // Islands leave gaps a full-width blur strip would show through; auto hides it per state.
-        const blur = mode !== 'islands';
+        // Blur My Shell's strip is full width: only the compact bar matches it. Islands have none;
+        // auto uses its own layer, masked to the morphing shape (_syncBlur).
+        const blur = mode === 'compact';
         if (this._blur.get_boolean('blur') !== blur)
             this._blur.set_boolean('blur', blur);
+        const radius = this._prefs.get_int('corner-radius');
+        if (this._blur.get_int('corner-radius') !== radius)
+            this._blur.set_int('corner-radius', radius);
         this._clear();
         Main.panel.remove_style_class_name('charcoal-compact');
         Main.panel.remove_style_class_name('charcoal-islands');
@@ -173,6 +177,12 @@ export default class CharcoalTopbar extends Extension {
         this._surface.allocate(box);
         this._surface.queue_repaint();
         this._syncBlur();
+        if (this._blurLayer) {
+            this._blurLayer.allocate(new Clutter.ActorBox({x1: 0, y1: 0, x2: Main.panel.width, y2: Main.panel.height}));
+            // The static wallpaper copy is laid out in monitor coordinates.
+            const [x, y] = Main.panel.get_transformed_position();
+            this._blurStatic?.set_position(-x, -y);
+        }
     }
 
     _paint() {
@@ -218,18 +228,33 @@ export default class CharcoalTopbar extends Extension {
         timeline.start();
     }
 
+    // Auto mode: a blur layer behind the surface, masked to exactly the shapes the surface paints.
     _syncBlur() {
-        const group = Main.panel.get_parent().get_children()
-            .find(actor => actor.name === 'bms-panel-backgroundgroup');
-        if (!group || this._progress === null)
+        if (this._progress === null)
             return;
-        if (group !== this._blurGroup) {
-            this._blurGroup = group;
-            this._originalBlurOpacity = group.opacity;
+        if (!this._blurLayer) {
+            this._blurLayer = new St.Widget({reactive: false, clip_to_allocation: true});
+            this._mask = new PanelMask();
+            this._blurLayer.add_effect(this._mask);
+            Main.panel.insert_child_below(this._blurLayer, this._surface);
+            const layer = this._blurLayer;
+            addBlur(layer, this._prefs.get_boolean('static-blur')).then(group => {
+                if (group && layer === this._blurLayer) {
+                    this._blurStatic = group;
+                    this._allocateSurface();
+                }
+            });
         }
-        // Keep the pipeline allocated, but suppress its full-width strip over gaps.
-        group.opacity = this._progress < 0.001
-            ? this._originalBlurOpacity : 0;
+        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+        const boxes = [Main.panel._leftBox, Main.panel._centerBox, Main.panel._rightBox]
+            .map(box => ({x: box.x + box.translation_x, width: box.width}));
+        this._mask.setShapes([Main.panel.width, Main.panel.height],
+            morphShapes(Main.panel.width, Main.panel.height, boxes, this._progress, this._style.radius * scale));
+    }
+
+    _removeBlurLayer() {
+        this._blurLayer?.destroy();
+        this._blurLayer = this._mask = this._blurStatic = null;
     }
 
     _clear() {
@@ -237,11 +262,7 @@ export default class CharcoalTopbar extends Extension {
         this._timeline = null;
         this._progress = null;
         this._surface?.hide();
-        const group = Main.panel.get_parent().get_children()
-            .find(actor => actor.name === 'bms-panel-backgroundgroup');
-        if (group && group === this._blurGroup)
-            group.opacity = this._originalBlurOpacity;
-        this._blurGroup = null;
+        this._removeBlurLayer();
         Main.panel.remove_style_class_name('adaptive-smoke');
         this._lastMode = null;
     }
@@ -264,7 +285,7 @@ export default class CharcoalTopbar extends Extension {
         for (const name of MODE_CLASSES)
             Main.panel.remove_style_class_name(name);
         for (const [settings, key, value] of this._saved ?? [])
-            settings.set_boolean(key, value);
+            settings.set_value(key, value);
         this._saved = null;
         this._unloadStyle();
         this._surface?.destroy();

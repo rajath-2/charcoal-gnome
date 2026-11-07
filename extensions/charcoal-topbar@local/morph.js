@@ -31,19 +31,30 @@ export function roundedPath(cr, rect, offsetX = 0, offsetY = 0) {
     cr.closePath();
 }
 
-// style: {color: [r,g,b] 0..1, line: [r,g,b], full, islands, border (alphas 0..1), radius, shadow}
+// The outline of the joined bar: one rounded rectangle across the whole panel.
+function joined(width, height, radius) {
+    const r = Math.min(radius, height / 2);
+    return {x: 0, width, height, leftRadius: r, rightRadius: r};
+}
+
+// Shapes the auto bar fills at this progress, in logical px relative to the panel.
+// Shared by the painter and the blur mask so both always cover exactly the same area.
+export function morphShapes(width, height, boxes, progress, radius = 10) {
+    return progress < 0.001 ? [joined(width, height, radius)]
+        : morphRects(width, height, boxes, progress, radius);
+}
+
+// style: {color: [r,g,b] 0..1, line: [r,g,b], opacity, border (alphas 0..1), radius, shadow}
+// Both endpoints use the same opacity and outline so the split/join morph has no jumps.
 export const DEFAULT_STYLE = {color: [18 / 255, 18 / 255, 18 / 255], line: [235 / 255, 235 / 255, 235 / 255],
-    full: 0.78, islands: 0.90, border: 0.15, radius: 10, shadow: true};
+    opacity: 0.78, border: 0.15, radius: 10, shadow: true};
 
 export function paintMorph(cr, width, height, boxes, progress, scale = 1, style = DEFAULT_STYLE) {
     // Geometry is in logical CSS pixels, including on scaled displays.
     cr.scale(scale, scale);
-    const rects = morphRects(width / scale, height / scale,
-        boxes.map(b => ({x: b.x / scale, width: b.width / scale})), progress, style.radius);
+    const w = width / scale, h = height / scale;
     const t = Math.max(0, Math.min(1, progress));
-    // Paint the connected endpoint as one path: no internal seams or dark overlaps.
-    const shapes = t < 0.001 ? [{x: 0, width: width / scale, height: height / scale,
-        leftRadius: Math.min(style.radius, height / scale / 2), rightRadius: Math.min(style.radius, height / scale / 2)}] : rects;
+    const shapes = morphShapes(w, h, boxes.map(b => ({x: b.x / scale, width: b.width / scale})), t, style.radius);
     if (style.shadow) {
         for (const rect of shapes) roundedPath(cr, rect, 12, 15);
         cr.setSourceRGBA(0, 0, 0, 0.12);
@@ -51,12 +62,22 @@ export function paintMorph(cr, width, height, boxes, progress, scale = 1, style 
         cr.setLineWidth(6);
         cr.stroke();
     }
+    // One path: overlapping pieces would darken their seams.
     for (const rect of shapes) roundedPath(cr, rect, 12, 12);
-    cr.setSourceRGBA(...style.color, style.full + (style.islands - style.full) * t);
+    cr.setSourceRGBA(...style.color, style.opacity);
     cr.fill();
-    // Inner edge highlights emerge with the split, rather than appearing at once.
-    for (const rect of shapes) roundedPath(cr, rect, 12, 12);
-    cr.setSourceRGBA(...style.line, t < 0.001 ? style.border : style.border * t);
+    // The joined outline hands over to the pieces' outlines while the gaps are still hairline-thin:
+    // constant strength, no seam pop at the start, no line left across open gaps.
+    const handover = Math.min(1, t / 0.15);
     cr.setLineWidth(1);
-    cr.stroke();
+    if (handover < 1) {
+        roundedPath(cr, joined(w, h, style.radius), 12, 12);
+        cr.setSourceRGBA(...style.line, style.border * (1 - handover));
+        cr.stroke();
+    }
+    if (t >= 0.001) {
+        for (const rect of shapes) roundedPath(cr, rect, 12, 12);
+        cr.setSourceRGBA(...style.line, style.border * handover);
+        cr.stroke();
+    }
 }

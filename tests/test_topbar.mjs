@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {buildCss} from '../extensions/charcoal-topbar@local/theme.js';
-import {morphRects} from '../extensions/charcoal-topbar@local/morph.js';
+import {morphRects, morphShapes} from '../extensions/charcoal-topbar@local/morph.js';
 
 const schema = readFileSync(new URL('../extensions/charcoal-topbar@local/schemas/org.gnome.shell.extensions.charcoal-topbar.gschema.xml', import.meta.url), 'utf8');
 const defaults = Object.fromEntries([...schema.matchAll(/<key name="([^"]+)" type="(.)">[\s\S]*?<default>([^<]+)<\/default>/g)]
@@ -34,4 +34,13 @@ test('morph corner radius follows the preference', () => {
     const boxes = [{x: 0, width: 100}, {x: 300, width: 100}, {x: 700, width: 100}];
     assert.equal(morphRects(800, 30, boxes, 1, 6)[0].leftRadius, 6);
     assert.equal(morphRects(800, 30, boxes, 1, 40)[0].leftRadius, 15, 'capped at half the height');
+});
+
+test('auto bar shapes: one joined bar at rest, three pieces once splitting', () => {
+    const boxes = [{x: 0, width: 100}, {x: 300, width: 100}, {x: 700, width: 100}];
+    const joined = morphShapes(800, 30, boxes, 0, 10);
+    assert.deepEqual(joined, [{x: 0, width: 800, height: 30, leftRadius: 10, rightRadius: 10}]);
+    const split = morphShapes(800, 30, boxes, 1, 10);
+    assert.equal(split.length, 3);
+    assert.deepEqual(split.map(r => [r.x, r.width]), [[0, 100], [300, 100], [700, 100]]);
 });

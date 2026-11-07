@@ -62,8 +62,8 @@ export default class CharcoalTopbarPreferences extends ExtensionPreferences {
         const look = page('Appearance', 'applications-graphics-symbolic');
         const bar = group(look, 'Bar');
         color(bar, 'bar-color', 'Background');
-        spin(bar, 'bar-opacity', 'Opacity: full bar', 0, 100, 1, 'Percent');
-        spin(bar, 'islands-opacity', 'Opacity: islands', 0, 100, 1, 'Percent');
+        spin(bar, 'bar-opacity', 'Opacity', 0, 100, 1, 'Percent. Compact bar, and both states of Automatic');
+        spin(bar, 'islands-opacity', 'Opacity: Islands layout', 0, 100, 1, 'Percent. Only the fixed Islands layout');
         spin(bar, 'border-opacity', 'Outline strength', 0, 60, 1, 'Percent, 0 hides the outline');
         color(bar, 'text-color', 'Text and icons');
         color(bar, 'accent-color', 'Highlight');
