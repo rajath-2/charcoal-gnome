@@ -8,6 +8,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {FavoritesWheel} from './wheel.js';
 import {CursorMinimize} from './windows.js';
 import {SearchLauncher} from './search.js';
+import {MinimalSearch} from './minimal.js';
 import {InputController} from './input.js';
 import {DockIntegration} from './dock.js';
 import {ThemeClient} from './theme-client.js';
@@ -30,7 +31,19 @@ export default class CharcoalLaunchers extends Extension {
         this._unwatchTheme = this._theme.connectChanged(() => this._scheduleConfigure());
         this._dock = new DockIntegration(this._theme);
         this._wheel = new FavoritesWheel(this._theme);
-        this._search = new SearchLauncher(this._theme, () => this.openPreferences());
+        const searches = this._searches = {classic: new SearchLauncher(this._theme, () => this.openPreferences()),
+            minimal: new MinimalSearch(this._theme, () => this.openPreferences())};
+        const all = Object.values(searches);
+        // Input and the rest of the extension see one search; the style is read each time it opens.
+        this._search = {settings: this._theme,
+            get isOpen() { return all.some(search => search.isOpen); },
+            toggle: () => {
+                const open = all.find(search => search.isOpen);
+                if (open) open.close();
+                else searches[this._theme.get_string('search-style') === 'minimal' ? 'minimal' : 'classic'].open();
+            },
+            close: immediate => all.forEach(search => search.close(immediate)),
+            destroy: () => all.forEach(search => search.destroy())};
         if (Main.layoutManager._startingUp)
             this._startup = Main.layoutManager.connect('startup-complete', () => {
                 Main.layoutManager.disconnect(this._startup); this._startup = 0; this._configure();
@@ -102,7 +115,7 @@ export default class CharcoalLaunchers extends Extension {
         this._input?.destroy(); this._input = null;
         this._cursorMinimize?.disable(); this._cursorMinimize = null;
         this._wheel?.destroy(); this._wheel = null;
-        this._search?.destroy(); this._search = null;
+        this._search?.destroy(); this._search = this._searches = null;
         this._unloadStyle();
         this._theme?.destroy();
         this._theme = null;

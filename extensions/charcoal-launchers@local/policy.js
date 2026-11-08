@@ -134,6 +134,7 @@ export function searchColorCss(text, accent) {
 .charcoal-detail, .charcoal-empty { color: ${t(0.65)}; }
 .charcoal-heading { color: ${t(0.55)}; }
 .charcoal-hint { color: ${t(0.6)}; }
+.charcoal-install-tag { background-color: ${t(0.12)}; }
 `;
 }
 export function surfaceCss(o) {
@@ -153,6 +154,8 @@ export function appHotkeyIndex(name) {
 }
 
 export const SEARCH_ORDER = ['calculator', 'favorites', 'apps', 'files', 'settings', 'software'];
+// Minimal search: one flat list; favorites only exist for an empty query, which Minimal shows as a bare bar.
+export const MINIMAL_ORDER = ['apps', 'calculator', 'files', 'settings', 'software'];
 
 // GNOME Software result ids look like system/<kind>/<origin>/<app>/<branch>.
 export function softwareAppId(resultId) {

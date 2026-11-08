@@ -114,6 +114,13 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         spin(wheelLook, 'wheel-close-duration', 'Collapse duration', 0, 400, 10, 'Milliseconds');
 
         const searchPage = page('Search', 'system-search-symbolic');
+        const styles = [['classic', 'Classic'], ['minimal', 'Minimal']];
+        const style = new Adw.ComboRow({title: 'Style', subtitle: 'Minimal: a glass bar near the top that grows into results, no dimming',
+            model: Gtk.StringList.new(styles.map(([, label]) => label))});
+        const syncStyle = () => { style.selected = Math.max(0, styles.findIndex(([id]) => id === settings.get_string('search-style'))); };
+        syncStyle(); watch('search-style', syncStyle);
+        style.connect('notify::selected', () => settings.set_string('search-style', styles[style.selected][0]));
+        group(searchPage, 'Style').add(style);
         const keys = group(searchPage, 'Shortcut');
         const shortcut = new Adw.ActionRow({title: 'Search shortcut', subtitle: 'Super+Space replaces keyboard layout switching while enabled'});
         const shortcutButton = new Gtk.Button({valign: Gtk.Align.CENTER});

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Gesture, wheelGeometry, wheelSelection, restoreBindings, appHotkeyIndex, QueryGeneration, surfaceCss, searchColorCss, softwareAppId, SEARCH_ORDER} from '../extensions/charcoal-launchers@local/policy.js';
+import {Gesture, wheelGeometry, wheelSelection, restoreBindings, appHotkeyIndex, QueryGeneration, surfaceCss, searchColorCss, softwareAppId, SEARCH_ORDER, MINIMAL_ORDER} from '../extensions/charcoal-launchers@local/policy.js';
 
 test('a short Super tap opens overview once', () => {
     const g = new Gesture();
@@ -130,6 +130,7 @@ test('search panel details follow the text and highlight colors', () => {
     assert.ok(css.includes('border-color: rgba(217,144,61,0.6)'));
     assert.doesNotMatch(css, /235,235,240|NaN|undefined/);
     assert.ok(searchColorCss('bad', 'bad').includes('rgba(128,128,128,'));
+    assert.ok(css.includes('.charcoal-install-tag { background-color: rgba(16,16,16,0.12); }'));
 });
 
 test('Super+N shortcut names map to favorite indexes', () => {
@@ -148,3 +149,8 @@ test('software result ids map to desktop ids', () => {
     assert.equal(softwareAppId(''), null);
 });
 test('software is listed last', () => assert.equal(SEARCH_ORDER.at(-1), 'software'));
+test('minimal search lists one flat order without favorites, software last', () => {
+    assert.ok(!MINIMAL_ORDER.includes('favorites'));
+    assert.equal(MINIMAL_ORDER.at(-1), 'software');
+    assert.deepEqual([...MINIMAL_ORDER].sort(), SEARCH_ORDER.filter(c => c !== 'favorites').sort());
+});

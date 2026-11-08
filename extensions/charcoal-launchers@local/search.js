@@ -47,6 +47,19 @@ export class SearchLauncher {
         this.rows = [];
         this.groups = new Map();
         this.providers = loadRemoteSearchProviders(this.searchSettings).filter(p => PROVIDERS[p.id]);
+        this._build();
+        Main.layoutManager.addTopChrome(this.actor);
+        keepOnTop(this.actor);
+        this.actor.connect('captured-event', (_, event) => this._event(event));
+        this.entry.clutter_text.connect('text-changed', () => this._schedule());
+        this.modal = Main.pushModal(this.actor, {actionMode: Shell.ActionMode.POPUP});
+        global.stage.set_key_focus(this.entry.clutter_text);
+        this._query();
+        this._place();
+        this._animateOpen();
+    }
+    // Creates this.actor (full-screen, catches clicks outside), this.panel, this.entry, this.scroll, this.resultBox.
+    _build() {
         this.actor = new St.Widget({reactive: true, x: 0, y: 0, width: global.stage.width,
             height: global.stage.height, style: 'background-color: rgba(0,0,0,0.16);'});
         this.panel = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL,
@@ -73,14 +86,8 @@ export class SearchLauncher {
         this.actor.add_child(this.backdrop);
         addBlur(this.backdrop, this.settings);
         this.actor.add_child(this.panel);
-        Main.layoutManager.addTopChrome(this.actor);
-        keepOnTop(this.actor);
-        this.actor.connect('captured-event', (_, event) => this._event(event));
-        this.entry.clutter_text.connect('text-changed', () => this._schedule());
-        this.modal = Main.pushModal(this.actor, {actionMode: Shell.ActionMode.POPUP});
-        global.stage.set_key_focus(this.entry.clutter_text);
-        this._query();
-        this._place();
+    }
+    _animateOpen() {
         // Grow after the first frame: building the app list makes it slow enough to swallow the animation.
         this.panel.opacity = 0;
         this.paintSource = global.stage.connect('after-paint', () => {
@@ -88,6 +95,7 @@ export class SearchLauncher {
             if (this.isOpen) animate(this.panel, this.settings, true);
         });
     }
+    _animateClose(done) { animate(this.panel, this.settings, false, done); }
     _event(event) {
         if (event.type() === Clutter.EventType.BUTTON_PRESS) {
             const [x, y] = event.get_coords();
@@ -115,12 +123,13 @@ export class SearchLauncher {
         this.generation.next();
         this.cancellable?.cancel();
         if (this.debounce) GLib.Source.remove(this.debounce);
-        // Clear stale actionable rows immediately, even during debounce.
-        this.groups.clear(); this.selected = 0; this._render('Searching…');
+        this._markStale();
         this.debounce = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
             this.debounce = 0; this._query(); return GLib.SOURCE_REMOVE;
         });
     }
+    // Clear stale actionable rows immediately, even during debounce.
+    _markStale() { this.groups.clear(); this.selected = 0; this._render('Searching…'); }
     _query() {
         if (!this.isOpen) return;
         const generation = this.generation.next();
@@ -158,7 +167,7 @@ export class SearchLauncher {
         for (const [id, [category, title]] of Object.entries(PROVIDERS)) {
             if (!this.settings.get_boolean(`search-${category}`)) continue;
             const provider = this.providers.find(p => p.id === id);
-            this.groups.set(category, {title, results: [], status: provider ? 'Searching…' : 'Unavailable or disabled in GNOME Search settings'});
+            this.groups.set(category, {title, results: [], pending: !!provider, status: provider ? 'Searching…' : 'Unavailable or disabled in GNOME Search settings'});
             if (provider) this._providerQuery(provider, category, title, terms, limit, generation, cancellable);
         }
         this._render('No results');
@@ -208,31 +217,34 @@ export class SearchLauncher {
             if (!group || (!group.results.length && !group.status)) continue;
             this.resultBox.add_child(new St.Label({text: group.title, style_class: 'charcoal-heading'}));
             if (group.status) this.resultBox.add_child(new St.Label({text: group.status, style_class: 'charcoal-detail'}));
-            for (const result of group.results) {
-                const row = new St.Button({style_class: 'charcoal-result', x_expand: true, can_focus: false});
-                const content = new St.BoxLayout({style_class: 'charcoal-result-content', x_expand: true});
-                content.add_child(result.icon(this.settings.get_int('search-icon-size')));
-                const labels = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL,
-                    style_class: 'charcoal-result-text', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
-                labels.add_child(new St.Label({text: result.name ?? '', x_expand: true}));
-                labels.add_child(new St.Label({text: result.detail ?? '', style_class: 'charcoal-detail', x_expand: true}));
-                content.add_child(labels);
-                if (result.tag) content.add_child(new St.Label({text: result.tag, style_class: 'charcoal-install-tag',
-                    y_align: Clutter.ActorAlign.CENTER}));
-                row.set_child(content);
-                row.connect('clicked', () => this._activate(result));
-                this.rows.push({row, result}); this.resultBox.add_child(row);
-            }
+            for (const result of group.results) this._addRow(result);
         }
         if (!this.resultBox.get_n_children()) this.resultBox.add_child(new St.Label({text: empty, style_class: 'charcoal-empty'}));
+        this._finishRender(selectedId);
+    }
+    _addRow(result) {
+        const row = new St.Button({style_class: 'charcoal-result', x_expand: true, can_focus: false});
+        const content = new St.BoxLayout({style_class: 'charcoal-result-content', x_expand: true});
+        content.add_child(result.icon(this.settings.get_int('search-icon-size')));
+        const labels = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL,
+            style_class: 'charcoal-result-text', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+        labels.add_child(new St.Label({text: result.name ?? '', style_class: 'charcoal-result-name', x_expand: true}));
+        labels.add_child(new St.Label({text: result.detail ?? '', style_class: 'charcoal-detail', x_expand: true}));
+        content.add_child(labels);
+        if (result.tag) content.add_child(new St.Label({text: result.tag, style_class: 'charcoal-install-tag',
+            y_align: Clutter.ActorAlign.CENTER}));
+        row.set_child(content);
+        row.connect('clicked', () => this._activate(result));
+        this.rows.push({row, result}); this.resultBox.add_child(row);
+    }
+    _finishRender(selectedId) {
         const same = this.rows.findIndex(r => r.result.id === selectedId);
         this.selected = same >= 0 ? same : Math.min(this.selected, Math.max(0, this.rows.length - 1));
         this._highlight();
         this._layout();
     }
     _highlight() {
-        this.rows.forEach(({row}, i) => row.set_style(i === this.selected
-            ? `background-color: ${rgbaOf(color(this.settings, 'accent-color'), 0.16)}; border-left: 2px solid ${color(this.settings, 'accent-color')};` : ''));
+        this.rows.forEach(({row}, i) => row.set_style(i === this.selected ? this._selectedStyle() : ''));
         const row = this.rows[this.selected]?.row;
         if (row?.has_allocation()) {
             const adjustment = this.scroll.vadjustment;
@@ -241,6 +253,10 @@ export class SearchLauncher {
             else if (box.y2 > adjustment.value + adjustment.page_size)
                 adjustment.value = box.y2 - adjustment.page_size;
         }
+    }
+    _selectedStyle() {
+        const accent = color(this.settings, 'accent-color');
+        return `background-color: ${rgbaOf(accent, 0.16)}; border-left: 2px solid ${accent};`;
     }
     _layout() {
         if (this.layoutSource) GLib.Source.remove(this.layoutSource);
@@ -262,7 +278,7 @@ export class SearchLauncher {
         this.panel.set_position(m.x + (m.width - width) / 2, m.y + Math.max(20, (m.height - height) / 2));
     }
     _activate(result) {
-        if (!result) return;
+        if (!result || this.stale) return;
         this.close();
         try { result.activate(); }
         catch (error) { Main.notify('Charcoal Launchers', `Could not open result: ${error.message}`); }
@@ -278,13 +294,13 @@ export class SearchLauncher {
         this.isOpen = false;
         if (this.modal) Main.popModal(this.modal);
         this.modal = null;
-        const actor = this.actor, panel = this.panel;
+        const actor = this.actor;
         this.actor = null; this.rows = []; this.groups.clear();
         actor.reactive = false;
         if (immediate) actor.destroy();
         else {
             this.closing.add(actor);
-            animate(panel, this.settings, false, () => { this.closing.delete(actor); actor.destroy(); });
+            this._animateClose(() => { this.closing.delete(actor); actor.destroy(); });
         }
     }
     destroy() { this.close(true); }

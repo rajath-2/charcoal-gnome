@@ -10,4 +10,8 @@
 .charcoal-hint { font-size: 0.8em; }
 .charcoal-empty { padding: 20px 8px; }
 .charcoal-wheel-label { font-size: 10px; text-align: center; }
-.charcoal-install-tag { font-size: 0.8em; padding: 2px 9px; border-radius: 999px; background-color: rgba(255,255,255,0.12); }
+.charcoal-install-tag { font-size: 0.8em; padding: 2px 9px; border-radius: 999px; }
+.charcoal-minimal { padding: 6px; spacing: 4px; }
+.charcoal-minimal .charcoal-search-entry { background-color: transparent; border: none; }
+.charcoal-minimal .charcoal-result { border-radius: 12px; }
+.charcoal-minimal .charcoal-result-name { font-weight: bold; }

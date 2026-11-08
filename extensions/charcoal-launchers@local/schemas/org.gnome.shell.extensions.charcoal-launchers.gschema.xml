@@ -15,6 +15,7 @@
     <key name="search-calculator" type="b"><default>true</default></key>
     <key name="search-settings" type="b"><default>true</default></key>
     <key name="search-software" type="b"><default>true</default></key>
+    <key name="search-style" type="s"><choices><choice value="classic"/><choice value="minimal"/></choices><default>'classic'</default></key>
     <key name="result-limit" type="i"><range min="3" max="20"/><default>8</default></key>
     <key name="favorites" type="as"><default>[]</default></key>
     <key name="favorites-initialized" type="b"><default>false</default></key>

@@ -337,6 +337,7 @@ appearance selected restores the bundled copy until the next successful update.
 ## Search and favorites launchers
 
 - **Super+Space:** centered search for applications, files, calculations, settings, and installable apps (opens GNOME Software; nothing is installed from search).
+- **Search style:** Preferences → Search → Style. **Classic** is the centered panel over a dimmed, blurred screen with headings; **Minimal** is a glass bar near the top of the screen that grows into one flat results card, with nothing else dimmed.
 - **Tap Super:** workspace overview.
 - **Hold Super:** compact favorites wheel at the cursor. Move toward an app and release
   to launch: the direction picks it, so overshooting past the wheel still selects the
