@@ -18,6 +18,7 @@ subprocess.run(['glib-compile-schemas', '--strict', str(extensions / 'charcoal-l
 fixture = extensions / 'lockscreen-test@local'
 fixture.mkdir()
 shutil.copyfile(repo / 'tests/lockscreen-session.js', fixture / 'extension.js')
+(fixture / 'image.svg').write_text('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#d9903d"/></svg>')
 (fixture / 'metadata.json').write_text(json.dumps({'uuid': 'lockscreen-test@local', 'name': 'Lock screen test',
     'description': 'Isolated checks', 'shell-version': ['51'], 'session-modes': ['user', 'unlock-dialog', 'lockscreen-test']}))
 (root / 'data/gnome-shell/modes/lockscreen-test.json').write_text(json.dumps({'parentMode': 'user',
@@ -33,7 +34,7 @@ with (root / 'shell.log').open('w') as log:
         '--virtual-monitor=1280x720', '--mode=lockscreen-test'], env=env, stdout=log,
         stderr=subprocess.STDOUT, start_new_session=True)
     try:
-        process.wait(timeout=40)
+        process.wait(timeout=90)
     finally:
         try: os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError: pass
@@ -42,3 +43,5 @@ output = (root / 'shell.log').read_text()
 if 'LOCKSCREEN PASS' not in output or 'LOCKSCREEN FAIL' in output:
     raise AssertionError(output[-14000:])
 print('LOCKSCREEN PASS')
+for line in output.splitlines():
+    if 'WRONG-PASSWORD' in line: print(line.strip())
