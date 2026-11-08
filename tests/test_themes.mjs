@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {validateProfile, updateProfile} from '../extensions/charcoal-themes@local/profile.js';
 import {THEME_KEYS} from '../extensions/charcoal-themes@local/catalog.js';
 import {resolveValue, selectOverride, switchTheme} from '../shared/theme-policy.js';
+import {activateTheme} from '../extensions/charcoal-themes@local/activation.js';
 
 const minimal = {version: 1, id: 'night', name: 'Night', wallpaper: null,
     components: {topbar: {'bar-color': '#121212', 'bar-height': 30}}};
@@ -61,4 +62,27 @@ test('override is restorable after theme switch and survives profile revision', 
     assert.equal(value(switched, '#ffffff'), '#ffffff');
     assert.equal(value(selectOverride(switched, 'bar-color', switched.activationId), '#ffffff'), '#112233');
     assert.equal(selected.overrides['bar-color'], 1, 'saved override is retained');
+});
+
+test('activation validates before changing active ID or token', () => {
+    const values = {'active-theme-id': 'old', 'activation-id': 'old-token', status: ''};
+    const settings = {get_string: key => values[key], set_string: (key, value) => { values[key] = value; }};
+    const profile = {version: 1, id: 'night', name: 'Night', wallpaper: null, components: {}};
+    const store = {get: id => id === 'night' ? profile : null};
+    assert.equal(activateTheme('missing', settings, store, () => ({ok: true}), () => 'new-token'), false);
+    assert.equal(values['active-theme-id'], 'old');
+    assert.equal(values['activation-id'], 'old-token');
+    assert.equal(activateTheme('night', settings, store, () => ({ok: true}), () => 'new-token'), true);
+    assert.equal(values['active-theme-id'], 'night');
+    assert.equal(values['activation-id'], 'new-token');
+});
+
+test('missing wallpaper still activates other theme values and reports the error', () => {
+    const values = {'active-theme-id': 'old', 'activation-id': 'old-token', status: ''};
+    const settings = {set_string: (key, value) => { values[key] = value; }};
+    const store = {get: () => ({version: 1, id: 'night', name: 'Night', wallpaper: null, components: {}})};
+    assert.equal(activateTheme('night', settings, store, () => ({ok: false, error: 'missing wallpaper'}), () => 'new-token'), true);
+    assert.equal(values['active-theme-id'], 'night');
+    assert.equal(values['activation-id'], 'new-token');
+    assert.equal(values.status, 'missing wallpaper');
 });
