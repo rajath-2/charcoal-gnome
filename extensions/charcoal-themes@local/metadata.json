@@ -1,0 +1,8 @@
+{
+  "uuid": "charcoal-themes@local",
+  "name": "Charcoal Themes",
+  "description": "Coordinate appearance and layout across Charcoal extensions.",
+  "shell-version": ["51"],
+  "settings-schema": "org.gnome.shell.extensions.charcoal-themes",
+  "version": 1
+}

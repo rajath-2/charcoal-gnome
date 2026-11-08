@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.charcoal-themes" path="/org/gnome/shell/extensions/charcoal-themes/">
+    <key name="requested-theme-id" type="s"><default>''</default></key>
+    <key name="active-theme-id" type="s"><default>''</default></key>
+    <key name="activation-id" type="s"><default>''</default></key>
+    <key name="profile-revision" type="s"><default>''</default></key>
+    <key name="status" type="s"><default>''</default></key>
+    <key name="saved-wallpaper" type="s"><default>''</default></key>
+  </schema>
+</schemalist>
