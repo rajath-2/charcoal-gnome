@@ -1,3 +1,4 @@
+import Clutter from 'gi://Clutter';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
@@ -11,11 +12,6 @@ import {dispatchAction, requiresConfirmation} from './actions.js';
 import {saveNote} from './notes.js';
 import {ThemeClient} from './theme-client.js';
 import {listThemes} from './theme-library.js';
-
-function sessionCall(method, parameters = null) {
-    Gio.DBus.session.call_sync('org.gnome.SessionManager', '/org/gnome/SessionManager',
-        'org.gnome.SessionManager', method, parameters, null, Gio.DBusCallFlags.NONE, -1, null);
-}
 
 export default class CharcoalControls extends Extension {
     enable() {
@@ -87,7 +83,7 @@ export default class CharcoalControls extends Extension {
         this._wheel.close();
         if (requiresConfirmation(id)) {
             this._showDialog(`Confirm ${id === 'poweroff' ? 'power off' : id}?`, null,
-                [{label: 'Cancel', action: () => {}},
+                [{label: 'Cancel', key: Clutter.KEY_Escape, action: () => {}},
                     {label: 'Confirm', action: () => this._run(id, true)}]);
             return;
         }
@@ -100,7 +96,7 @@ export default class CharcoalControls extends Extension {
         this._dialog = dialog;
         dialog.contentLayout.add_child(new St.Label({text: title}));
         if (entry) dialog.contentLayout.add_child(entry);
-        dialog.setButtons(buttons.map(button => ({label: button.label,
+        dialog.setButtons(buttons.map(button => ({label: button.label, key: button.key,
             action: () => { dialog.close(); if (this._dialog === dialog) this._dialog = null; button.action(); }})));
         dialog.open();
         if (entry) global.stage.set_key_focus(entry.clutter_text);
@@ -112,7 +108,7 @@ export default class CharcoalControls extends Extension {
         entry.clutter_text.set_single_line_mode(false);
         entry.clutter_text.set_line_wrap(true);
         this._showDialog('Quick note', entry, [
-            {label: 'Cancel', action: () => {}},
+            {label: 'Cancel', key: Clutter.KEY_Escape, action: () => {}},
             {label: 'Save', action: () => {
                 try { saveNote(entry.get_text()); this._settings.set_string('status', 'Note saved'); }
                 catch (error) { this._settings.set_string('status', error.message); }
@@ -120,17 +116,28 @@ export default class CharcoalControls extends Extension {
         ]);
     }
 
+    // Async: the shell itself answers polkit and end-session prompts, so a sync call would freeze it.
+    _call(bus, name, path, iface, method, parameters = null) {
+        bus.call(name, path, iface, method, parameters, null, Gio.DBusCallFlags.NONE, -1, null, (connection, result) => {
+            try { connection.call_finish(result); } catch (error) {
+                this._settings?.set_string('status', error.message);
+                Main.notify('Control wheel', `${method} failed: ${error.message}`);
+            }
+        });
+    }
+
     async _run(id, confirmed) {
         if (Main.sessionMode.currentMode !== 'user') return;
+        const session = (method, parameters) => this._call(Gio.DBus.session, 'org.gnome.SessionManager',
+            '/org/gnome/SessionManager', 'org.gnome.SessionManager', method, parameters);
         try {
             await dispatchAction(id, {
                 lock: () => Main.screenShield.lock(true),
-                suspend: () => Gio.DBus.system.call_sync('org.freedesktop.login1', '/org/freedesktop/login1',
-                    'org.freedesktop.login1.Manager', 'Suspend', new GLib.Variant('(b)', [true]),
-                    null, Gio.DBusCallFlags.NONE, -1, null),
-                logout: () => sessionCall('Logout', new GLib.Variant('(u)', [0])),
-                restart: () => sessionCall('Reboot'),
-                poweroff: () => sessionCall('Shutdown'),
+                suspend: () => this._call(Gio.DBus.system, 'org.freedesktop.login1', '/org/freedesktop/login1',
+                    'org.freedesktop.login1.Manager', 'Suspend', new GLib.Variant('(b)', [true])),
+                logout: () => session('Logout', new GLib.Variant('(u)', [0])),
+                restart: () => session('Reboot'),
+                poweroff: () => session('Shutdown'),
                 note: () => this._note(),
                 settings: () => this.openPreferences(),
             }, confirmed);

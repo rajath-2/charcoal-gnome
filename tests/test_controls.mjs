@@ -51,3 +51,9 @@ test('prefs entry rows show an apply button so edits save', () => {
     assert.equal(rows.length, 2);
     for (const row of rows) assert.match(row, /show_apply_button: true/);
 });
+
+test('power actions never block the compositor with call_sync', () => {
+    const source = readFileSync(new URL('../extensions/charcoal-controls@local/extension.js', import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /call_sync/);
+    assert.match(source, /label: 'Cancel', key: Clutter\.KEY_Escape/);
+});
