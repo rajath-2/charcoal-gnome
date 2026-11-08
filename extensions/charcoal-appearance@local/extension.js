@@ -4,12 +4,17 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {TARGETS} from './targets.js';
 import {THEME, updateIcons} from './update.js';
+import {ThemeClient} from './theme-client.js';
 
 const DAY = 24 * 60 * 60;
 
 export default class CharcoalAppearance extends Extension {
     enable() {
         this._settings = this.getSettings();
+        this._theme = new ThemeClient('appearance', this._settings);
+        this._unwatchTheme = this._theme.connectChanged(() => {
+            for (const [key] of TARGETS) this._apply(key);
+        });
         this._desktop = new Map(TARGETS.map(([key, schema]) => [key, new Gio.Settings({schema_id: schema})]));
         // Keep the first snapshot: after a crash, the live values are already ours.
         if (!Object.keys(this._settings.get_value('saved').deepUnpack()).length) {
@@ -18,7 +23,11 @@ export default class CharcoalAppearance extends Extension {
                 saved[key] = desktop.get_value(key).print(false);
             this._settings.set_value('saved', new GLib.Variant('a{ss}', saved));
         }
-        this._changed = this._settings.connect('changed', (_, key) => this._apply(key));
+        this._changed = this._settings.connect('changed', (_, key) => {
+            if (key === 'follow-theme' || key === 'override-activations') {
+                for (const [target] of TARGETS) this._apply(target);
+            } else this._apply(key);
+        });
         for (const [key] of TARGETS)
             this._apply(key);
         // Check soon after login, then hourly; each check is skipped unless a day has passed.
@@ -51,12 +60,15 @@ export default class CharcoalAppearance extends Extension {
 
     _apply(key) {
         const desktop = this._desktop.get(key);
-        const value = this._settings.get_value(key);
+        if (!desktop) return;
+        const value = this._theme.get_value(key);
         if (desktop && !desktop.get_value(key).equal(value))
             desktop.set_value(key, value);
     }
 
     disable() {
+        this._unwatchTheme?.();
+        this._unwatchTheme = null;
         GLib.Source.remove(this._timer);
         this._cancellable.cancel();
         this._settings.disconnect(this._changed);
@@ -69,6 +81,8 @@ export default class CharcoalAppearance extends Extension {
             }
         }
         this._settings.reset('saved');
+        this._theme?.destroy();
+        this._theme = null;
         this._settings = null;
         this._desktop = null;
     }

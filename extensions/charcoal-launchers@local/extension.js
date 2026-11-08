@@ -10,6 +10,7 @@ import {CursorMinimize} from './windows.js';
 import {SearchLauncher} from './search.js';
 import {InputController} from './input.js';
 import {DockIntegration} from './dock.js';
+import {ThemeClient} from './theme-client.js';
 
 export default class CharcoalLaunchers extends Extension {
     enable() {
@@ -25,9 +26,11 @@ export default class CharcoalLaunchers extends Extension {
             this._settings.set_strv('favorites', shell.get_strv('favorite-apps').slice(0, 12));
             this._settings.set_boolean('favorites-initialized', true);
         }
-        this._dock = new DockIntegration(this._settings);
-        this._wheel = new FavoritesWheel(this._settings);
-        this._search = new SearchLauncher(this._settings, () => this.openPreferences());
+        this._theme = new ThemeClient('launchers', this._settings);
+        this._unwatchTheme = this._theme.connectChanged(() => this._scheduleConfigure());
+        this._dock = new DockIntegration(this._theme);
+        this._wheel = new FavoritesWheel(this._theme);
+        this._search = new SearchLauncher(this._theme, () => this.openPreferences());
         if (Main.layoutManager._startingUp)
             this._startup = Main.layoutManager.connect('startup-complete', () => {
                 Main.layoutManager.disconnect(this._startup); this._startup = 0; this._configure();
@@ -35,11 +38,7 @@ export default class CharcoalLaunchers extends Extension {
         else this._configure();
         this._changed = this._settings.connect('changed', (_, key) => {
             if (['owned-bindings', 'owned-dock', 'status', 'favorites-initialized'].includes(key)) return;
-            this._cancel();
-            if (this._reload) GLib.Source.remove(this._reload);
-            this._reload = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                this._reload = 0; this._configure(); return GLib.SOURCE_REMOVE;
-            });
+            this._scheduleConfigure();
         });
         this._sessionChanged = Main.sessionMode.connect('updated', () => this._cancel());
         this._monitorChanged = Main.layoutManager.connect('monitors-changed', () => { this._cancel(); this._dock.update(); });
@@ -48,10 +47,17 @@ export default class CharcoalLaunchers extends Extension {
             if (ext.uuid === 'blur-my-shell@aunetx') this._search.close(true);
         });
     }
+    _scheduleConfigure() {
+        this._cancel();
+        if (this._reload) GLib.Source.remove(this._reload);
+        this._reload = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            this._reload = 0; this._configure(); return GLib.SOURCE_REMOVE;
+        });
+    }
     _configure() {
         this._loadStyle();
         this._input?.destroy();
-        this._input = new InputController(this._settings, this._wheel, this._search);
+        this._input = new InputController(this._theme, this._wheel, this._search);
         this._input.enable();
         this._dock.update();
         this._cursorMinimize?.disable();
@@ -66,7 +72,7 @@ export default class CharcoalLaunchers extends Extension {
         const dir = GLib.build_filenamev([GLib.get_user_runtime_dir(), 'charcoal-launchers']);
         GLib.mkdir_with_parents(dir, 0o700);
         const file = Gio.File.new_for_path(`${dir}/style-${GLib.uuid_string_random()}.css`);
-        const css = searchColorCss(color(this._settings, 'foreground-color'), color(this._settings, 'accent-color'));
+        const css = searchColorCss(color(this._theme, 'foreground-color'), color(this._theme, 'accent-color'));
         file.replace_contents(new TextEncoder().encode(css), null, false, Gio.FileCreateFlags.NONE, null);
         St.ThemeContext.get_for_stage(global.stage).get_theme().load_stylesheet(file);
         this._unloadStyle();
@@ -80,6 +86,8 @@ export default class CharcoalLaunchers extends Extension {
     }
     _cancel() { this._input?.cancel(); this._wheel?.close(true); this._search?.close(true); }
     disable() {
+        this._unwatchTheme?.();
+        this._unwatchTheme = null;
         if (this._startup) Main.layoutManager.disconnect(this._startup);
         this._startup = 0;
         if (this._reload) GLib.Source.remove(this._reload);
@@ -96,6 +104,8 @@ export default class CharcoalLaunchers extends Extension {
         this._wheel?.destroy(); this._wheel = null;
         this._search?.destroy(); this._search = null;
         this._unloadStyle();
+        this._theme?.destroy();
+        this._theme = null;
         this._settings = null;
     }
 }

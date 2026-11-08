@@ -34,4 +34,13 @@ placement.set_string('positions', '{"music":{"x":0.8}}');
 assert(placement.get_string('positions') === '{"music":{"x":0.8}}', 'dragged position becomes active override');
 assert(JSON.parse(position.values['override-activations']).positions === 'a', 'override records current activation');
 placement.destroy();
+const appearance = {values: {'icon-theme': 'GreyStone - circle', 'follow-theme': true,
+    'override-activations': '{}'}, get_value(key) { return {
+    deepUnpack: () => this.values[key], get_type_string: () => 's'}; },
+    get_boolean(key) { return this.values[key]; }, get_string(key) { return this.values[key]; }};
+const icons = new ThemeClient('appearance', appearance, {themeSettings: central,
+    loadProfile: () => ({version: 1, id: 'night', components: {appearance: {'icon-theme': 'Other icons'}}}),
+    isEngineEnabled: () => true});
+assert(icons.get_value('icon-theme').deepUnpack() === 'Other icons', 'linked icon choice reaches desktop writer');
+icons.destroy();
 print('theme client: ok');

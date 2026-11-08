@@ -7,6 +7,7 @@ import {resolveValue, selectOverride, switchTheme, effectiveSnapshot} from '../s
 import {activateTheme} from '../extensions/charcoal-themes@local/activation.js';
 import {buildCss as topbarCss} from '../extensions/charcoal-topbar@local/theme.js';
 import {buildCss as widgetCss} from '../extensions/charcoal-widgets@local/theme.js';
+import {surfaceCss} from '../extensions/charcoal-launchers@local/policy.js';
 
 const minimal = {version: 1, id: 'night', name: 'Night', wallpaper: null,
     components: {topbar: {'bar-color': '#121212', 'bar-height': 30}}};
@@ -107,4 +108,18 @@ test('topbar and widget CSS use effective theme values', () => {
     const widget = effectiveSnapshot(widgetLocal, {get: key => ({...defaults('widgets'),
         'background-color': '#222222', 'accent-color': '#00aaff'})[key]});
     assert.ok(widgetCss(widget).includes('#00aaff'));
+});
+
+test('launcher theme changes look while favorites and shortcuts stay local', () => {
+    const local = {'background-color': '#202127', 'foreground-color': '#f0f0f2',
+        'accent-color': '#a6b5cc', 'background-opacity': 94, 'border-color': '#ffffff',
+        'border-width': 1, 'border-opacity': 12, 'shadow-color': '#000000',
+        'shadow-size': 32, 'shadow-opacity': 30, 'text-size': 100, 'corner-radius': 20,
+        favorites: ['app-a'], 'launcher-shortcut': ['<Super>space']};
+    const theme = {'background-color': '#112233', 'launcher-width': 800};
+    const values = Object.fromEntries(Object.entries(local).map(([key, value]) =>
+        [key, resolveValue({key, local: value, theme: theme[key], linked: true, activationId: 'a'})]));
+    assert.ok(surfaceCss(values).includes('rgba(17,34,51'));
+    assert.deepEqual(values.favorites, ['app-a']);
+    assert.deepEqual(values['launcher-shortcut'], ['<Super>space']);
 });
