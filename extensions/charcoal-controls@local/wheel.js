@@ -1,0 +1,103 @@
+import Clutter from 'gi://Clutter';
+import St from 'gi://St';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {clampWheel, pickWheelItem, releaseSelection} from './policy.js';
+
+const ACTIONS = [
+    ['lock', 'Lock'], ['note', 'Note'], ['settings', 'Settings'], ['themes', 'Themes'],
+    ['suspend', 'Suspend'], ['logout', 'Log out'], ['restart', 'Restart'], ['poweroff', 'Power off'],
+];
+
+export class ControlWheel {
+    constructor(settings, onSelect) {
+        this.settings = settings;
+        this.onSelect = onSelect;
+        this.themes = [];
+        this.layer = 'actions';
+        this.actor = null;
+        this._pressed = null;
+        this._dispatched = false;
+    }
+
+    setThemes(profiles, activeId) {
+        this.themes = profiles.map(profile => [profile.id, `${profile.id === activeId ? '● ' : ''}${profile.name}`]);
+        if (this.actor && this.layer === 'themes') this._render();
+    }
+
+    open(x, y, layer = 'actions') {
+        this.close();
+        this.layer = layer;
+        const monitor = Main.layoutManager.monitors.find(m => x >= m.x && x < m.x + m.width &&
+            y >= m.y && y < m.y + m.height) ?? Main.layoutManager.primaryMonitor;
+        if (!monitor) return;
+        this.geometry = clampWheel(x, y, monitor, this.settings.get_int('radius'));
+        this.actor = new St.Widget({reactive: false, width: this.geometry.radius * 2,
+            height: this.geometry.radius * 2, x: this.geometry.x - this.geometry.radius,
+            y: this.geometry.y - this.geometry.radius});
+        Main.layoutManager.addTopChrome(this.actor);
+        this._render();
+        this._event = global.stage.connect('captured-event', (_, event) => this._handleEvent(event));
+    }
+
+    _items() {
+        return this.layer === 'themes' ? [['back', 'Back'], ...this.themes] : ACTIONS;
+    }
+
+    _render() {
+        this.actor.destroy_all_children();
+        const items = this._items();
+        const r = this.geometry.radius;
+        const font = this.settings.get_int('text-size');
+        const center = new St.Label({text: this.layer === 'themes' ? 'Themes' : 'Controls',
+            style: `color: ${this.settings.get_string('foreground-color')}; font-size: ${font + 2}px;`});
+        this.actor.add_child(center);
+        center.set_position(r - center.width / 2, r - center.height / 2);
+        items.forEach(([id, label], index) => {
+            const angle = index * Math.PI * 2 / items.length - Math.PI / 2;
+            const orbit = r * 0.69;
+            const item = new St.Label({text: label, style: `background-color: ${this.settings.get_string('background-color')}; ` +
+                `color: ${this.settings.get_string('foreground-color')}; ` +
+                `font-size: ${font}px; padding: 8px; border-radius: 10px; ` +
+                `border: ${this.settings.get_int('border-width')}px solid ${this.settings.get_string('border-color')}; ` +
+                `box-shadow: 0 3px ${this.settings.get_int('shadow-size')}px ${this.settings.get_string('shadow-color')};`});
+            item._wheelId = id;
+            this.actor.add_child(item);
+            item.set_position(r + Math.cos(angle) * orbit - item.width / 2,
+                r + Math.sin(angle) * orbit - item.height / 2);
+        });
+    }
+
+    _handleEvent(event) {
+        const type = event.type();
+        if (type === Clutter.EventType.KEY_PRESS && event.get_key_symbol() === Clutter.KEY_Escape) {
+            if (this.layer === 'themes') this.onSelect('back');
+            else this.close();
+            return Clutter.EVENT_STOP;
+        }
+        if (type !== Clutter.EventType.BUTTON_PRESS && type !== Clutter.EventType.BUTTON_RELEASE)
+            return Clutter.EVENT_PROPAGATE;
+        const [x, y] = event.get_coords();
+        const id = pickWheelItem(x, y, this.geometry, this._items().map(item => item[0]),
+            this.settings.get_int('neutral-radius'));
+        if (type === Clutter.EventType.BUTTON_PRESS) {
+            this._pressed = id;
+            return id ? Clutter.EVENT_STOP : Clutter.EVENT_PROPAGATE;
+        }
+        const selection = releaseSelection(this._pressed, id, this._dispatched);
+        this._pressed = null;
+        if (selection) {
+            this._dispatched = true;
+            this.onSelect(selection);
+        } else this.close();
+        return Clutter.EVENT_STOP;
+    }
+
+    close() {
+        if (this._event) global.stage.disconnect(this._event);
+        this._event = 0;
+        this.actor?.destroy(); this.actor = null;
+        this._pressed = null; this._dispatched = false;
+    }
+
+    destroy() { this.close(); }
+}

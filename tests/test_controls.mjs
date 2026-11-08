@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {nextWheelState, pickWheelItem, clampWheel} from '../extensions/charcoal-controls@local/policy.js';
+import {nextWheelState, pickWheelItem, clampWheel, releaseSelection} from '../extensions/charcoal-controls@local/policy.js';
 
 test('control wheel navigation and safe selection', () => {
     let state = nextWheelState('closed', 'open');
@@ -16,4 +16,11 @@ test('control wheel navigation and safe selection', () => {
     assert.equal(pickWheelItem(geometry.x + 300, geometry.y, geometry, ['one']), null);
     assert.equal(pickWheelItem(geometry.x, geometry.y - 100, geometry, []), null);
     assert.equal(pickWheelItem(geometry.x, geometry.y - 100, geometry, ['one']), 'one');
+});
+
+test('only deliberate matching press and release selects once', () => {
+    assert.equal(releaseSelection('note', 'note', false), 'note');
+    assert.equal(releaseSelection('note', 'poweroff', false), null);
+    assert.equal(releaseSelection('note', 'note', true), null);
+    assert.equal(releaseSelection(null, 'note', false), null);
 });

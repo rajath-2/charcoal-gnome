@@ -22,3 +22,7 @@ export function pickWheelItem(x, y, geometry, ids, neutralRadius = 36) {
     const angle = (Math.atan2(dy, dx) + Math.PI / 2 + 2 * Math.PI) % (2 * Math.PI);
     return ids[Math.floor((angle + Math.PI / ids.length) % (2 * Math.PI) / (2 * Math.PI / ids.length))];
 }
+
+export function releaseSelection(pressed, released, dispatched) {
+    return !dispatched && pressed && pressed === released ? pressed : null;
+}
