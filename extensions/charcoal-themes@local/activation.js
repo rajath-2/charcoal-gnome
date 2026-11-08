@@ -6,11 +6,15 @@ export function activateTheme(id, settings, store, applyWallpaper, newActivation
         settings.set_string('status', `Theme not found or invalid: ${id}`);
         return false;
     }
+    const activationId = newActivationId();
     let wallpaper;
-    try { wallpaper = applyWallpaper(profile); }
+    try { wallpaper = applyWallpaper(profile, activationId); }
     catch (error) { wallpaper = {ok: false, error: error.message}; }
+    // One change set, so consumers never see the new theme with the old activation (stale overrides).
+    settings.delay?.();
     settings.set_string('active-theme-id', id);
-    settings.set_string('activation-id', newActivationId());
+    settings.set_string('activation-id', activationId);
     settings.set_string('status', wallpaper.ok ? '' : wallpaper.error);
+    settings.apply?.();
     return true;
 }

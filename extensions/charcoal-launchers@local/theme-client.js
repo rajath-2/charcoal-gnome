@@ -24,8 +24,8 @@ function loadProfile(id) {
     } catch { return null; }
 }
 
-function engineEnabled() {
-    try { return new Gio.Settings({schema_id: 'org.gnome.shell'}).get_strv('enabled-extensions').includes(ENGINE_UUID); }
+function engineEnabled(shellSettings) {
+    try { return !!shellSettings?.get_strv('enabled-extensions').includes(ENGINE_UUID); }
     catch { return false; }
 }
 
@@ -35,20 +35,30 @@ export class ThemeClient {
         this.local = localSettings;
         this.central = options.themeSettings === undefined ? openEngineSettings() : options.themeSettings;
         this._loadProfile = options.loadProfile ?? loadProfile;
-        this._isEngineEnabled = options.isEngineEnabled ?? engineEnabled;
         this._callbacks = new Set();
         this._shellSettings = options.shellSettings === undefined
             ? new Gio.Settings({schema_id: 'org.gnome.shell'}) : options.shellSettings;
-        this._shellSignal = this._shellSettings?.connect('changed::enabled-extensions', () => {
-            this._revision = null;
-            for (const callback of this._callbacks) callback();
-        });
+        this._isEngineEnabled = options.isEngineEnabled ?? (() => engineEnabled(this._shellSettings));
         this._revision = null;
         this._profile = null;
-        this._centralSignal = this.central?.connect('changed', () => {
-            this._revision = null;
-            for (const callback of this._callbacks) callback();
-        });
+        this._state = this._themeState();
+        this._shellSignal = this._shellSettings?.connect('changed::enabled-extensions', () => this._notify());
+        this._centralSignal = this.central?.connect('changed', () => this._notify());
+    }
+
+    // Only a real theme switch, edit or engine toggle redraws consumers; status and request keys do not.
+    _themeState() {
+        const enabled = !!this.central && this._isEngineEnabled();
+        return [enabled, ...['active-theme-id', 'profile-revision', 'activation-id']
+            .map(key => this.central?.get_string(key) ?? '')].join('\n');
+    }
+
+    _notify() {
+        const state = this._themeState();
+        if (state === this._state) return;
+        this._state = state;
+        this._revision = null;
+        for (const callback of this._callbacks) callback();
     }
 
     _activeProfile() {

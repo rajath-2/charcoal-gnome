@@ -87,4 +87,24 @@ assert(lock.get_double('clock-y') === 0.4, 'lock override dormant after theme sw
 lock.selectOverride('clock-y');
 assert(lock.get_double('clock-y') === 0.1, 'lock override restored');
 lock.destroy();
+const engineValues = {'active-theme-id': 'night', 'activation-id': 'a', 'profile-revision': '1', status: '',
+    'requested-theme-id': ''};
+let centralChanged;
+const switching = new ThemeClient('topbar', local, {isEngineEnabled: () => true, loadProfile: () => profile,
+    shellSettings: null, themeSettings: {get_string: key => engineValues[key],
+        connect(_signal, callback) { centralChanged = callback; return 1; }, disconnect() {}}});
+let redraws = 0;
+switching.connectChanged(() => redraws++);
+const write = (key, value) => { engineValues[key] = value; centralChanged(null, key); };
+write('requested-theme-id', 'day');
+write('status', 'Wallpaper file is missing');
+write('requested-theme-id', '');
+assert(redraws === 0, `status and request keys redrew consumers ${redraws} times`);
+// A delayed-apply switch lands all keys at once, then GSettings emits one changed per key.
+Object.assign(engineValues, {'active-theme-id': 'day', 'activation-id': 'b'});
+centralChanged(null, 'active-theme-id'); centralChanged(null, 'activation-id'); centralChanged(null, 'status');
+assert(redraws === 1, `one theme switch redrew consumers ${redraws} times`);
+write('profile-revision', '2');
+assert(redraws === 2, 'theme edit redraws consumers');
+switching.destroy();
 print('theme client: ok');

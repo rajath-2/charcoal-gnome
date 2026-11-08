@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {existsSync, readdirSync, readFileSync} from 'node:fs';
 import {validateProfile, updateProfile} from '../extensions/charcoal-themes@local/profile.js';
 import {THEME_KEYS} from '../extensions/charcoal-themes@local/catalog.js';
 import {resolveValue, selectOverride, switchTheme, effectiveSnapshot} from '../shared/theme-policy.js';
@@ -81,6 +81,19 @@ test('activation validates before changing active ID or token', () => {
     assert.equal(values['activation-id'], 'new-token');
 });
 
+test('activation writes theme and token as one change set', () => {
+    const values = {'active-theme-id': 'old', 'activation-id': 'old-token', status: ''};
+    const log = [];
+    const settings = {delay: () => log.push('delay'), apply: () => log.push('apply'),
+        set_string: (key, value) => { log.push(key); values[key] = value; }};
+    const store = {get: () => ({version: 1, id: 'night', name: 'Night', wallpaper: null, components: {}})};
+    let token;
+    assert.equal(activateTheme('night', settings, store, (_profile, id) => { token = id; return {ok: true}; },
+        () => 'new-token'), true);
+    assert.deepEqual(log, ['delay', 'active-theme-id', 'activation-id', 'status', 'apply']);
+    assert.equal(token, 'new-token', 'wallpaper is recorded against the new activation');
+});
+
 test('missing wallpaper still activates other theme values and reports the error', () => {
     const values = {'active-theme-id': 'old', 'activation-id': 'old-token', status: ''};
     const settings = {set_string: (key, value) => { values[key] = value; }};
@@ -122,4 +135,14 @@ test('launcher theme changes look while favorites and shortcuts stay local', () 
     assert.ok(surfaceCss(values).includes('rgba(17,34,51'));
     assert.deepEqual(values.favorites, ['app-a']);
     assert.deepEqual(values['launcher-shortcut'], ['<Super>space']);
+});
+
+test('every consumer carries byte-identical copies of the shared theme modules', () => {
+    const shared = new URL('../shared/', import.meta.url);
+    const extensions = new URL('../extensions/', import.meta.url);
+    const modules = readdirSync(shared).filter(name => name.endsWith('.js'));
+    const consumers = readdirSync(extensions).filter(dir => modules.some(name => existsSync(new URL(`${dir}/${name}`, extensions))));
+    assert.ok(consumers.length >= 6, `found consumers: ${consumers}`);
+    for (const dir of consumers) for (const name of modules)
+        assert.ok(readFileSync(new URL(`${dir}/${name}`, extensions)).equals(readFileSync(new URL(name, shared))), `${dir}/${name}`);
 });
