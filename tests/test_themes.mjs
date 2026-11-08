@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {existsSync, readdirSync, readFileSync} from 'node:fs';
 import {validateProfile, updateProfile} from '../extensions/charcoal-themes@local/profile.js';
 import {THEME_KEYS} from '../extensions/charcoal-themes@local/catalog.js';
-import {resolveValue, selectOverride, switchTheme, effectiveSnapshot} from '../shared/theme-policy.js';
+import {resolveValue, selectOverride, switchTheme, effectiveSnapshot, valueSources} from '../shared/theme-policy.js';
 import {activateTheme} from '../extensions/charcoal-themes@local/activation.js';
 import {buildCss as topbarCss} from '../extensions/charcoal-topbar@local/theme.js';
 import {buildCss as widgetCss} from '../extensions/charcoal-widgets@local/theme.js';
@@ -145,4 +145,18 @@ test('every consumer carries byte-identical copies of the shared theme modules',
     assert.ok(consumers.length >= 6, `found consumers: ${consumers}`);
     for (const dir of consumers) for (const name of modules)
         assert.ok(readFileSync(new URL(`${dir}/${name}`, extensions)).equals(readFileSync(new URL(name, shared))), `${dir}/${name}`);
+});
+
+test('value sources name the keys overridden locally and the ones following the theme', () => {
+    const keys = ['bar-color', 'bar-height', 'bar-radius'];
+    const theme = {'bar-color': '#121212', 'bar-height': 30};
+    assert.deepEqual(valueSources(keys, theme, {'bar-color': 'a', 'bar-height': 'old'}, 'a'),
+        {local: ['bar-color'], theme: ['bar-height']});
+    assert.deepEqual(valueSources(keys, undefined, {}, 'a'), {local: [], theme: []});
+    for (const key of keys) {
+        const {local} = valueSources(keys, theme, {'bar-color': 'a'}, 'a');
+        const resolved = resolveValue({key, local: 'L', theme: theme[key], linked: true,
+            overrideActivation: {'bar-color': 'a'}, activationId: 'a'});
+        if (theme[key] !== undefined) assert.equal(resolved === 'L', local.includes(key), key);
+    }
 });

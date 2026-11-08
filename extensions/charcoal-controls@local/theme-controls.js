@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {THEME_KEYS} from './theme-catalog.js';
 import {ThemeClient} from './theme-client.js';
+import {valueSources} from './theme-policy.js';
 import {saveOverridesToTheme} from './theme-editor.js';
 
 export function attachThemeControls(window, page, settings, component) {
@@ -16,6 +17,8 @@ export function attachThemeControls(window, page, settings, component) {
     group.add(link);
     const status = new Adw.ActionRow({title: 'Current source'});
     group.add(status);
+    const sources = new Adw.ActionRow({title: 'Value sources', subtitle_lines: 0});
+    group.add(sources);
     const action = (title, label, handler) => {
         const row = new Adw.ActionRow({title});
         const button = new Gtk.Button({label, valign: Gtk.Align.CENTER});
@@ -52,6 +55,11 @@ export function attachThemeControls(window, page, settings, component) {
         const linked = settings.get_boolean('follow-theme');
         status.subtitle = profile ? `Following ${profile.name}` : linked ? 'Theme engine or active theme unavailable' : 'Using saved local settings';
         use.sensitive = restore.sensitive = save.sensitive = !!profile;
+        // Controls below show local values; this row says which of them the theme currently replaces.
+        const {local, theme} = valueSources(keys, profile?.components?.[component], overrides(),
+            client.central?.get_string('activation-id'));
+        sources.subtitle = profile ? `Overridden locally: ${local.join(', ') || 'none'}\n` +
+            `Following theme: ${theme.join(', ') || 'none'}` : 'All settings use their local values';
     };
     const ids = keys.map(key => settings.connect(`changed::${key}`, () => {
         if (settings.get_boolean('follow-theme')) client.selectOverride(key);
