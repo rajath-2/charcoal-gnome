@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {clampWheel, pickWheelItem, releaseSelection, themeItems} from './policy.js';
@@ -31,12 +32,14 @@ export class ControlWheel {
             y >= m.y && y < m.y + m.height) ?? Main.layoutManager.primaryMonitor;
         if (!monitor) return;
         this.geometry = clampWheel(x, y, monitor, this.settings.get_int('radius'));
-        this.actor = new St.Widget({reactive: false, width: this.geometry.radius * 2,
+        this.actor = new St.Widget({reactive: true, can_focus: true, width: this.geometry.radius * 2,
             height: this.geometry.radius * 2, x: this.geometry.x - this.geometry.radius,
             y: this.geometry.y - this.geometry.radius});
         Main.layoutManager.addTopChrome(this.actor);
         this._render();
-        this._event = global.stage.connect('captured-event', (_, event) => this._handleEvent(event));
+        // A modal grab routes clicks and keys here even over a focused app window (Wayland).
+        this.actor.connect('captured-event', (_, event) => this._handleEvent(event));
+        this._grab = Main.pushModal(this.actor, {actionMode: Shell.ActionMode.POPUP});
     }
 
     _items() {
@@ -97,8 +100,8 @@ export class ControlWheel {
     }
 
     close() {
-        if (this._event) global.stage.disconnect(this._event);
-        this._event = 0;
+        if (this._grab) Main.popModal(this._grab);
+        this._grab = null;
         this.actor?.destroy(); this.actor = null;
         this._pressed = null; this._dispatched = false;
     }
