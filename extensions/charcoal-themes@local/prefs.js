@@ -76,6 +76,10 @@ export default class CharcoalThemesPreferences extends ExtensionPreferences {
                         row = Adw.SpinRow.new_with_range(rule.min, rule.max, 1);
                         row.title = title(key); row.value = value;
                         row.connect('notify::value', () => change(component, key, Math.round(row.value)));
+                    } else if (rule.type === 'number') {
+                        row = Adw.SpinRow.new_with_range(rule.min, rule.max, 0.01);
+                        row.digits = 3; row.title = title(key); row.value = value;
+                        row.connect('notify::value', () => change(component, key, row.value));
                     } else if (rule.type === 'boolean') {
                         row = new Adw.SwitchRow({title: title(key), active: value});
                         row.connect('notify::active', () => change(component, key, row.active));

@@ -4,6 +4,9 @@ const bool = {type: 'boolean'};
 const integer = (min, max) => ({type: 'integer', min, max});
 const text = {type: 'text'};
 const json = {type: 'json'};
+const number = (min, max) => ({type: 'number', min, max});
+// Lock elements are placed by fractions of the monitor; decorative text-content stays personal.
+const LOCK_ELEMENTS = ['clock', 'date', 'user', 'prompt', 'status', 'notifications', 'text', 'image'];
 
 export const THEME_KEYS = {
     controls: {
@@ -61,6 +64,18 @@ export const THEME_KEYS = {
         'shadow-size': integer(0, 60), 'shadow-opacity': integer(0, 100),
         'corner-radius': integer(0, 40), 'accent-color': color, 'text-color': color,
         blur: bool, 'static-blur': bool,
+    },
+    lockscreen: {
+        ...Object.fromEntries(LOCK_ELEMENTS.flatMap(name => [
+            [`${name}-x`, number(0, 1)], [`${name}-y`, number(0, 1)],
+            [`${name}-w`, number(0.02, 1)], [`${name}-h`, number(0.02, 1)],
+            ...(name === 'prompt' ? [] : [[`${name}-visible`, bool]]),
+        ])),
+        'image-uri': text, 'lock-wallpaper': text, 'element-styles': json,
+        'font-family': text, 'font-weight': integer(100, 900), 'font-size': integer(8, 200),
+        'text-color': color, 'accent-color': color, 'panel-color': color,
+        'border-width': integer(0, 16), 'border-radius': integer(0, 64),
+        'shadow-size': integer(0, 64), spacing: integer(0, 64),
     },
 };
 

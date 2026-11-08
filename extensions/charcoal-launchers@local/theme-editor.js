@@ -7,6 +7,7 @@ function valid(value, rule) {
     if (rule.type === 'color') return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
     if (rule.type === 'boolean') return typeof value === 'boolean';
     if (rule.type === 'integer') return Number.isInteger(value) && value >= rule.min && value <= rule.max;
+    if (rule.type === 'number') return Number.isFinite(value) && value >= rule.min && value <= rule.max;
     if (rule.type === 'choice') return rule.values.includes(value);
     if (rule.type === 'text') return typeof value === 'string' && value.length <= 256 && !value.includes('\0');
     if (rule.type === 'json') {

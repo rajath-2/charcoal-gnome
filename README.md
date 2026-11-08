@@ -10,7 +10,7 @@ Click the animation for the full-quality video.
 | ![Calendar and notifications menu](media/calendar-menu.jpg) **Calendar menu:** styled notifications, media controls and events | ![Super+Space search panel](media/search.jpg) **Super+Space search:** apps, files and calculations |
 | ![Hold-Super favorites wheel](media/favorites-wheel.jpg) **Favorites wheel:** hold Super | [![Top bar switching layouts](media/topbar-layout.gif)](media/topbar-layout.mp4) **Automatic layout:** the bar splits and joins as windows open and maximize (click for video) |
 
-A charcoal-and-glass desktop for **GNOME Shell 51**, with five configurable
+A charcoal-and-glass desktop for **GNOME Shell 51**, with seven configurable
 extensions, GTK4 styling, icons and a cursor theme. Install the whole bundle or
 choose individual pieces. Theme files install for your user, with a backup and
 restore command.
@@ -23,6 +23,7 @@ restore command.
 | Charcoal Widgets (`charcoal-widgets@local`) | Resizable weather, calendar and music cards on the empty desktop |
 | Charcoal Themes (`charcoal-themes@local`) | Named presets for Charcoal appearance, layout, and desktop wallpaper |
 | Charcoal Control Wheel (`charcoal-controls@local`) | Separate wheel for actions, quick notes, settings, and theme switching |
+| Charcoal Lock Screen (`charcoal-lockscreen@local`) | Layout, style and wallpaper for your own GNOME lock screen |
 
 Blur comes from the bundled **Blur My Shell** extension. Static blur uses only the
 wallpaper and is the default; live blur can be selected in each extension's
@@ -34,6 +35,7 @@ preferences and costs more GPU time. Search and wheel share their static/live se
 - [Installer options](#installer-options)
 - [Open preferences](#open-preferences)
 - [Coordinated themes](#coordinated-themes)
+- [Lock screen](#lock-screen)
 - [Top bar](#top-bar)
 - [Desktop appearance and icon updates](#desktop-appearance-and-icon-updates)
 - [Search and favorites launchers](#search-and-favorites-launchers)
@@ -146,7 +148,7 @@ Open [preferences](#open-preferences), choose your weather city, and try
 
 | Option | Effect |
 | --- | --- |
-| `--only PIECE [PIECE ...]` | Install any combination of `topbar`, `appearance`, `launchers`, `widgets`, `themes`, `controls`; default: all |
+| `--only PIECE [PIECE ...]` | Install any combination of `topbar`, `appearance`, `launchers`, `widgets`, `themes`, `controls`, `lockscreen`; default: all |
 | `--mode auto\|compact\|islands` | Choose the top bar's starting layout; default: `auto` |
 | `--no-activate` | Copy files and compile schemas without changing desktop settings or enabling extensions |
 | `--dry-run` | Preview without writes, prompts or downloads |
@@ -162,6 +164,7 @@ Examples:
 ./install.sh --only widgets                # Widgets + Blur My Shell
 ./install.sh --only themes                 # Theme engine only
 ./install.sh --only controls               # Control wheel only
+./install.sh --only lockscreen             # Lock screen only
 ./install.sh --only topbar launchers --mode islands
 ./install.sh --mode compact                # all pieces, fixed compact top bar
 ./install.sh --no-activate                 # file-only installation
@@ -223,6 +226,7 @@ gnome-extensions prefs charcoal-appearance@local
 gnome-extensions prefs charcoal-launchers@local
 gnome-extensions prefs charcoal-widgets@local
 gnome-extensions prefs charcoal-themes@local
+gnome-extensions prefs charcoal-lockscreen@local
 ```
 
 To launch a Flatpak installation of Extension Manager from Terminal:
@@ -240,7 +244,7 @@ individually. Keep Blur My Shell enabled for Charcoal's blur effects.
 
 Open **Charcoal Themes** preferences to create a theme from your current
 settings, duplicate or rename one, choose a desktop wallpaper, and edit values
-for Topbar, Appearance, Launchers, Widgets, and the Control Wheel. Applying a theme changes its
+for Topbar, Appearance, Launchers, Widgets, the Control Wheel, and the Lock Screen. Applying a theme changes its
 wallpaper immediately. Each other Charcoal extension has a **Follow active
 theme** switch in its own preferences; existing installations start with that
 switch off, preserving their current settings.
@@ -253,6 +257,31 @@ settings you changed locally into the selected theme. Shortcuts, favorites,
 weather city, enabled widgets, and other feature or personal settings always
 stay local. If the theme engine is disabled or unavailable, linked extensions
 use their saved local settings.
+
+## Lock screen
+
+**Charcoal Lock Screen** restyles and rearranges the lock screen of your own
+user session in **GNOME Shell 51**: clock, date, user, password prompt, status,
+notifications, an optional decorative text and image, fonts, colors, borders,
+shadows, and a lock wallpaper that may differ from the desktop wallpaper. Open
+its preferences to drag elements in the preview (laid out with the same rules
+the shell uses) or enter exact positions, and to link it to the active theme
+with **Follow active theme**, **Save active overrides to this theme**, **Use
+theme values**, and **Restore saved local overrides**. Decorative text is
+personal and never saved into a theme.
+
+It does not change GDM, the login screen shown before you sign in, or any other
+user's lock screen; GDM runs as its own system user and is out of scope. It also
+never touches authentication: the password prompt is GNOME's own, it cannot be
+hidden, and if its requested position is unsafe it stays where GNOME puts it. A
+wallpaper or image file that is missing is reported under **Status** in the
+preferences, and the previous background stays in place.
+
+To undo a layout you do not like, unlock and open the preferences
+(`gnome-extensions prefs charcoal-lockscreen@local`) and press **Reset → Reset
+lock screen**; this returns every lock-screen setting to its default and stops
+following the theme. To get GNOME's own lock screen back entirely, turn the
+extension off: `gnome-extensions disable charcoal-lockscreen@local`.
 
 ## Control wheel
 
@@ -423,7 +452,7 @@ screen; minimizing everything brings them back.
 | `icons/Future-black-cursors/` | `$XDG_DATA_HOME/icons/Future-black-cursors` |
 | `extensions/` | `$XDG_DATA_HOME/gnome-shell/extensions/` |
 
-`XDG_DATA_HOME` normally means `~/.local/share`. All four Charcoal extensions and
+`XDG_DATA_HOME` normally means `~/.local/share`. All Charcoal extensions and
 `blur-my-shell@aunetx` are bundled for offline file installation. Blur My Shell is
 the included version used by this setup, with popup blur support; its metadata and
 license are included.
@@ -432,7 +461,7 @@ The top bar needs no Shell theme or User Themes extension. Selecting `topbar` mo
 an older bundle's `adaptive-smoke-panel@local` and `~/.themes/Waybar-GNOME*` into the
 backup, and clears a User Themes selection that pointed at them.
 
-Full activation enables the five bundled extensions and sets the starting top-bar
+Full activation enables the bundled extensions and sets the starting top-bar
 layout. Topbar activation configures Blur My Shell with a separate radius-16 popup
 profile, plus static blur for dock and windows. Other blur profiles and unrelated
 extension activation entries are retained. A globally disabled extensions setting
@@ -524,7 +553,7 @@ python3 tests/test_extension_manager.py
 For contributors with Node.js and GJS installed:
 
 ```bash
-node --test tests/test_launchers.mjs tests/test_topbar.mjs tests/test_widgets.mjs
+node --test tests/*.mjs
 gjs -m tests/test_icon_update.js
 ```
 

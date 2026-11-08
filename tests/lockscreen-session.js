@@ -1,3 +1,4 @@
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -46,6 +47,40 @@ export default class LockTest extends Extension {
         check(actors.date.style?.includes('font-size: 40px'), `${label}: date not styled: ${actors.date.style}`);
     }
 
+    async checkTheme(runtime, settings) {
+        check(runtime._source?.component === 'lockscreen', 'runtime does not read through ThemeClient');
+        const dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'gnome-shell', 'extensions', 'charcoal-themes@local', 'schemas']);
+        const schemas = Gio.SettingsSchemaSource.new_from_directory(dir, Gio.SettingsSchemaSource.get_default(), false);
+        const engine = new Gio.Settings({settings_schema: schemas.lookup('org.gnome.shell.extensions.charcoal-themes', true)});
+        const shell = new Gio.Settings({schema_id: 'org.gnome.shell'});
+        const before = shell.get_strv('enabled-extensions');
+        const monitor = Main.layoutManager.primaryMonitor;
+        const clockAt = async (y, label) => {
+            await pause(300);
+            const clock = rect(findLockActors().clock);
+            check(near(clock.y, monitor.y + y * monitor.height + (0.15 * monitor.height - clock.height) / 2),
+                `${label}: clock ${JSON.stringify(clock)} not at ${y}; source ${runtime._source.get_double('clock-y')} placement ${JSON.stringify(runtime._placements?.clock)}`);
+        };
+        engine.set_string('active-theme-id', 'night');
+        engine.set_string('activation-id', 'one');
+        shell.set_strv('enabled-extensions', [...before, 'charcoal-themes@local']);
+        settings.set_boolean('follow-theme', true);
+        await clockAt(0.4, 'themed');
+        settings.set_double('clock-y', 0.1);
+        runtime._source.selectOverride('clock-y');
+        await clockAt(0.1, 'local override');
+        engine.set_string('activation-id', 'two');
+        await clockAt(0.4, 'override dormant after switch');
+        runtime._source.selectOverride('clock-y');
+        await clockAt(0.1, 'override restored');
+        // Leave the engine off so it does not start on unlock.
+        shell.set_strv('enabled-extensions', before);
+        await clockAt(0.1, 'engine disabled uses local');
+        settings.set_boolean('follow-theme', false);
+        settings.set_double('clock-y', 0.05);
+        await clockAt(0.05, 'unlinked');
+    }
+
     async run() {
         await pause(1500);
         // Enabled the user's way (not via the session mode) so it stays enabled on the lock screen.
@@ -83,6 +118,14 @@ export default class LockTest extends Extension {
         await pause(200);
         const named = name => actors.dialog.get_children().some(a => a.name === name);
         check(named('charcoal-lock-image') && named('charcoal-lock-wallpaper'), 'valid image or wallpaper not shown');
+        // A wallpaper file that goes missing keeps the previous background and reports it.
+        settings.set_string('lock-wallpaper', '/nonexistent/gone.png');
+        await pause(200);
+        check(named('charcoal-lock-wallpaper'), 'missing wallpaper dropped the previous background');
+        check(settings.get_string('status').includes('gone.png'), `missing wallpaper not reported: ${settings.get_string('status')}`);
+        settings.set_string('lock-wallpaper', `file://${this.path}/image.svg`);
+        await pause(200);
+        check(settings.get_string('status') === '', `status not cleared: ${settings.get_string('status')}`);
 
         // Prompt moves within safe bounds once GNOME shows it.
         actors.dialog.activate();
@@ -171,6 +214,10 @@ export default class LockTest extends Extension {
         // Lock/unlock twice.
         await this.unlock();
         this.checkStyled(await this.lock(), 'lock 2');
+        // Theme link, on a fresh lock (GNOME slides the clock away once the prompt shows). The
+        // runtime reads through ThemeClient('lockscreen'); the engine's schema and a profile file
+        // are enough for the client to resolve themed values, so the engine itself is not run.
+        await this.checkTheme(theme.stateObj, settings);
         await this.unlock();
         this.checkStyled(await this.lock(), 'lock 3');
         await this.unlock();

@@ -9,12 +9,18 @@ import tempfile
 
 repo = Path(__file__).resolve().parents[1]
 root = Path(tempfile.mkdtemp(prefix='charcoal-lockscreen-test-'))
-for name in ['runtime', 'cache', 'config', 'data/gnome-shell/modes']:
+for name in ['runtime', 'cache', 'config/charcoal/themes', 'data/gnome-shell/modes']:
     (root / name).mkdir(parents=True)
 (root / 'runtime').chmod(0o700)
 extensions = root / 'data/gnome-shell/extensions'
 shutil.copytree(repo / 'extensions/charcoal-lockscreen@local', extensions / 'charcoal-lockscreen@local')
-subprocess.run(['glib-compile-schemas', '--strict', str(extensions / 'charcoal-lockscreen@local/schemas')], check=True)
+# The theme engine is only copied for its schema; the test links a profile without running it.
+for name in ['charcoal-lockscreen@local', 'charcoal-themes@local']:
+    if name != 'charcoal-lockscreen@local':
+        shutil.copytree(repo / 'extensions' / name, extensions / name)
+    subprocess.run(['glib-compile-schemas', '--strict', str(extensions / name / 'schemas')], check=True)
+(root / 'config/charcoal/themes/night.json').write_text(json.dumps({'version': 1, 'id': 'night', 'name': 'Night',
+    'wallpaper': None, 'components': {'lockscreen': {'clock-y': 0.4}}}))
 fixture = extensions / 'lockscreen-test@local'
 fixture.mkdir()
 shutil.copyfile(repo / 'tests/lockscreen-session.js', fixture / 'extension.js')

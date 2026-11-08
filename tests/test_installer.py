@@ -53,7 +53,8 @@ class InstallerTest(unittest.TestCase):
             self.assertTrue((launcher / 'prefs.js').is_file())
             self.assertTrue((launcher / 'schemas/gschemas.compiled').is_file())
             for name in ['charcoal-topbar@local', 'charcoal-appearance@local',
-                         'charcoal-launchers@local', 'charcoal-widgets@local', 'charcoal-controls@local']:
+                         'charcoal-launchers@local', 'charcoal-widgets@local', 'charcoal-controls@local',
+                         'charcoal-lockscreen@local']:
                 installed = home / '.local/share/gnome-shell/extensions' / name
                 for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js', 'theme-profile.js',
                                'theme-editor.js', 'theme-controls.js']:
@@ -149,6 +150,35 @@ class InstallerTest(unittest.TestCase):
                                       env=env, text=True, capture_output=True)
             self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
             self.assertFalse((extensions / 'charcoal-controls@local').exists())
+
+    def test_only_lockscreen_installs_backs_up_and_restores(self):
+        with tempfile.TemporaryDirectory(prefix='gnome-theme-install-test-') as directory:
+            home = Path(directory)
+            env = dict(os.environ, HOME=str(home), XDG_DATA_HOME=str(home / '.local/share'),
+                       XDG_CONFIG_HOME=str(home / '.config'), XDG_STATE_HOME=str(home / '.local/state'))
+            extensions = home / '.local/share/gnome-shell/extensions'
+            lock = extensions / 'charcoal-lockscreen@local'
+            lock.mkdir(parents=True)
+            (lock / 'extension.js').write_text('previous')
+            result = subprocess.run([str(ROOT / 'install.sh'), '--no-activate', '--only', 'lockscreen'],
+                                    env=env, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue((lock / 'schemas/gschemas.compiled').is_file())
+            for name in ['extension.js', 'prefs.js', 'policy.js', 'actors.js']:
+                self.assertEqual((lock / name).read_bytes(),
+                                 (ROOT / 'extensions/charcoal-lockscreen@local' / name).read_bytes(), name)
+            for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js', 'theme-profile.js',
+                           'theme-editor.js', 'theme-controls.js']:
+                self.assertEqual((lock / module).read_bytes(), (ROOT / 'shared' / module).read_bytes(), module)
+            self.assertEqual(sorted(p.name for p in extensions.iterdir()), ['charcoal-lockscreen@local'])
+            self.assertFalse((home / '.config/gtk-4.0').exists())
+            backup = next((home / '.local/state/gnome-themes/backups').iterdir())
+            self.assertEqual((backup / 'files/extensions/charcoal-lockscreen@local/extension.js').read_text(), 'previous')
+            restored = subprocess.run([str(ROOT / 'install.sh'), '--restore', str(backup)],
+                                      env=env, text=True, capture_output=True)
+            self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
+            self.assertEqual((lock / 'extension.js').read_text(), 'previous')
+            self.assertFalse((lock / 'prefs.js').exists())
 
 
 if __name__ == '__main__':

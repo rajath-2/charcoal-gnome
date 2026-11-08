@@ -20,6 +20,36 @@ export const DEFAULT_STYLE = {
     'lock-wallpaper': '',
 };
 
+// `source` is anything with GSettings-style get_* methods: Gio.Settings or a ThemeClient.
+export function readValues(source) {
+    const elements = {};
+    for (const name of ELEMENTS) {
+        elements[name] = {x: source.get_double(`${name}-x`), y: source.get_double(`${name}-y`),
+            w: source.get_double(`${name}-w`), h: source.get_double(`${name}-h`),
+            visible: name === 'prompt' || source.get_boolean(`${name}-visible`)};
+    }
+    const style = {};
+    for (const [key, value] of Object.entries(DEFAULT_STYLE))
+        style[key] = typeof value === 'number' ? source.get_int(key) : source.get_string(key);
+    return {elements, style, elementStyles: source.get_string('element-styles'),
+        text: source.get_string('text-content'), image: source.get_string('image-uri')};
+}
+
+// Preferences preview: the shell's own placement on one monitor of this size, scaled to the preview.
+export function previewPlacements(values, monitor, scale) {
+    const placements = layoutLockElements(values.elements, [{x: 0, y: 0, width: monitor.width, height: monitor.height}], 0);
+    if (scale === 1) return placements;
+    return Object.fromEntries(Object.entries(placements).map(([name, r]) => [name, r && {...r,
+        x: r.x * scale, y: r.y * scale, width: r.width * scale, height: r.height * scale}]));
+}
+
+// A set but unusable lock wallpaper keeps the previous background and reports why.
+export function chooseWallpaper(requested, uri, previous) {
+    if (!requested) return {uri: null, error: ''};
+    if (uri) return {uri, error: ''};
+    return {uri: previous ?? null, error: `lock wallpaper not found: ${requested}`};
+}
+
 const num = (v, lo, hi, d) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
 const rnd = Math.round;
 

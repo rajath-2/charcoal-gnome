@@ -4,28 +4,14 @@ import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {findLockActors, snapshotActors, restoreActors} from './actors.js';
-import {ELEMENTS, DEFAULT_STYLE, layoutLockElements, readStyle, readElementStyle} from './policy.js';
+import {ELEMENTS, readValues, layoutLockElements, readStyle, readElementStyle, chooseWallpaper} from './policy.js';
+import {ThemeClient} from './theme-client.js';
 
 const MAX_TEXT = 200;
 const BOXES = ['user', 'prompt', 'status', 'notifications', 'text', 'image'];
 // The prompt goes first: on any failure it is restored before anything else.
 const ORDER = ['prompt', 'clock', 'date', 'user', 'status', 'notifications'];
 const SHIFT = {start: 0, center: 0.5, end: 1};
-
-// `source` is anything with GSettings-style get_* methods (Task 4 swaps in a ThemeClient).
-export function readValues(source) {
-    const elements = {};
-    for (const name of ELEMENTS) {
-        elements[name] = {x: source.get_double(`${name}-x`), y: source.get_double(`${name}-y`),
-            w: source.get_double(`${name}-w`), h: source.get_double(`${name}-h`),
-            visible: name === 'prompt' || source.get_boolean(`${name}-visible`)};
-    }
-    const style = {};
-    for (const [key, value] of Object.entries(DEFAULT_STYLE))
-        style[key] = typeof value === 'number' ? source.get_int(key) : source.get_string(key);
-    return {elements, style, elementStyles: source.get_string('element-styles'),
-        text: source.get_string('text-content'), image: source.get_string('image-uri')};
-}
 
 // An existing regular local file (absolute path or file:// URI) as a percent-encoded URI, else null.
 export function localFileUri(value) {
@@ -68,7 +54,9 @@ function layoutPosition(actor, snapshot) {
 export default class CharcoalLockscreen extends Extension {
     enable() {
         this._settings = this.getSettings();
-        this._source = this._settings;
+        this._source = new ThemeClient('lockscreen', this._settings);
+        this._unwatchTheme = this._source.connectChanged(() => this._reapply());
+        this._wallpaper = null;
         this._snapshot = new Map();
         this._blocks = [];
         this._settings.connectObject('changed', (_, key) => key !== 'status' && this._reapply(), this);
@@ -88,7 +76,9 @@ export default class CharcoalLockscreen extends Extension {
         Main.sessionMode.disconnectObject(this);
         Main.layoutManager.disconnectObject(this);
         this._settings.disconnectObject(this);
-        this._settings = this._source = this._snapshot = this._blocks = null;
+        this._unwatchTheme();
+        this._source.destroy();
+        this._settings = this._source = this._unwatchTheme = this._snapshot = this._blocks = this._wallpaper = null;
     }
 
     _sync() {
@@ -166,12 +156,14 @@ export default class CharcoalLockscreen extends Extension {
     applyLayout(values) {
         const actors = findLockActors();
         if (!actors || actors.dialog !== this._dialog) return;
-        if (this._settings.get_string('status')) this._settings.set_string('status', '');
+        const style = readStyle(values.style);
+        const wallpaper = chooseWallpaper(style['lock-wallpaper'], localFileUri(style['lock-wallpaper']), this._wallpaper);
+        this._wallpaper = wallpaper.uri;
+        if (this._settings.get_string('status') !== wallpaper.error) this._settings.set_string('status', wallpaper.error);
         this._track(actors);
         const monitors = Main.layoutManager.monitors.map(({x, y, width, height}) => ({x, y, width, height}));
         this._monitors = monitors;
         this._placements = layoutLockElements(values.elements, monitors, Main.layoutManager.primaryIndex);
-        const style = readStyle(values.style);
         this._styles = Object.fromEntries(ELEMENTS.map(name =>
             [name, elementCss(readElementStyle(values.style, values.elementStyles, name), style['panel-color'], BOXES.includes(name))]));
         this._aligns = Object.fromEntries(ELEMENTS.map(name =>
@@ -185,7 +177,7 @@ export default class CharcoalLockscreen extends Extension {
                 else if (shown && state.hidden) { state.hidden = false; actor.visible = state.visible; }
             });
         }
-        this._buildBlocks(values, style);
+        this._buildBlocks(values);
         this._place();
     }
 
@@ -227,7 +219,7 @@ export default class CharcoalLockscreen extends Extension {
         this._translate(actor, state, 'y', actor.translation_y + dy - oldY);
     }
 
-    _buildBlocks(values, style) {
+    _buildBlocks(values) {
         this._blocks.forEach(block => block.destroy());
         this._blocks = [];
         const dialog = this._dialog, p = this._placements;
@@ -245,7 +237,7 @@ export default class CharcoalLockscreen extends Extension {
             add(new St.Widget({name: 'charcoal-lock-image',
                 style: `${this._styles.image} background-image: url("${image}"); background-size: contain;`}), p.image);
         }
-        const wallpaper = localFileUri(style['lock-wallpaper']);
+        const wallpaper = this._wallpaper;
         if (wallpaper && dialog._backgroundGroup) {
             for (const m of this._monitors) {
                 add(new St.Widget({name: 'charcoal-lock-wallpaper',

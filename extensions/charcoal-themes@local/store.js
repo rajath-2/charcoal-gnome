@@ -80,7 +80,7 @@ export function captureSettings(id, name, settingsByComponent, useDefaults = fal
 
 export function installedComponentSettings() {
     const components = {};
-    for (const component of ['topbar', 'appearance', 'launchers', 'widgets', 'controls']) {
+    for (const component of ['topbar', 'appearance', 'launchers', 'widgets', 'controls', 'lockscreen']) {
         const dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'gnome-shell', 'extensions',
             `charcoal-${component}@local`, 'schemas']);
         try {
