@@ -158,8 +158,8 @@ def install(args):
         if exists(target):
             print(f'  retire {target} (moved into the backup)')
     # Consumers installed earlier and not selected now only get their shared theme modules refreshed.
-    refresh = {f'extensions/{name}': TARGETS[f'extensions/{name}'] for name in CONSUMERS
-               if f'extensions/{name}' not in targets and TARGETS[f'extensions/{name}'].is_dir()}
+    refresh = {label: path for name in CONSUMERS if (label := f'extensions/{name}') not in targets
+               and (path := TARGETS.get(label)) and path.is_dir()}
     for target in refresh.values():
         print(f'  refresh shared theme modules in {target}')
     if args.dry_run:
