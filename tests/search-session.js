@@ -78,6 +78,85 @@ export default class SearchTest extends Extension {
 
         launchers._search.toggle();
         check(!search.isOpen, 'minimal did not close');
+
+        // Opening animation: a circle fades in, then the bar grows sideways out of it, centred.
+        console.log('SEARCH enable_animations', St.Settings.get().enable_animations);
+        settings.set_int('open-duration', 300);
+        settings.set_int('search-max-height', 90); // so the pixel cap, not the percentage, limits the card
+        await pause(400);
+        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+        const full = Math.min(settings.get_int('launcher-width') * scale, monitor.width - 40);
+        const centred = () => Math.abs(search.panel.x + search.panel.width / 2 - (monitor.x + monitor.width / 2)) < 1;
+        launchers._search.toggle();
+        check(search.isOpen && search.panel.width < full && search.panel.opacity < 255 && search.entry.clutter_text.opacity === 0,
+            `bar did not start as a fading circle: width=${search.panel.width} opacity=${search.panel.opacity}`);
+        check(centred(), 'circle not centred');
+        // Typed during the animation, through the real input path.
+        const keyboard = global.stage.context.get_backend().get_default_seat().create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+        for (const ch of 'sett') {
+            const keyval = Clutter.unicode_to_keysym(ch.charCodeAt(0));
+            keyboard.notify_keyval(GLib.get_monotonic_time(), keyval, Clutter.KeyState.PRESSED);
+            keyboard.notify_keyval(GLib.get_monotonic_time(), keyval, Clutter.KeyState.RELEASED);
+        }
+        await pause(200);
+        check(search.panel.width > 0 && search.panel.width < full && centred(), `bar not growing: width=${search.panel.width}`);
+        check(search.blur.x === Math.round(search.panel.x) && search.blur.width === Math.round(search.panel.width),
+            `blur does not follow the growing bar: ${search.blur.x},${search.blur.width} vs ${search.panel.x},${search.panel.width}`);
+        await pause(600);
+        check(search.entry.get_text() === 'sett', `typing lost during the animation: "${search.entry.get_text()}"`);
+        check(search.panel.width === full && search.panel.opacity === 255 && search.entry.clutter_text.opacity === 255,
+            `bar did not finish: width=${search.panel.width}/${full}`);
+
+        // Several renders in one main-loop pass rebuild the card once.
+        let rebuilds = 0;
+        const rebuild = search._rebuild;
+        search._rebuild = function () { rebuilds++; return rebuild.call(this); };
+        search._render(); search._render(); search._render();
+        await pause(200);
+        search._rebuild = rebuild;
+        check(rebuilds === 1, `renders not batched: ${rebuilds} rebuilds`);
+
+        // The card's height is capped in pixels as well as by search-max-height.
+        check(await waitFor(() => search.rows.length > 0 && !search.stale, 5000), 'no rows for "sett"');
+        await pause(600);
+        search.resultBox.add_child(new St.Widget({height: 2000}));
+        search._place();
+        await pause(400);
+        check(search.scroll.height === monitor.height - 240 * scale, `card not capped: ${search.scroll.height}`);
+
+        // Clearing the query eases the card back down to the bar.
+        search.entry.set_text('');
+        let eased = false;
+        for (let i = 0; i < 60 && search.scroll.visible; i++) {
+            eased ||= !!search.scroll.get_transition('height');
+            await pause(10);
+        }
+        check(eased && !search.scroll.visible, `card did not ease shut: eased=${eased} visible=${search.scroll.visible}`);
+        check(search.blur.height === search.panel.height, 'blur does not match the collapsed bar');
+
+        // Closing animates, then destroys the actor.
+        launchers._search.toggle();
+        check(!search.isOpen && search.closing.size === 1, 'close did not animate');
+        check(await waitFor(() => search.closing.size === 0, 1000), 'closing actor not destroyed');
+
+        // Animations off: the full bar appears at once.
+        settings.set_boolean('animations', false);
+        await pause(400);
+        launchers._search.toggle();
+        check(search.panel.width === full && search.panel.opacity === 255 && search.entry.clutter_text.opacity === 255,
+            `animations off but bar not final: width=${search.panel.width} opacity=${search.panel.opacity}`);
+        launchers._search.toggle();
+        check(search.closing.size === 0, 'animations off but close animated');
+
+        // Live blur: Blur My Shell's pipeline sits inside the masked layer, so the mask cuts its output.
+        settings.set_boolean('static-blur', false);
+        await pause(400);
+        launchers._search.toggle();
+        await pause(800);
+        check(!bms?._effects_manager || search.blur.get_children().some(child => child.name === 'charcoal-search-backdrop'),
+            'live blur not attached');
+        check(search.blur.get_effects().includes(search.mask) && search.blur.width === search.panel.width, 'live blur not masked');
+        launchers._search.toggle();
         console.log('SEARCH PASS', bms?._effects_manager ? 'with blur' : 'without Blur My Shell');
         global.context.terminate();
     }
