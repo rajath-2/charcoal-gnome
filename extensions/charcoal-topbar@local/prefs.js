@@ -3,6 +3,7 @@ import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {attachThemeControls} from './theme-controls.js';
 
 const MODES = [['auto', 'Automatic'], ['compact', 'Compact bar'], ['islands', 'Islands']];
 
@@ -42,6 +43,7 @@ export default class CharcoalTopbarPreferences extends ExtensionPreferences {
         };
 
         const general = page('Top bar', 'preferences-desktop-display-symbolic');
+        attachThemeControls(window, general, settings, 'topbar');
         const layout = group(general, 'Layout');
         const mode = new Adw.ComboRow({title: 'Layout',
             subtitle: 'Automatic: full bar on the desktop, islands while an app is maximized',

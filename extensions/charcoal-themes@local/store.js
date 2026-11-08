@@ -62,12 +62,13 @@ export class ThemeStore {
     }
 }
 
-export function captureSettings(id, name, settingsByComponent) {
+export function captureSettings(id, name, settingsByComponent, useDefaults = false) {
     const components = {};
     for (const [component, settings] of Object.entries(settingsByComponent)) {
         const values = {};
         for (const key of Object.keys(THEME_KEYS[component] ?? {})) {
-            if (settings.settings_schema.has_key(key)) values[key] = settings.get_value(key).deepUnpack();
+            if (settings.settings_schema.has_key(key)) values[key] = (useDefaults
+                ? settings.settings_schema.get_key(key).get_default_value() : settings.get_value(key)).deepUnpack();
         }
         components[component] = values;
     }
@@ -75,4 +76,23 @@ export function captureSettings(id, name, settingsByComponent) {
     const checked = validateProfile(profile);
     if (!checked.ok) throw new Error(checked.errors.join('; '));
     return profile;
+}
+
+export function installedComponentSettings() {
+    const components = {};
+    for (const component of ['topbar', 'appearance', 'launchers', 'widgets']) {
+        const dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'gnome-shell', 'extensions',
+            `charcoal-${component}@local`, 'schemas']);
+        try {
+            const source = Gio.SettingsSchemaSource.new_from_directory(dir, Gio.SettingsSchemaSource.get_default(), false);
+            const schema = source.lookup(`org.gnome.shell.extensions.charcoal-${component}`, true);
+            if (schema) components[component] = new Gio.Settings({settings_schema: schema});
+        } catch { /* The component is optional. */ }
+    }
+    return components;
+}
+
+export function ensureDefaultTheme(store, components) {
+    if (!store.get('charcoal-default'))
+        store.save(captureSettings('charcoal-default', 'Charcoal Default', components, true));
 }

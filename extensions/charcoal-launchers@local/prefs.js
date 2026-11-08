@@ -3,6 +3,7 @@ import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {attachThemeControls} from './theme-controls.js';
 
 export default class CharcoalPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
@@ -28,6 +29,7 @@ export default class CharcoalPreferences extends ExtensionPreferences {
             settings.bind(key, row, 'value', Gio.SettingsBindFlags.DEFAULT); g.add(row);
         };
         const general = page('General', 'preferences-system-symbolic');
+        attachThemeControls(window, general, settings, 'launchers');
         const launchers = group(general, 'Launchers');
         toggle(launchers, 'search-enabled', 'Multipurpose search', 'Open apps, files, calculations and settings');
         toggle(launchers, 'wheel-enabled', 'Favorites wheel', 'Hold Super (or your own trigger key), point at an app, release to launch. Release in the center to cancel.');

@@ -25,7 +25,8 @@ TOPBAR = 'charcoal-topbar@local'
 APPEARANCE = 'charcoal-appearance@local'
 LAUNCHERS = 'charcoal-launchers@local'
 WIDGETS = 'charcoal-widgets@local'
-EXTENSIONS = [BLUR, TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS]
+THEMES = 'charcoal-themes@local'
+EXTENSIONS = [BLUR, TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS, THEMES]
 # Earlier bundles: the top bar was a Shell theme plus this extension, loaded by user-theme.
 AUTO = 'adaptive-smoke-panel@local'
 USER_THEME = 'user-theme@gnome-shell-extensions.gcampax.github.com'
@@ -44,6 +45,7 @@ COMPONENTS = {
     'appearance': ['gtk-4.0', 'icons/GreyStone - circle', 'icons/Future-black-cursors', f'extensions/{APPEARANCE}'],
     'launchers': [f'extensions/{BLUR}', f'extensions/{LAUNCHERS}'],
     'widgets': [f'extensions/{BLUR}', f'extensions/{WIDGETS}'],
+    'themes': [f'extensions/{THEMES}'],
 }
 SCHEMA_DIRS = {'org.gnome.shell.extensions.blur-my-shell': BLUR, 'org.gnome.shell.extensions.user-theme': USER_THEME,
                'org.gnome.shell.extensions.charcoal-topbar': TOPBAR}
@@ -172,6 +174,10 @@ def install(args):
             # Do not install old GTK edit snapshots as live configuration.
             ignore = shutil.ignore_patterns('gtk.css.*') if label == 'gtk-4.0' else None
             shutil.copytree(ROOT / label, target, symlinks=True, ignore=ignore)
+            if label in {f'extensions/{name}' for name in [TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS]}:
+                for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js',
+                               'theme-editor.js', 'theme-controls.js']:
+                    shutil.copy2(ROOT / 'shared' / module, target / module)
             manifest['targets'][label]['installed'] = True
             write_manifest(backup, manifest)
         for label, target in legacy.items():
@@ -287,7 +293,7 @@ def main():
     parser.add_argument('--mode', choices=['auto', 'compact', 'islands'], default='auto',
                         help='initial top bar layout; change later in Charcoal Topbar preferences')
     parser.add_argument('--only', nargs='+', choices=list(COMPONENTS), default=list(COMPONENTS), metavar='PIECE',
-                        help='install only some pieces: topbar, appearance, launchers, widgets (default: all)')
+                        help='install only some pieces: topbar, appearance, launchers, widgets, themes (default: all)')
     parser.add_argument('--dry-run', action='store_true', help='show changes without writing')
     parser.add_argument('--no-activate', action='store_true', help='install files without desktop settings changes')
     parser.add_argument('--install-extension-manager', action='store_true',

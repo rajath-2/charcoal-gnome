@@ -6,6 +6,7 @@ import Gtk from 'gi://Gtk';
 import Soup from 'gi://Soup?version=3.0';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {geocodeUrl, mergePlaces, parseGeocode, parsePlaceSearch, placeSearchUrl} from './policy.js';
+import {attachThemeControls} from './theme-controls.js';
 
 const LOOK_KEYS = ['background-color', 'background-opacity', 'border-color', 'border-width', 'border-opacity',
     'shadow-color', 'shadow-size', 'shadow-opacity', 'corner-radius', 'accent-color', 'text-color', 'blur', 'static-blur'];
@@ -59,6 +60,7 @@ export default class CharcoalWidgetsPreferences extends ExtensionPreferences {
         };
 
         const widgets = page('Widgets', 'view-grid-symbolic');
+        attachThemeControls(window, widgets, settings, 'widgets');
         const shown = group(widgets, 'Widgets', 'Shown on the desktop while no window is open on that screen.');
         toggle(shown, 'weather-enabled', 'Weather');
         toggle(shown, 'calendar-enabled', 'Calendar', 'Events come from the calendars in your top bar’s date menu');

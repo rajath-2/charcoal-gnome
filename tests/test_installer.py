@@ -52,6 +52,17 @@ class InstallerTest(unittest.TestCase):
             launcher = home / '.local/share/gnome-shell/extensions/charcoal-launchers@local'
             self.assertTrue((launcher / 'prefs.js').is_file())
             self.assertTrue((launcher / 'schemas/gschemas.compiled').is_file())
+            for name in ['charcoal-topbar@local', 'charcoal-appearance@local',
+                         'charcoal-launchers@local', 'charcoal-widgets@local']:
+                installed = home / '.local/share/gnome-shell/extensions' / name
+                for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js',
+                               'theme-editor.js', 'theme-controls.js']:
+                    self.assertEqual((installed / module).read_bytes(), (ROOT / 'shared' / module).read_bytes())
+                schema = 'org.gnome.shell.extensions.' + name.split('@')[0]
+                value = subprocess.run(['gsettings', '--schemadir', str(installed / 'schemas'), 'get', schema,
+                                        'follow-theme'], env=dict(env, GSETTINGS_BACKEND='memory'),
+                                       text=True, capture_output=True, check=True).stdout.strip()
+                self.assertEqual(value, 'false', name)
             backup_root = home / '.local/state/gnome-themes/backups'
             first = next(backup_root.iterdir())
             self.assertEqual(json.loads((first / 'manifest.json').read_text())['status'], 'complete')
@@ -102,6 +113,25 @@ class InstallerTest(unittest.TestCase):
             self.assertTrue((extensions / 'blur-my-shell@aunetx').is_dir())
             for absent in ['charcoal-topbar@local', 'charcoal-launchers@local', 'charcoal-appearance@local']:
                 self.assertFalse((extensions / absent).exists(), absent)
+
+    def test_only_themes_installs_and_restores_engine_without_other_pieces(self):
+        with tempfile.TemporaryDirectory(prefix='gnome-theme-install-test-') as directory:
+            home = Path(directory)
+            env = dict(os.environ, HOME=str(home), XDG_DATA_HOME=str(home / '.local/share'),
+                       XDG_CONFIG_HOME=str(home / '.config'), XDG_STATE_HOME=str(home / '.local/state'))
+            extensions = home / '.local/share/gnome-shell/extensions'
+            result = subprocess.run([str(ROOT / 'install.sh'), '--no-activate', '--only', 'themes'],
+                                    env=env, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue((extensions / 'charcoal-themes@local/schemas/gschemas.compiled').is_file())
+            for absent in ['charcoal-topbar@local', 'charcoal-launchers@local', 'charcoal-appearance@local',
+                           'charcoal-widgets@local', 'blur-my-shell@aunetx']:
+                self.assertFalse((extensions / absent).exists(), absent)
+            backup = next((home / '.local/state/gnome-themes/backups').iterdir())
+            restored = subprocess.run([str(ROOT / 'install.sh'), '--restore', str(backup)],
+                                      env=env, text=True, capture_output=True)
+            self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
+            self.assertFalse((extensions / 'charcoal-themes@local').exists())
 
 
 if __name__ == '__main__':

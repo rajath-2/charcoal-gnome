@@ -19,6 +19,8 @@ client.selectOverride('bar-color');
 assert(client.get_string('bar-color') === '#112233', 'override wins');
 client.useThemeValue('bar-color');
 assert(client.get_string('bar-color') === '#445566', 'theme restored');
+assert(Object.hasOwn(JSON.parse(local.values['override-activations']), 'bar-color'),
+    'saved override remains available after choosing theme value');
 client.destroy();
 const missing = new ThemeClient('topbar', local, {themeSettings: null});
 assert(missing.get_string('bar-color') === '#112233', 'missing engine uses local');

@@ -10,7 +10,7 @@ Click the animation for the full-quality video.
 | ![Calendar and notifications menu](media/calendar-menu.jpg) **Calendar menu:** styled notifications, media controls and events | ![Super+Space search panel](media/search.jpg) **Super+Space search:** apps, files and calculations |
 | ![Hold-Super favorites wheel](media/favorites-wheel.jpg) **Favorites wheel:** hold Super | [![Top bar switching layouts](media/topbar-layout.gif)](media/topbar-layout.mp4) **Automatic layout:** the bar splits and joins as windows open and maximize (click for video) |
 
-A charcoal-and-glass desktop for **GNOME Shell 51**, with four configurable
+A charcoal-and-glass desktop for **GNOME Shell 51**, with five configurable
 extensions, GTK4 styling, icons and a cursor theme. Install the whole bundle or
 choose individual pieces. Theme files install for your user, with a backup and
 restore command.
@@ -21,6 +21,7 @@ restore command.
 | Charcoal Appearance (`charcoal-appearance@local`) | Icon and cursor themes, dark/light style, window buttons, automatic GreyStone icon updates |
 | Charcoal Launchers (`charcoal-launchers@local`) | Super+Space search, hold-Super favorites wheel, window previews, radial dock and touchpad gestures |
 | Charcoal Widgets (`charcoal-widgets@local`) | Resizable weather, calendar and music cards on the empty desktop |
+| Charcoal Themes (`charcoal-themes@local`) | Named presets for Charcoal appearance, layout, and desktop wallpaper |
 
 Blur comes from the bundled **Blur My Shell** extension. Static blur uses only the
 wallpaper and is the default; live blur can be selected in each extension's
@@ -31,6 +32,7 @@ preferences and costs more GPU time. Search and wheel share their static/live se
 - [Install from scratch](#install-from-scratch)
 - [Installer options](#installer-options)
 - [Open preferences](#open-preferences)
+- [Coordinated themes](#coordinated-themes)
 - [Top bar](#top-bar)
 - [Desktop appearance and icon updates](#desktop-appearance-and-icon-updates)
 - [Search and favorites launchers](#search-and-favorites-launchers)
@@ -143,7 +145,7 @@ Open [preferences](#open-preferences), choose your weather city, and try
 
 | Option | Effect |
 | --- | --- |
-| `--only PIECE [PIECE ...]` | Install any combination of `topbar`, `appearance`, `launchers`, `widgets`; default: all |
+| `--only PIECE [PIECE ...]` | Install any combination of `topbar`, `appearance`, `launchers`, `widgets`, `themes`; default: all |
 | `--mode auto\|compact\|islands` | Choose the top bar's starting layout; default: `auto` |
 | `--no-activate` | Copy files and compile schemas without changing desktop settings or enabling extensions |
 | `--dry-run` | Preview without writes, prompts or downloads |
@@ -157,6 +159,7 @@ Examples:
 ./install.sh --only appearance             # Appearance + GTK4 CSS, icons, cursor
 ./install.sh --only launchers              # Launchers + Blur My Shell
 ./install.sh --only widgets                # Widgets + Blur My Shell
+./install.sh --only themes                 # Theme engine only
 ./install.sh --only topbar launchers --mode islands
 ./install.sh --mode compact                # all pieces, fixed compact top bar
 ./install.sh --no-activate                 # file-only installation
@@ -217,6 +220,7 @@ gnome-extensions prefs charcoal-topbar@local
 gnome-extensions prefs charcoal-appearance@local
 gnome-extensions prefs charcoal-launchers@local
 gnome-extensions prefs charcoal-widgets@local
+gnome-extensions prefs charcoal-themes@local
 ```
 
 To launch a Flatpak installation of Extension Manager from Terminal:
@@ -229,6 +233,24 @@ Settings normally apply immediately and survive reinstalling the bundle. The
 installer's `--mode` selects the top bar's initial layout on activation; use
 preferences to change it afterward. You can enable or disable each extension
 individually. Keep Blur My Shell enabled for Charcoal's blur effects.
+
+## Coordinated themes
+
+Open **Charcoal Themes** preferences to create a theme from your current
+settings, duplicate or rename one, choose a desktop wallpaper, and edit values
+for Topbar, Appearance, Launchers, and Widgets. Applying a theme changes its
+wallpaper immediately. Each other Charcoal extension has a **Follow active
+theme** switch in its own preferences; existing installations start with that
+switch off, preserving their current settings.
+
+When linked, a local edit becomes a saved override for that extension. **Use
+theme values** makes its overrides dormant, and **Restore saved local overrides**
+brings them back. Switching themes also makes local overrides dormant without
+deleting their values. **Save active overrides to this theme** writes only the
+settings you changed locally into the selected theme. Shortcuts, favorites,
+weather city, enabled widgets, and other feature or personal settings always
+stay local. If the theme engine is disabled or unavailable, linked extensions
+use their saved local settings.
 
 ## Top bar
 

@@ -108,7 +108,7 @@ export class ThemeClient {
 
     useThemeValue(key) {
         const value = this._overrides();
-        delete value[key];
+        if (Object.hasOwn(value, key)) value[key] = '';
         this.local.set_string('override-activations', JSON.stringify(value));
     }
 

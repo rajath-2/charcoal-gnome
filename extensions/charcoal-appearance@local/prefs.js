@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import {THEME, SOURCE, installedVersion, updateIcons} from './update.js';
+import {attachThemeControls} from './theme-controls.js';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 // Installed icon themes; cursor themes are the ones with a cursors/ folder.
@@ -31,6 +32,7 @@ export default class CharcoalAppearancePreferences extends ExtensionPreferences 
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
         const page = new Adw.PreferencesPage({title: 'Appearance', icon_name: 'applications-graphics-symbolic'});
+        attachThemeControls(window, page, settings, 'appearance');
         const group = new Adw.PreferencesGroup({title: 'Desktop appearance',
             description: 'Applied while this extension is enabled. Disable it to restore your previous settings.'});
         page.add(group);
