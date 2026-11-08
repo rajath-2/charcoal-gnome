@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {nextWheelState, pickWheelItem, clampWheel, releaseSelection} from '../extensions/charcoal-controls@local/policy.js';
+import {requiresConfirmation, dispatchAction} from '../extensions/charcoal-controls@local/actions.js';
 
 test('control wheel navigation and safe selection', () => {
     let state = nextWheelState('closed', 'open');
@@ -16,6 +17,18 @@ test('control wheel navigation and safe selection', () => {
     assert.equal(pickWheelItem(geometry.x + 300, geometry.y, geometry, ['one']), null);
     assert.equal(pickWheelItem(geometry.x, geometry.y - 100, geometry, []), null);
     assert.equal(pickWheelItem(geometry.x, geometry.y - 100, geometry, ['one']), 'one');
+});
+
+test('destructive actions require confirmation and dispatch once', async () => {
+    for (const id of ['logout', 'restart', 'poweroff']) assert.equal(requiresConfirmation(id), true);
+    for (const id of ['lock', 'suspend', 'note', 'settings']) assert.equal(requiresConfirmation(id), false);
+    const called = [];
+    const services = Object.fromEntries(['lock', 'suspend', 'note', 'settings', 'logout', 'restart', 'poweroff']
+        .map(id => [id, async () => called.push(id)]));
+    await dispatchAction('restart', services, false);
+    assert.deepEqual(called, []);
+    await dispatchAction('restart', services, true);
+    assert.deepEqual(called, ['restart']);
 });
 
 test('only deliberate matching press and release selects once', () => {
