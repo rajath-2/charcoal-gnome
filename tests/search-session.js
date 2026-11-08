@@ -73,8 +73,12 @@ export default class SearchTest extends Extension {
         search._schedule();
         press(search, Clutter.KEY_Return);
         check(!activated && search.isOpen, 'Enter activated a stale row');
-        check(search.rows.every(({row}) => row.opacity < 255), 'stale rows not dimmed');
+        check(search.rows.every(({row}) => row.opacity < 255 && !row.track_hover), 'stale rows not dimmed or still hoverable');
         check(await waitFor(() => !search.stale, 3000), 'rows stayed stale');
+
+        search.entry.set_text('');
+        search._query();
+        check(search.groups.size === 0 && await waitFor(() => search.rows.length === 0, 3000), 'minimal empty query built result groups');
 
         launchers._search.toggle();
         check(!search.isOpen, 'minimal did not close');
@@ -155,7 +159,7 @@ export default class SearchTest extends Extension {
         await pause(800);
         check(!bms?._effects_manager || search.blur.get_children().some(child => child.name === 'charcoal-search-backdrop'),
             'live blur not attached');
-        check(search.blur.get_effects().includes(search.mask) && search.blur.width === search.panel.width, 'live blur not masked');
+        check(!search.blur.get_n_children() ? !search.mask : search.blur.get_effects().includes(search.mask) && search.blur.width === search.panel.width, `live blur not masked n=${search.blur.get_n_children()} mask=${!!search.mask} w=${search.blur.width}/${search.panel.width}`);
         launchers._search.toggle();
         console.log('SEARCH PASS', bms?._effects_manager ? 'with blur' : 'without Blur My Shell');
         global.context.terminate();

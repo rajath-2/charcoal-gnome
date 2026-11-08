@@ -388,7 +388,7 @@ this extension.
 File results depend on GNOME Files and its search index; this is not a whole-disk
 scan. GNOME Search privacy settings are respected. Calculator, Settings and Software (installable apps) require
 their installed GNOME search providers. Enter copies calculation results; ordinary
-results open their application or file. Unavailable providers are shown separately.
+results open their application or file. Unavailable providers are shown separately (Classic; Minimal leaves them out).
 
 **Appearance → Motion** can disable animations or use fade without scaling.
 **Reset launcher preferences** restores appearance, controls and shortcuts, and

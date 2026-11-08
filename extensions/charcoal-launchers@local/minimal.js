@@ -51,8 +51,6 @@ export class MinimalSearch extends SearchLauncher {
         // The mask sits on the layer's parent, so it cuts Blur My Shell's finished output in both modes:
         // the static wallpaper copy and the live pipeline (whose capture reads the stage under an offscreen parent).
         this.blur = new St.Widget({x, y, reactive: false, clip_to_allocation: true});
-        this.mask = new RoundedMask();
-        this.blur.add_effect(this.mask);
         this.actor.add_child(this.blur);
         this.actor.add_child(this.panel);
         this.dirty = false; this.scrollTarget = -1; this.radius = -1; this.shape = '';
@@ -61,7 +59,14 @@ export class MinimalSearch extends SearchLauncher {
         const update = global.stage.connect('before-update', () => this._syncShape());
         this.actor.connect('destroy', () => global.stage.disconnect(update));
         this.blur.connect('child-added', () => { this.shape = ''; }); // place the static wallpaper copy
-        addBlur(this.blur, this.settings, 'blur', [x, y]);
+        // Mask only once blur actually attached (an empty layer would still cost an offscreen buffer every frame).
+        const blur = this.blur;
+        addBlur(blur, this.settings, 'blur', [x, y]).then(() => {
+            if (!blur.get_n_children() || this.blur !== blur || !this.actor) return;
+            this.mask = new RoundedMask();
+            blur.add_effect(this.mask);
+            this.shape = '';
+        }).catch(() => {});
     }
     _syncShape() {
         const {panel, blur} = this;
@@ -80,7 +85,7 @@ export class MinimalSearch extends SearchLauncher {
         const bar = this._barHeight(), full = this._frame().width;
         const t = full > bar ? Math.min(1, Math.max(0, (width - bar) / (full - bar))) : 1;
         const radius = Math.round(Math.min(height / 2, bar / 2 + (this.settings.get_int('corner-radius') * scale - bar / 2) * t));
-        this.mask.setShape(width, height, radius);
+        this.mask?.setShape(width, height, radius);
         if (radius === this.radius) return;
         this.radius = radius;
         panel.set_style(`${this.panelStyle} border-radius: ${radius / scale}px;`);
@@ -121,7 +126,16 @@ export class MinimalSearch extends SearchLauncher {
     // Keep the previous rows, dimmed and inert, until fresh results land.
     _markStale() {
         this.stale = true;
-        this.rows.forEach(({row}) => { row.opacity = 120; });
+        this.rows.forEach(({row}) => { row.opacity = 120; row.track_hover = false; });
+    }
+    // An empty query is just the bare bar: skip Classic's favorites and all-apps lookups.
+    _query() {
+        if (this.entry.get_text().trim()) return super._query();
+        this.generation.next();
+        this.cancellable?.cancel();
+        this.groups.clear();
+        this._render();
+        return undefined;
     }
     // Batch: replies from several sources in one main-loop pass rebuild and resize the card once, on idle.
     _render() {
