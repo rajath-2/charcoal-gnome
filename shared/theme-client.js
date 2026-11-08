@@ -89,6 +89,16 @@ export class ThemeClient {
     get_int(key) { return this.get(key); }
     get_boolean(key) { return this.get(key); }
     get_strv(key) { return this.get(key); }
+    get_double(key) { return this.get(key); }
+    get settings_schema() { return this.local.settings_schema; }
+
+    connect(signal, callback) { return this.local.connect(signal, callback); }
+    disconnect(id) { this.local.disconnect(id); }
+
+    set_string(key, value) {
+        if (this._activeProfile()?.components?.[this.component]?.[key] !== undefined) this.selectOverride(key);
+        return this.local.set_string(key, value);
+    }
 
     selectOverride(key) {
         if (!this.central) return;

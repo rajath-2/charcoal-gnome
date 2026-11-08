@@ -12,6 +12,8 @@ import {addBlur} from './blur.js';
 import {buildCss, rgb01} from './theme.js';
 import {installMenuHandoff} from './menuHandoff.js';
 import {ContentTheme} from './contentTheme.js';
+import {ThemeClient} from './theme-client.js';
+import {effectiveSnapshot} from './theme-policy.js';
 
 const MODE_CLASSES = ['charcoal-compact', 'charcoal-islands', 'adaptive-smoke'];
 
@@ -24,6 +26,8 @@ export default class CharcoalTopbar extends Extension {
         this._timeline = null;
         this._progress = null;
         this._prefs = this.getSettings();
+        this._theme = new ThemeClient('topbar', this._prefs);
+        this._unwatchTheme = this._theme.connectChanged(() => this._applyPrefs());
         this._contentTheme = new ContentTheme([Main.panel._leftBox, Main.panel._centerBox, Main.panel._rightBox]);
         this._blur = this._settings('blur-my-shell@aunetx', 'org.gnome.shell.extensions.blur-my-shell.panel');
         this._popupBlur = this._settings('blur-my-shell@aunetx', 'org.gnome.shell.extensions.blur-my-shell.popup');
@@ -66,8 +70,7 @@ export default class CharcoalTopbar extends Extension {
 
     // The stylesheet is generated from preferences; a new file per change makes St reparse it.
     _loadStyle() {
-        const values = Object.fromEntries(this._prefs.settings_schema.list_keys()
-            .map(key => [key, this._prefs.get_value(key).deepUnpack()]));
+        const values = effectiveSnapshot(this._prefs, this._theme);
         this._style = {color: rgb01(values['bar-color']), line: rgb01(values['border-color']),
             opacity: values['bar-opacity'] / 100, border: values['border-opacity'] / 100, borderWidth: values['border-width'],
             radius: values['corner-radius'], shadow: values.shadow, shadowColor: rgb01(values['shadow-color']),
@@ -94,8 +97,8 @@ export default class CharcoalTopbar extends Extension {
 
     _applyPrefs() {
         this._loadStyle();
-        const mode = this._prefs.get_string('mode');
-        const staticBlur = this._prefs.get_boolean('static-blur');
+        const mode = this._theme.get_string('mode');
+        const staticBlur = this._theme.get_boolean('static-blur');
         for (const settings of [this._blur, this._popupBlur])
             if (settings.get_boolean('static-blur') !== staticBlur)
                 settings.set_boolean('static-blur', staticBlur);
@@ -104,7 +107,7 @@ export default class CharcoalTopbar extends Extension {
         const blur = mode === 'compact';
         if (this._blur.get_boolean('blur') !== blur)
             this._blur.set_boolean('blur', blur);
-        const radius = this._prefs.get_int('corner-radius');
+        const radius = this._theme.get_int('corner-radius');
         if (this._blur.get_int('corner-radius') !== radius)
             this._blur.set_int('corner-radius', radius);
         this._clear();
@@ -152,7 +155,7 @@ export default class CharcoalTopbar extends Extension {
     }
 
     _update() {
-        if (this._prefs.get_string('mode') !== 'auto')
+        if (this._theme.get_string('mode') !== 'auto')
             return;
         const monitor = Main.layoutManager.primaryIndex;
         const windows = global.workspace_manager.get_active_workspace().list_windows();
@@ -163,7 +166,7 @@ export default class CharcoalTopbar extends Extension {
             monitor: window.get_monitor(),
             horizontal: window.maximized_horizontally,
             vertical: window.maximized_vertically,
-        })), monitor, this._prefs.get_boolean('invert-auto'));
+        })), monitor, this._theme.get_boolean('invert-auto'));
         if (islands === this._lastMode)
             return;
         Main.panel.add_style_class_name('adaptive-smoke');
@@ -243,7 +246,7 @@ export default class CharcoalTopbar extends Extension {
             this._blurLayer.add_effect(this._mask);
             Main.panel.insert_child_below(this._blurLayer, this._surface);
             const layer = this._blurLayer;
-            addBlur(layer, this._prefs.get_boolean('static-blur')).then(group => {
+            addBlur(layer, this._theme.get_boolean('static-blur')).then(group => {
                 if (group && layer === this._blurLayer) {
                     this._blurStatic = group;
                     this._allocateSurface();
@@ -275,6 +278,10 @@ export default class CharcoalTopbar extends Extension {
     }
 
     disable() {
+        this._unwatchTheme?.();
+        this._unwatchTheme = null;
+        this._theme?.destroy();
+        this._theme = null;
         this._contentTheme?.destroy();
         this._contentTheme = null;
         this._restoreMenuHandoff?.();

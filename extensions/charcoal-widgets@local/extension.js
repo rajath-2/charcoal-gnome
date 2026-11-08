@@ -9,6 +9,8 @@ import {isDesktopClear} from './policy.js';
 import {WeatherCard} from './weather.js';
 import {CalendarCard} from './calendar.js';
 import {MusicCard} from './music.js';
+import {ThemeClient} from './theme-client.js';
+import {effectiveSnapshot} from './theme-policy.js';
 
 const NAMES = ['weather', 'calendar', 'music'];
 const CARD_TYPES = {weather: WeatherCard, calendar: CalendarCard, music: MusicCard};
@@ -22,6 +24,8 @@ export default class CharcoalWidgets extends Extension {
         this._cards = new Map();
         this._resized = new Set();
         this._settings = this.getSettings();
+        this._theme = new ThemeClient('widgets', this._settings);
+        this._unwatchTheme = this._theme.connectChanged(() => { this._loadStyle(); this._build(); });
         // Above the wallpaper, below every window; the window group is hidden in the overview.
         // A BackgroundGroup: Mutter's restack keeps those under the windows (a plain actor ends up on top).
         this._container = new Meta.BackgroundGroup({name: 'charcoal-widgets'});
@@ -51,7 +55,8 @@ export default class CharcoalWidgets extends Extension {
     }
 
     _settingChanged(key) {
-        if (key === 'positions' || key === 'sizes') this._placeAll();
+        if (key === 'follow-theme' || key === 'override-activations') { this._loadStyle(); this._build(); }
+        else if (key === 'positions' || key === 'sizes') this._placeAll();
         else if (REBUILD_KEYS.includes(key)) this._build();
         else if (!OWN_KEYS.includes(key)) this._queueStyle(key.endsWith('-size') ? key.slice(0, -5) : null);
     }
@@ -62,7 +67,7 @@ export default class CharcoalWidgets extends Extension {
             this._cards.delete(name);
             if (!this._settings.get_boolean(`${name}-enabled`))
                 continue;
-            const card = new CARD_TYPES[name](name, this._settings, this);
+            const card = new CARD_TYPES[name](name, this._theme, this);
             this._container.add_child(card);
             this._cards.set(name, card);
         }
@@ -130,8 +135,7 @@ export default class CharcoalWidgets extends Extension {
 
     // The stylesheet is generated from preferences; a new file per change makes St reparse it.
     _loadStyle() {
-        const values = Object.fromEntries(this._settings.settings_schema.list_keys()
-            .map(key => [key, this._settings.get_value(key).deepUnpack()]));
+        const values = effectiveSnapshot(this._settings, this._theme);
         const dir = GLib.build_filenamev([GLib.get_user_runtime_dir(), 'charcoal-widgets']);
         GLib.mkdir_with_parents(dir, 0o700);
         const file = Gio.File.new_for_path(`${dir}/style-${GLib.uuid_string_random()}.css`);
@@ -150,6 +154,10 @@ export default class CharcoalWidgets extends Extension {
     }
 
     disable() {
+        this._unwatchTheme?.();
+        this._unwatchTheme = null;
+        this._theme?.destroy();
+        this._theme = null;
         for (const [object, id] of this._signals)
             object.disconnect(id);
         this._signals = [];

@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {validateProfile, updateProfile} from '../extensions/charcoal-themes@local/profile.js';
 import {THEME_KEYS} from '../extensions/charcoal-themes@local/catalog.js';
-import {resolveValue, selectOverride, switchTheme} from '../shared/theme-policy.js';
+import {resolveValue, selectOverride, switchTheme, effectiveSnapshot} from '../shared/theme-policy.js';
 import {activateTheme} from '../extensions/charcoal-themes@local/activation.js';
+import {buildCss as topbarCss} from '../extensions/charcoal-topbar@local/theme.js';
+import {buildCss as widgetCss} from '../extensions/charcoal-widgets@local/theme.js';
 
 const minimal = {version: 1, id: 'night', name: 'Night', wallpaper: null,
     components: {topbar: {'bar-color': '#121212', 'bar-height': 30}}};
@@ -85,4 +88,23 @@ test('missing wallpaper still activates other theme values and reports the error
     assert.equal(values['active-theme-id'], 'night');
     assert.equal(values['activation-id'], 'new-token');
     assert.equal(values.status, 'missing wallpaper');
+});
+
+test('topbar and widget CSS use effective theme values', () => {
+    const defaults = component => Object.fromEntries([...readFileSync(new URL(
+        `../extensions/charcoal-${component}@local/schemas/org.gnome.shell.extensions.charcoal-${component}.gschema.xml`,
+        import.meta.url), 'utf8').matchAll(/<key name="([^"]+)" type="(.)">[\s\S]*?<default>([^<]+)<\/default>/g)]
+        .map(([, key, type, raw]) => [key, type === 's' ? raw.slice(1, -1) : type === 'b' ? raw === 'true' : Number(raw)]));
+    const localSettings = values => ({settings_schema: {list_keys: () => Object.keys(values)},
+        get_value: key => ({deepUnpack: () => values[key]})});
+    const local = localSettings(defaults('topbar'));
+    const themed = {get: key => ({...defaults('topbar'), 'bar-color': '#112233', 'bar-height': 42, 'text-color': '#abcdef'})[key]};
+    const topbar = effectiveSnapshot(local, themed);
+    assert.equal(topbar['bar-height'], 42);
+    assert.ok(topbarCss({...topbar, mode: 'compact'}).includes('rgba(17,34,51'));
+
+    const widgetLocal = localSettings(defaults('widgets'));
+    const widget = effectiveSnapshot(widgetLocal, {get: key => ({...defaults('widgets'),
+        'background-color': '#222222', 'accent-color': '#00aaff'})[key]});
+    assert.ok(widgetCss(widget).includes('#00aaff'));
 });
