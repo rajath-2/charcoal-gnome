@@ -20,6 +20,11 @@ function validValue(value, rule) {
 export function validateProfile(raw, catalog = THEME_KEYS) {
     const errors = [];
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {ok: false, profile: null, errors: ['Profile must be an object']};
+    // Lock screen was dropped; themes saved before that still carry its section, so strip it instead of rejecting them.
+    if (raw.components && Object.hasOwn(raw.components, 'lockscreen')) {
+        const {lockscreen: _dropped, ...components} = raw.components;
+        raw = {...raw, components};
+    }
     if (raw.version !== 1) errors.push('Unsupported profile version');
     if (typeof raw.id !== 'string' || !idPattern.test(raw.id)) errors.push('Invalid profile ID');
     if (typeof raw.name !== 'string' || !raw.name.trim() || raw.name.length > 80) errors.push('Invalid profile name');

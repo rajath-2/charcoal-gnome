@@ -56,6 +56,8 @@
     <key name="animations" type="b"><default>true</default></key>
     <key name="scale-animation" type="b"><default>true</default></key>
     <key name="open-duration" type="i"><range min="0" max="500"/><default>180</default></key>
+    <key name="search-bar-position" type="i"><range min="0" max="100"/><default>50</default></key>
+    <key name="search-fade-duration" type="i"><range min="0" max="1000"/><default>250</default></key>
     <key name="close-duration" type="i"><range min="0" max="400"/><default>120</default></key>
     <key name="blur" type="b"><default>true</default></key>
     <key name="static-blur" type="b"><default>true</default></key>

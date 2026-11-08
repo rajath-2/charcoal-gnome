@@ -115,12 +115,14 @@ export default class CharcoalPreferences extends ExtensionPreferences {
 
         const searchPage = page('Search', 'system-search-symbolic');
         const styles = [['classic', 'Classic'], ['minimal', 'Minimal']];
-        const style = new Adw.ComboRow({title: 'Style', subtitle: 'Minimal: a glass bar near the top that grows into results, no dimming',
+        const style = new Adw.ComboRow({title: 'Style', subtitle: 'Minimal: a glass bar in the centre that grows into results, no dimming',
             model: Gtk.StringList.new(styles.map(([, label]) => label))});
         const syncStyle = () => { style.selected = Math.max(0, styles.findIndex(([id]) => id === settings.get_string('search-style'))); };
         syncStyle(); watch('search-style', syncStyle);
         style.connect('notify::selected', () => settings.set_string('search-style', styles[style.selected][0]));
-        group(searchPage, 'Style').add(style);
+        const styleGroup = group(searchPage, 'Style');
+        styleGroup.add(style);
+        spin(styleGroup, 'search-bar-position', 'Minimal bar position', 0, 100, 1, 'Percent down the screen: 0 top, 50 centre, 100 bottom');
         const keys = group(searchPage, 'Shortcut');
         const shortcut = new Adw.ActionRow({title: 'Search shortcut', subtitle: 'Super+Space replaces keyboard layout switching while enabled'});
         const shortcutButton = new Gtk.Button({valign: Gtk.Align.CENTER});
@@ -148,6 +150,7 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         toggle(searchLook, 'blur', 'Background blur', 'Uses your Blur My Shell popup pipeline');
         toggle(searchLook, 'static-blur', 'Static blur', 'Search and wheel: blur the wallpaper only. Off: live blur of windows behind (more GPU)');
         spin(searchLook, 'open-duration', 'Grow-in duration', 0, 500, 10, 'Milliseconds');
+        spin(searchLook, 'search-fade-duration', 'Minimal icon grow-out', 0, 1000, 10, 'Milliseconds the search circle takes to grow before the bar widens');
         spin(searchLook, 'close-duration', 'Closing duration', 0, 400, 10, 'Milliseconds');
 
         const appearance = page('Appearance', 'applications-graphics-symbolic');

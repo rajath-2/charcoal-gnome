@@ -1,1 +1,0 @@
-{"uuid":"charcoal-lockscreen@local","name":"Charcoal Lock Screen","description":"Theme the current user's GNOME lock screen","shell-version":["51"],"session-modes":["user","unlock-dialog"],"settings-schema":"org.gnome.shell.extensions.charcoal-lockscreen"}

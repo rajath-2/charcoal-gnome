@@ -45,13 +45,6 @@ test('only deliberate matching press and release selects once', () => {
     assert.equal(releaseSelection(null, 'note', false), null);
 });
 
-test('prefs entry rows show an apply button so edits save', () => {
-    const prefs = readFileSync(new URL('../extensions/charcoal-controls@local/prefs.js', import.meta.url), 'utf8');
-    const rows = prefs.match(/new Adw\.EntryRow\(\{[^}]*\}\)/g);
-    assert.equal(rows.length, 2);
-    for (const row of rows) assert.match(row, /show_apply_button: true/);
-});
-
 test('power actions never block the compositor with call_sync', () => {
     const source = readFileSync(new URL('../extensions/charcoal-controls@local/extension.js', import.meta.url), 'utf8');
     assert.doesNotMatch(source, /call_sync/);

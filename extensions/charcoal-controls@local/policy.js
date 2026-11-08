@@ -1,3 +1,8 @@
+export const WHEEL_ITEMS = [
+    ['lock', 'Lock'], ['note', 'Note'], ['settings', 'Settings'], ['themes', 'Themes'],
+    ['suspend', 'Suspend'], ['logout', 'Log out'], ['restart', 'Restart'], ['poweroff', 'Power off'],
+];
+
 export function nextWheelState(state, event) {
     if (event === 'close') return 'closed';
     if (state === 'closed') return event === 'open' ? 'actions' : 'closed';

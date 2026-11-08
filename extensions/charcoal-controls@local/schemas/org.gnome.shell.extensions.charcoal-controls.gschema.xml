@@ -1,6 +1,7 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.charcoal-controls" path="/org/gnome/shell/extensions/charcoal-controls/">
-    <key name="shortcut" type="as"><default>['&lt;Super&gt;q']</default></key>
+    <key name="shortcut" type="as"><default>[]</default></key>
+    <key name="wheel-items" type="as"><default>['lock', 'note', 'settings', 'themes', 'suspend', 'logout', 'restart', 'poweroff']</default></key>
     <key name="radius" type="i"><range min="100" max="320"/><default>170</default></key>
     <key name="neutral-radius" type="i"><range min="20" max="80"/><default>42</default></key>
     <key name="text-size" type="i"><range min="10" max="32"/><default>15</default></key>

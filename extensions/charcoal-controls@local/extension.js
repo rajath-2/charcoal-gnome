@@ -24,7 +24,7 @@ export default class CharcoalControls extends Extension {
             if (!this._accelerators.includes(action) || Main.sessionMode.currentMode !== 'user') return;
             const [x, y] = global.get_pointer();
             this._refreshThemes();
-            this._wheel.open(x, y);
+            this._wheel.open(x, y, 'actions', true);
         });
         this._shortcut = this._settings.connect('changed::shortcut', () => this._claimShortcut());
         this._session = Main.sessionMode.connect('updated', () => {

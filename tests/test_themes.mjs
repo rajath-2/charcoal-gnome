@@ -142,7 +142,7 @@ test('every consumer carries byte-identical copies of the shared theme modules',
     const extensions = new URL('../extensions/', import.meta.url);
     const modules = readdirSync(shared).filter(name => name.endsWith('.js'));
     const consumers = readdirSync(extensions).filter(dir => modules.some(name => existsSync(new URL(`${dir}/${name}`, extensions))));
-    assert.ok(consumers.length >= 6, `found consumers: ${consumers}`);
+    assert.ok(consumers.length >= 5, `found consumers: ${consumers}`);
     for (const dir of consumers) for (const name of modules)
         assert.ok(readFileSync(new URL(`${dir}/${name}`, extensions)).equals(readFileSync(new URL(name, shared))), `${dir}/${name}`);
 });
@@ -159,4 +159,12 @@ test('value sources name the keys overridden locally and the ones following the 
             overrideActivation: {'bar-color': 'a'}, activationId: 'a'});
         if (theme[key] !== undefined) assert.equal(resolved === 'L', local.includes(key), key);
     }
+});
+
+test('themes saved with the dropped lock screen section still load, without it', async () => {
+    const {validateProfile} = await import('../shared/theme-profile.js');
+    const checked = validateProfile({version: 1, id: 'old', name: 'Old', wallpaper: null,
+        components: {topbar: {}, lockscreen: {'clock-y': 0.4}}});
+    assert.ok(checked.ok, checked.errors.join('; '));
+    assert.deepEqual(Object.keys(checked.profile.components), ['topbar']);
 });

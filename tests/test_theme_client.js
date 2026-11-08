@@ -70,23 +70,6 @@ const icons = new ThemeClient('appearance', appearance, {themeSettings: central,
     isEngineEnabled: () => true});
 assert(icons.get_value('icon-theme').deepUnpack() === 'Other icons', 'linked icon choice reaches desktop writer');
 icons.destroy();
-const lockLocal = {values: {'clock-y': 0.1, 'follow-theme': true, 'override-activations': '{}'},
-    get_value(key) { return {deepUnpack: () => this.values[key], get_type_string: () => 'd'}; },
-    get_boolean(key) { return this.values[key]; }, get_string(key) { return this.values[key]; },
-    set_string(key, value) { this.values[key] = value; return true; }};
-let activation = 'a';
-const lockCentral = {get_string(key) { return {'active-theme-id': 'night', 'activation-id': activation, 'profile-revision': '1'}[key]; },
-    connect() { return 1; }, disconnect() {}};
-const lock = new ThemeClient('lockscreen', lockLocal, {themeSettings: lockCentral, isEngineEnabled: () => true,
-    loadProfile: () => ({version: 1, id: 'night', name: 'Night', wallpaper: null, components: {lockscreen: {'clock-y': 0.4}}})});
-assert(lock.get_double('clock-y') === 0.4, 'lock layout follows theme');
-lock.selectOverride('clock-y');
-assert(lock.get_double('clock-y') === 0.1, 'lock layout override wins');
-activation = 'b';
-assert(lock.get_double('clock-y') === 0.4, 'lock override dormant after theme switch');
-lock.selectOverride('clock-y');
-assert(lock.get_double('clock-y') === 0.1, 'lock override restored');
-lock.destroy();
 const engineValues = {'active-theme-id': 'night', 'activation-id': 'a', 'profile-revision': '1', status: '',
     'requested-theme-id': ''};
 let centralChanged;

@@ -24,7 +24,14 @@ export class MinimalSearch extends SearchLauncher {
         const m = this.monitor;
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
         const width = Math.min(this.settings.get_int('launcher-width') * scale, m.width - 40);
-        return {x: m.x + (m.width - width) / 2, y: m.y + 64 * scale, width, scale};
+        return {x: m.x + (m.width - width) / 2, width, scale};
+    }
+    // The bare bar is centred at search-bar-position (percent down the monitor); a tall card slides up
+    // just enough to fit, keeping 64px margins.
+    _top(cardHeight) {
+        const m = this.monitor, scale = St.ThemeContext.get_for_stage(global.stage).scale_factor, bar = this._barHeight();
+        const wanted = m.y + m.height * this.settings.get_int('search-bar-position') / 100 - bar / 2;
+        return Math.round(Math.max(m.y + 64 * scale, Math.min(wanted, m.y + m.height - 64 * scale - cardHeight)));
     }
     _duration(key) {
         return this.settings.get_boolean('animations') && St.Settings.get().enable_animations ? this.settings.get_int(key) : 0;
@@ -47,7 +54,7 @@ export class MinimalSearch extends SearchLauncher {
         this.resultBox = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'charcoal-results', x_expand: true});
         this.scroll.set_child(this.resultBox);
         this.panel.add_child(this.scroll);
-        const {x, y} = this._frame();
+        const {x} = this._frame(), y = this._top(0);
         // The mask sits on the layer's parent, so it cuts Blur My Shell's finished output in both modes:
         // the static wallpaper copy and the live pipeline (whose capture reads the stage under an offscreen parent).
         this.blur = new St.Widget({x, y, reactive: false, clip_to_allocation: true});
@@ -92,20 +99,23 @@ export class MinimalSearch extends SearchLauncher {
     }
     // The typed text with its cursor, and the "Search" hint (a separate actor).
     _texts() { return [this.entry.clutter_text, this.entry.hint_actor].filter(Boolean); }
-    // (a) the circle with the search icon fades in, (b) the bar grows sideways out of it, staying centred,
+    // (a) the circle with the search icon grows out from its centre, (b) the bar grows sideways out of it, staying centred,
     // (c) the hint and cursor fade in. The entry already has key focus, so typing is kept throughout.
     _animateOpen() {
         const duration = this._duration('open-duration');
         if (!duration) return; // _place already left the full bar in place
         const {x, width} = this._frame(), bar = this._barHeight(), texts = this._texts();
-        this.panel.set({x: x + (width - bar) / 2, width: bar, opacity: 0});
-        this.blur.opacity = 0;
+        const fadeIn = this.settings.get_int('search-fade-duration'); // the circle's grow-out time
+        this.panel.set({x: x + (width - bar) / 2, width: bar, opacity: 255});
+        // The blur layer tracks the panel's box, so it scales about the same centre.
+        for (const actor of [this.panel, this.blur]) {
+            actor.set_pivot_point(0.5, 0.5);
+            actor.set_scale(0, 0);
+            actor.ease({scale_x: 1, scale_y: 1, duration: fadeIn, mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
+        }
         texts.forEach(text => { text.opacity = 0; });
-        const fade = () => ({opacity: 255, duration: 0.35 * duration, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
-        this.panel.ease(fade());
-        this.blur.ease(fade());
-        this.panel.ease({x, width, delay: 0.35 * duration, duration: 0.65 * duration, mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
-        texts.forEach(text => text.ease({opacity: 255, delay: 0.75 * duration, duration: 0.25 * duration,
+        this.panel.ease({x, width, delay: fadeIn, duration: 0.65 * duration, mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
+        texts.forEach(text => text.ease({opacity: 255, delay: fadeIn + 0.4 * duration, duration: 0.25 * duration,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD}));
     }
     // The reverse: results collapse and the text fades, the bar shrinks into the circle, the circle fades out.
@@ -160,22 +170,25 @@ export class MinimalSearch extends SearchLauncher {
     _place() {
         if (!this.isOpen) return;
         if (this.dirty) { this.dirty = false; this._rebuild(); }
-        const {x, y, width, scale} = this._frame();
+        const {x, width, scale} = this._frame();
         // While the bar grows, the animation owns x and width.
         if (!this.panel.get_transition('width')) this.panel.set({x, width});
-        this.panel.y = y;
         const m = this.monitor;
         // The card starts 64 * scale down; Classic's pixel cap leaves room for that and the bar.
         const target = this.entry.get_text().trim() ? Math.min(this.resultBox.get_preferred_height(width)[1],
             m.height - 240 * scale, m.height * this.settings.get_int('search-max-height') / 100) : 0;
         if (target === this.scrollTarget) return;
+        const first = this.scrollTarget < 0;
         this.scrollTarget = target;
-        const scroll = this.scroll;
+        const scroll = this.scroll, y = this._top(this._barHeight() + target);
         scroll.remove_transition('height');
-        if (!this._duration('open-duration')) {
+        this.panel.remove_transition('y');
+        if (first || !this._duration('open-duration')) {
             scroll.height = target; scroll.visible = !!target;
+            this.panel.y = y;
             return;
         }
+        this.panel.ease({y, duration: 150, mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
         if (!target && !scroll.visible) return;
         if (!scroll.visible) { scroll.height = 0; scroll.show(); }
         scroll.ease({height: target, duration: 150, mode: Clutter.AnimationMode.EASE_OUT_CUBIC,

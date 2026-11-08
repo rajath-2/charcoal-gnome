@@ -43,17 +43,17 @@ export default class SearchTest extends Extension {
         const search = launchers._searches.minimal;
         check(search.isOpen && !classic.isOpen, 'minimal did not open');
         check(global.stage.get_key_focus() === search.entry.clutter_text, 'entry lacks key focus');
-        await pause(300);
+        await pause(600); // fade-in plus grow
         const monitor = Main.layoutManager.primaryMonitor;
         check(!search.actor.style, `minimal dims the screen: ${search.actor.style}`);
         check(search.actor.get_children().every(child => child.width < global.stage.width),
             'minimal has a full-screen child');
         const [, y] = search.panel.get_transformed_position();
-        check(y < monitor.y + monitor.height / 4, `panel too low: ${y}`);
+        check(Math.abs(y + search.panel.height / 2 - (monitor.y + monitor.height / 2)) <= 1, `bar not vertically centred: ${y}`);
         check(!search.scroll.visible, 'results shown for an empty query');
         const bms = Main.extensionManager.lookup('blur-my-shell@aunetx')?.stateObj;
         check(!bms?._effects_manager || search.blur.get_first_child()?.name === 'charcoal-static-blur', 'bar blur not attached');
-        check(search.blur.width === search.panel.width && search.blur.height === search.panel.height, 'blur does not match the bar');
+        check(search.blur.width === search.panel.width && search.blur.height === search.panel.height, `blur does not match the bar: ${search.blur.width}x${search.blur.height} vs ${search.panel.width}x${search.panel.height}`);
 
         search.entry.set_text('zzzznotanapp');
         check(await waitFor(() => labels(search.resultBox).some(l => l.text === 'No results'), 5000), 'no "No results" row');
@@ -83,7 +83,17 @@ export default class SearchTest extends Extension {
         launchers._search.toggle();
         check(!search.isOpen, 'minimal did not close');
 
-        // Opening animation: a circle fades in, then the bar grows sideways out of it, centred.
+        // search-bar-position moves the bare bar: 20 puts its centre a fifth of the way down.
+        settings.set_int('search-bar-position', 20);
+        await pause(400);
+        launchers._search.toggle();
+        await pause(600);
+        const [, placed] = search.panel.get_transformed_position();
+        check(Math.abs(placed + search.panel.height / 2 - (monitor.y + monitor.height * 0.2)) <= 1, `bar not at 20%: ${placed}`);
+        launchers._search.toggle();
+        settings.set_int('search-bar-position', 50);
+
+        // Opening animation: a circle grows out, then the bar grows sideways out of it, centred.
         console.log('SEARCH enable_animations', St.Settings.get().enable_animations);
         settings.set_int('open-duration', 300);
         settings.set_int('search-max-height', 90); // so the pixel cap, not the percentage, limits the card
@@ -92,8 +102,9 @@ export default class SearchTest extends Extension {
         const full = Math.min(settings.get_int('launcher-width') * scale, monitor.width - 40);
         const centred = () => Math.abs(search.panel.x + search.panel.width / 2 - (monitor.x + monitor.width / 2)) < 1;
         launchers._search.toggle();
-        check(search.isOpen && search.panel.width < full && search.panel.opacity < 255 && search.entry.clutter_text.opacity === 0,
-            `bar did not start as a fading circle: width=${search.panel.width} opacity=${search.panel.opacity}`);
+        check(search.isOpen && search.panel.width < full && search.panel.scale_x < 1 && search.panel.opacity === 255
+            && search.entry.clutter_text.opacity === 0,
+            `bar did not start as a growing circle: width=${search.panel.width} scale=${search.panel.scale_x} opacity=${search.panel.opacity}`);
         check(centred(), 'circle not centred');
         // Typed during the animation, through the real input path.
         const keyboard = global.stage.context.get_backend().get_default_seat().create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
@@ -108,8 +119,8 @@ export default class SearchTest extends Extension {
             `blur does not follow the growing bar: ${search.blur.x},${search.blur.width} vs ${search.panel.x},${search.panel.width}`);
         await pause(600);
         check(search.entry.get_text() === 'sett', `typing lost during the animation: "${search.entry.get_text()}"`);
-        check(search.panel.width === full && search.panel.opacity === 255 && search.entry.clutter_text.opacity === 255,
-            `bar did not finish: width=${search.panel.width}/${full}`);
+        check(search.panel.width === full && search.panel.scale_x === 1 && search.blur.scale_x === 1
+            && search.entry.clutter_text.opacity === 255, `bar did not finish: width=${search.panel.width}/${full}`);
 
         // Several renders in one main-loop pass rebuild the card once.
         let rebuilds = 0;

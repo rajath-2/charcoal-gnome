@@ -23,7 +23,6 @@ restore command.
 | Charcoal Widgets (`charcoal-widgets@local`) | Resizable weather, calendar and music cards on the empty desktop |
 | Charcoal Themes (`charcoal-themes@local`) | Named presets for Charcoal appearance, layout, and desktop wallpaper |
 | Charcoal Control Wheel (`charcoal-controls@local`) | Separate wheel for actions, quick notes, settings, and theme switching |
-| Charcoal Lock Screen (`charcoal-lockscreen@local`) | Layout, style and wallpaper for your own GNOME lock screen |
 
 Blur comes from the bundled **Blur My Shell** extension. Static blur uses only the
 wallpaper and is the default; live blur can be selected in each extension's
@@ -35,7 +34,6 @@ preferences and costs more GPU time. Search and wheel share their static/live se
 - [Installer options](#installer-options)
 - [Open preferences](#open-preferences)
 - [Coordinated themes](#coordinated-themes)
-- [Lock screen](#lock-screen)
 - [Top bar](#top-bar)
 - [Desktop appearance and icon updates](#desktop-appearance-and-icon-updates)
 - [Search and favorites launchers](#search-and-favorites-launchers)
@@ -148,7 +146,7 @@ Open [preferences](#open-preferences), choose your weather city, and try
 
 | Option | Effect |
 | --- | --- |
-| `--only PIECE [PIECE ...]` | Install any combination of `topbar`, `appearance`, `launchers`, `widgets`, `themes`, `controls`, `lockscreen`; default: all |
+| `--only PIECE [PIECE ...]` | Install any combination of `topbar`, `appearance`, `launchers`, `widgets`, `themes`, `controls`; default: all |
 | `--mode auto\|compact\|islands` | Choose the top bar's starting layout; default: `auto` |
 | `--no-activate` | Copy files and compile schemas without changing desktop settings or enabling extensions |
 | `--dry-run` | Preview without writes, prompts or downloads |
@@ -164,7 +162,6 @@ Examples:
 ./install.sh --only widgets                # Widgets + Blur My Shell
 ./install.sh --only themes                 # Theme engine only
 ./install.sh --only controls               # Control wheel only
-./install.sh --only lockscreen             # Lock screen only
 ./install.sh --only topbar launchers --mode islands
 ./install.sh --mode compact                # all pieces, fixed compact top bar
 ./install.sh --no-activate                 # file-only installation
@@ -226,7 +223,6 @@ gnome-extensions prefs charcoal-appearance@local
 gnome-extensions prefs charcoal-launchers@local
 gnome-extensions prefs charcoal-widgets@local
 gnome-extensions prefs charcoal-themes@local
-gnome-extensions prefs charcoal-lockscreen@local
 ```
 
 To launch a Flatpak installation of Extension Manager from Terminal:
@@ -244,7 +240,7 @@ individually. Keep Blur My Shell enabled for Charcoal's blur effects.
 
 Open **Charcoal Themes** preferences to create a theme from your current
 settings, duplicate or rename one, choose a desktop wallpaper, and edit values
-for Topbar, Appearance, Launchers, Widgets, the Control Wheel, and the Lock Screen. Applying a theme changes its
+for Topbar, Appearance, Launchers, Widgets, and the Control Wheel. Applying a theme changes its
 wallpaper immediately. Each other Charcoal extension has a **Follow active
 theme** switch in its own preferences; existing installations start with that
 switch off, preserving their current settings.
@@ -258,41 +254,17 @@ weather city, enabled widgets, and other feature or personal settings always
 stay local. If the theme engine is disabled or unavailable, linked extensions
 use their saved local settings.
 
-## Lock screen
-
-**Charcoal Lock Screen** restyles and rearranges the lock screen of your own
-user session in **GNOME Shell 51**: clock, date, user, password prompt, status,
-notifications, an optional decorative text and image, fonts, colors, borders,
-shadows, and a lock wallpaper that may differ from the desktop wallpaper. Open
-its preferences to drag elements in the preview (laid out with the same rules
-the shell uses) or enter exact positions, and to link it to the active theme
-with **Follow active theme**, **Save active overrides to this theme**, **Use
-theme values**, and **Restore saved local overrides**. Decorative text is
-personal and never saved into a theme.
-
-It does not change GDM, the login screen shown before you sign in, or any other
-user's lock screen; GDM runs as its own system user and is out of scope. It also
-never touches authentication: the password prompt is GNOME's own, it cannot be
-hidden, and if its requested position is unsafe it stays where GNOME puts it. A
-lock-screen wallpaper file that is missing is reported under **Status** in the
-preferences, and the previous background stays in place; a missing decorative
-image is simply not shown.
-
-To undo a layout you do not like, unlock and open the preferences
-(`gnome-extensions prefs charcoal-lockscreen@local`) and press **Reset → Reset
-lock screen** and confirm; this returns every lock-screen setting to its default and stops
-following the theme. To get GNOME's own lock screen back entirely, turn the
-extension off: `gnome-extensions disable charcoal-lockscreen@local`.
-
 ## Control wheel
 
-Press **Super+Q** to open the separate control wheel. Its actions include lock,
-suspend, log out, restart, power off, a quick note, and Charcoal settings.
-Select **Themes** for a second ring of saved profiles; the active theme is marked
-with a dot. Log out, restart, and power off ask for confirmation. Quick notes
+Set a shortcut for the separate control wheel in **Charcoal Control Wheel**
+preferences (none is set by default; press **Set shortcut** and then the keys).
+Hold the shortcut, move the pointer onto an item and release to run it; release over
+the centre to cancel. Clicking an item also works. Its items are lock, suspend, log out, restart, power off, a quick note, Charcoal
+settings and themes; turn each on or off under **Wheel items**.
+Select **Themes** for a second ring of saved profiles; the applied theme is
+filled with the accent colour and named in the centre. Log out, restart, and power off ask for confirmation. Quick notes
 are stored as UTF-8 text files under `~/.local/share/charcoal/notes/` and are
-never included in a theme. Edit the shortcut and wheel appearance in
-**Charcoal Control Wheel** preferences.
+never included in a theme. Wheel appearance is also set in its preferences.
 
 ## Top bar
 
@@ -337,7 +309,7 @@ appearance selected restores the bundled copy until the next successful update.
 ## Search and favorites launchers
 
 - **Super+Space:** centered search for applications, files, calculations, settings, and installable apps (opens GNOME Software; nothing is installed from search).
-- **Search style:** Preferences → Search → Style. **Classic** is the centered panel over a dimmed, blurred screen with headings; **Minimal** is a glass bar near the top of the screen that grows into one flat results card, with nothing else dimmed. Minimal opens as a small search circle that grows into the bar (and shrinks back on close); with animations off it simply appears.
+- **Search style:** Preferences → Search → Style. **Classic** is the centered panel over a dimmed, blurred screen with headings; **Minimal** is a glass bar in the middle of the screen (it slides up only when results need the room) that grows into one flat results card, with nothing else dimmed. Minimal opens as a small search circle that grows into the bar (and shrinks back on close); Style → Minimal bar position moves the bar up or down (percent of the screen, 50 is centre); Look and motion → Minimal icon grow-out sets how long the circle takes to grow in; with animations off it simply appears.
 - **Tap Super:** workspace overview.
 - **Hold Super:** compact favorites wheel at the cursor. Move toward an app and release
   to launch: the direction picks it, so overshooting past the wheel still selects the

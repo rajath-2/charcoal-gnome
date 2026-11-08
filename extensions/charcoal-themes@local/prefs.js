@@ -108,7 +108,9 @@ export default class CharcoalThemesPreferences extends ExtensionPreferences {
         };
         const refresh = (id = selectedId) => {
             profiles = store.list();
-            model.splice(0, model.get_n_items(), profiles.map(profile => profile.name));
+            const applied = settings.get_string('active-theme-id');
+            model.splice(0, model.get_n_items(), profiles.map(profile => profile.id === applied ? `${profile.name} (applied)` : profile.name));
+            chooser.subtitle = `Applied: ${profiles.find(profile => profile.id === applied)?.name ?? 'none'}`;
             selectedId = profiles.some(profile => profile.id === id) ? id : profiles[0]?.id ?? '';
             chooser.selected = Math.max(0, profiles.findIndex(profile => profile.id === selectedId));
             name.text = selected()?.name ?? '';
@@ -164,6 +166,7 @@ export default class CharcoalThemesPreferences extends ExtensionPreferences {
             }));
         wallpaperRow.add_suffix(choose);
         settings.connect('changed::status', () => { status.subtitle = settings.get_string('status') || 'Theme ready'; });
-        refresh();
+        settings.connect('changed::active-theme-id', () => refresh());
+        refresh(settings.get_string('active-theme-id')); // open on the applied theme
     }
 }
