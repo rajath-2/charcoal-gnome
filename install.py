@@ -51,6 +51,11 @@ COMPONENTS = {
     'controls': [f'extensions/{CONTROLS}'],
     'lockscreen': [f'extensions/{LOCKSCREEN}'],
 }
+# Every consumer carries copies of the shared theme modules; all copies must know every catalog
+# section, or a profile holding a newer component is rejected as a whole.
+CONSUMERS = [TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS, CONTROLS, LOCKSCREEN]
+THEME_MODULES = ['theme-client.js', 'theme-policy.js', 'theme-catalog.js', 'theme-profile.js',
+                 'theme-editor.js', 'theme-controls.js']
 SCHEMA_DIRS = {'org.gnome.shell.extensions.blur-my-shell': BLUR, 'org.gnome.shell.extensions.user-theme': USER_THEME,
                'org.gnome.shell.extensions.charcoal-topbar': TOPBAR}
 
@@ -152,6 +157,11 @@ def install(args):
     for target in legacy.values():
         if exists(target):
             print(f'  retire {target} (moved into the backup)')
+    # Consumers installed earlier and not selected now only get their shared theme modules refreshed.
+    refresh = {f'extensions/{name}': TARGETS[f'extensions/{name}'] for name in CONSUMERS
+               if f'extensions/{name}' not in targets and TARGETS[f'extensions/{name}'].is_dir()}
+    for target in refresh.values():
+        print(f'  refresh shared theme modules in {target}')
     if args.dry_run:
         print('Dry run: no files or settings changed.')
         return
@@ -178,10 +188,20 @@ def install(args):
             # Do not install old GTK edit snapshots as live configuration.
             ignore = shutil.ignore_patterns('gtk.css.*') if label == 'gtk-4.0' else None
             shutil.copytree(ROOT / label, target, symlinks=True, ignore=ignore)
-            if label in {f'extensions/{name}' for name in [TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS, CONTROLS, LOCKSCREEN]}:
-                for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js', 'theme-profile.js',
-                               'theme-editor.js', 'theme-controls.js']:
+            if label in {f'extensions/{name}' for name in CONSUMERS}:
+                for module in THEME_MODULES:
                     shutil.copy2(ROOT / 'shared' / module, target / module)
+            manifest['targets'][label]['installed'] = True
+            write_manifest(backup, manifest)
+        for label, target in refresh.items():
+            # Backed up whole, so restore puts the previous copies back.
+            manifest['targets'][label] = {'path': str(target), 'existed': True, 'installed': False}
+            write_manifest(backup, manifest)
+            saved = backup / 'files' / label
+            saved.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(target, saved, symlinks=True)
+            for module in THEME_MODULES:
+                shutil.copy2(ROOT / 'shared' / module, target / module)
             manifest['targets'][label]['installed'] = True
             write_manifest(backup, manifest)
         for label, target in legacy.items():

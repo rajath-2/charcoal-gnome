@@ -180,6 +180,35 @@ class InstallerTest(unittest.TestCase):
             self.assertEqual((lock / 'extension.js').read_text(), 'previous')
             self.assertFalse((lock / 'prefs.js').exists())
 
+    def test_partial_install_refreshes_theme_modules_of_installed_consumers(self):
+        with tempfile.TemporaryDirectory(prefix='gnome-theme-install-test-') as directory:
+            home = Path(directory)
+            env = dict(os.environ, HOME=str(home), XDG_DATA_HOME=str(home / '.local/share'),
+                       XDG_CONFIG_HOME=str(home / '.config'), XDG_STATE_HOME=str(home / '.local/state'))
+            extensions = home / '.local/share/gnome-shell/extensions'
+            # An older controls install whose catalog has no lockscreen section.
+            controls = extensions / 'charcoal-controls@local'
+            controls.mkdir(parents=True)
+            (controls / 'extension.js').write_text('older controls')
+            (controls / 'theme-catalog.js').write_text('older catalog')
+            (controls / 'theme-profile.js').write_text('older profile')
+            result = subprocess.run([str(ROOT / 'install.sh'), '--no-activate', '--only', 'lockscreen'],
+                                    env=env, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js', 'theme-profile.js',
+                           'theme-editor.js', 'theme-controls.js']:
+                self.assertEqual((controls / module).read_bytes(), (ROOT / 'shared' / module).read_bytes(), module)
+            self.assertEqual((controls / 'extension.js').read_text(), 'older controls', 'only shared modules change')
+            for absent in ['charcoal-topbar@local', 'charcoal-widgets@local', 'charcoal-launchers@local']:
+                self.assertFalse((extensions / absent).exists(), absent)
+            backup = next((home / '.local/state/gnome-themes/backups').iterdir())
+            restored = subprocess.run([str(ROOT / 'install.sh'), '--restore', str(backup)],
+                                      env=env, text=True, capture_output=True)
+            self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
+            self.assertEqual((controls / 'theme-catalog.js').read_text(), 'older catalog')
+            self.assertEqual((controls / 'extension.js').read_text(), 'older controls')
+            self.assertFalse((extensions / 'charcoal-lockscreen@local').exists())
+
 
 if __name__ == '__main__':
     unittest.main()
