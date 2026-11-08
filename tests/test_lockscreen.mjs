@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {ELEMENTS, MIN_PROMPT, layoutLockElements, safePromptRect, readStyle, DEFAULT_STYLE, DEFAULT_LAYOUT}
+import {ELEMENTS, MIN_PROMPT, layoutLockElements, safePromptRect, readStyle, readElementStyle, DEFAULT_STYLE, DEFAULT_LAYOUT}
     from '../extensions/charcoal-lockscreen@local/policy.js';
 
 const mon = (x, y, width, height) => ({x, y, width, height});
@@ -38,13 +38,19 @@ test('prompt cannot be hidden; text and image are hidden by default', () => {
     for (const e of ELEMENTS) assert.ok(DEFAULT_LAYOUT[e]);
 });
 
-test('prompt outside the monitor is pulled back with minimum size', () => {
+test('prompt partly off the monitor is clamped with minimum size', () => {
     const m = mon(-1920, 0, 1920, 1080);
-    for (const req of [{x: 5000, y: -400, width: 10, height: 10}, {x: NaN, y: 'a'}, null, undefined]) {
-        const r = safePromptRect(req, m);
-        assert.ok(inside(r, m), JSON.stringify(req));
-        assert.ok(r.width >= MIN_PROMPT.width && r.height >= MIN_PROMPT.height);
-    }
+    const r = safePromptRect({x: -100, y: 1000, width: 10, height: 10}, m);
+    assert.ok(inside(r, m));
+    assert.ok(r.width >= MIN_PROMPT.width && r.height >= MIN_PROMPT.height);
+});
+
+test('invalid or fully off-screen prompt falls back to GNOME position (null)', () => {
+    const m = mon(-1920, 0, 1920, 1080);
+    for (const req of [{x: 5000, y: 0, width: 300, height: 150}, {x: -1920, y: -900, width: 300, height: 150},
+        {x: NaN, y: 'a'}, {x: 0, y: 0}, null, undefined])
+        assert.equal(safePromptRect(req, m), null, JSON.stringify(req));
+    assert.equal(layoutLockElements({}, [mon(0, 0, 0, 0)], 0).prompt, null);
 });
 
 test('too-small screen shrinks the prompt to the monitor, never beyond', () => {
@@ -80,4 +86,28 @@ test('schema defaults agree with policy defaults', () => {
     }
     assert.equal(d['text-content'], '');
     assert.equal(d['image-uri'], '');
+    assert.equal(d['element-styles'], '{}');
+});
+
+test('per-element style: overrides, per-field fallback, malformed input', () => {
+    const g = readStyle({});
+    const json = JSON.stringify({clock: {'font-size': 90, color: '#112233', align: 'end', 'font-weight': 450,
+        'border-color': 'red', 'shadow-size': 1e9, 'font-family': 'x;}'}});
+    const s = readElementStyle(g, json, 'clock');
+    assert.equal(s['font-size'], 90);
+    assert.equal(s.color, '#112233');
+    assert.equal(s.align, 'end');
+    assert.equal(s['font-weight'], g['font-weight']);
+    assert.equal(s['border-color'], g['accent-color']);
+    assert.equal(s['shadow-size'], 64);
+    assert.equal(s['font-family'], g['font-family']);
+    const base = readElementStyle(g, '{}', 'date');
+    assert.equal(base.align, 'center');
+    assert.equal(base.color, g['text-color']);
+    for (const bad of ['{nope', '[]', 'null', '5', undefined, null])
+        assert.deepEqual(readElementStyle(g, bad, 'clock'), base);
+    assert.deepEqual(readElementStyle(g, json, 'bogus'), base);
+    assert.deepEqual(readElementStyle(g, '{"date":5}', 'date'), base);
+    for (const a of ['start', 'center', 'end']) assert.equal(readElementStyle(g, `{"user":{"align":"${a}"}}`, 'user').align, a);
+    assert.equal(readElementStyle(g, '{"user":{"align":"left"}}', 'user').align, 'center');
 });

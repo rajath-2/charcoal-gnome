@@ -197,5 +197,8 @@
     <key name="lock-wallpaper" type="s">
       <default>''</default>
     </key>
+    <key name="element-styles" type="s">
+      <default>'{}'</default>
+    </key>
   </schema>
 </schemalist>
