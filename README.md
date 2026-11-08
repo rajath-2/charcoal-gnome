@@ -4,6 +4,12 @@
 
 Click the animation for the full-quality video.
 
+| | |
+| --- | --- |
+| ![Desktop with islands top bar and widgets](media/desktop.jpg) **Desktop:** islands top bar, calendar, music and weather widgets | ![Full top bar over a maximized window](media/maximized-bar.jpg) **Maximized window:** the islands join into one full bar (shown with *Invert automatic layout* on) |
+| ![Calendar and notifications menu](media/calendar-menu.jpg) **Calendar menu:** styled notifications, media controls and events | ![Super+Space search panel](media/search.jpg) **Super+Space search:** apps, files and calculations |
+| ![Hold-Super favorites wheel](media/favorites-wheel.jpg) **Favorites wheel:** hold Super | |
+
 A charcoal-and-glass desktop for **GNOME Shell 51**, with four configurable
 extensions, GTK4 styling, icons and a cursor theme. Install the whole bundle or
 choose individual pieces. Theme files install for your user, with a backup and
