@@ -124,6 +124,8 @@ export default class CharcoalLockscreen extends Extension {
 
     _reapply() {
         if (!this._dialog) return;
+        // A full re-apply retries actors that failed before; allocation passes do not.
+        for (const state of this._snapshot.values()) state.failed = false;
         try {
             this.applyLayout(readValues(this._source));
         } catch (e) {
@@ -175,6 +177,7 @@ export default class CharcoalLockscreen extends Extension {
         this._aligns = Object.fromEntries(ELEMENTS.map(name =>
             [name, readElementStyle(values.style, values.elementStyles, name).align]));
         for (const [actor, state] of this._snapshot) {
+            if (state.failed) continue;
             this._guard(actor, () => {
                 actor.style = `${state.style ?? ''} ${this._styles[state.key]}`;
                 const shown = state.key === 'prompt' || this._placements[state.key]?.visible !== false;
@@ -198,7 +201,7 @@ export default class CharcoalLockscreen extends Extension {
     _place() {
         if (!this._placements) return;
         const entries = [...this._snapshot].sort(([, a], [, b]) => ORDER.indexOf(a.key) - ORDER.indexOf(b.key));
-        for (const [actor, state] of entries)
+        for (const [actor, state] of entries.filter(([, s]) => !s.failed))
             this._guard(actor, () => this._move(actor, state));
     }
 
@@ -271,7 +274,9 @@ export default class CharcoalLockscreen extends Extension {
     _fail(name, error, actor = null) {
         try {
             const prompt = [...this._snapshot].find(([, s]) => s.key === 'prompt')?.[0];
-            this._restore([prompt, actor].filter(Boolean));
+            const failed = [prompt, actor].filter(Boolean);
+            for (const a of failed) this._snapshot.get(a).failed = true;
+            this._restore(failed);
             this._settings?.set_string('status', `error: ${name}: ${error.message}`);
         } catch (e) {
             logError(e, 'charcoal-lockscreen restore');

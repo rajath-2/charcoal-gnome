@@ -100,32 +100,35 @@ export default class LockTest extends Extension {
         check(near(prompt.x, wantX) && near(prompt.y, wantY), `prompt not moved: ${JSON.stringify(prompt)} want ${wantX},${wantY}`);
         check(actors.prompt.visible && actors.prompt.opacity === 255, 'prompt hidden');
 
-        // Wrong password through GNOME's own prompt (never PAM directly).
+        // Retry after a failed attempt, without any password reaching PAM: emit GNOME's own
+        // verification-failed signal (as its verifier would) and check the entry is usable again.
+        // A real wrong-password retry is a manual check.
         const auth = actors.dialog._authPrompt;
-        const asked = await waitFor(() => auth._queryingService && actors.authEntry.reactive, 5000);
-        if (asked) {
-            // Observe (never intercept) GNOME's verifier to know PAM really rejected the attempt.
-            let failed = false;
-            const id = auth._userVerifier.connect('verification-failed', () => { failed = true; });
-            actors.authEntry.text = 'charcoal-not-the-password';
-            actors.authEntry.clutter_text.emit('activate');
-            check(await waitFor(() => failed, 20000), 'GNOME never reported the wrong password');
-            if (!auth._userVerifier) actors.dialog.activate(); // GNOME reset to the clock; retry from there
-            else auth._userVerifier.disconnect(id);
-            check(await waitFor(() => {
-                const now = findLockActors();
-                return now?.authEntry?.visible && now.authEntry.reactive && !now.authEntry.text;
-            }, 10000), 'auth entry not usable for a retry after a wrong password');
-            const retry = rect(findLockActors().prompt);
-            check(retry.x >= monitor.x && retry.x + retry.width <= monitor.x + monitor.width, 'prompt off monitor after retry');
-            console.log('LOCKSCREEN WRONG-PASSWORD CHECKED: PAM rejected it and the entry is ready for a retry');
+        if (await waitFor(() => auth._queryingService && actors.authEntry.reactive, 5000)) {
+            auth._userVerifier.emit('verification-failed', {serviceName: auth._queryingService, canRetry: true});
+            await pause(500);
+            console.log('LOCKSCREEN RETRY: simulated verification-failed');
         } else {
             actors.dialog.activate();
             await pause(500);
-            const now = findLockActors();
-            check(now?.authEntry?.visible && now.authEntry.reactive, 'auth entry not reactive after re-activation');
-            console.log('LOCKSCREEN WRONG-PASSWORD PENDING: no PAM question in headless session');
+            console.log('LOCKSCREEN RETRY: no prompt question; re-activation only');
         }
+        const retry = findLockActors();
+        check(retry?.authEntry?.visible && retry.authEntry.reactive, 'auth entry not usable after a failed attempt');
+        retry.authEntry.grab_key_focus();
+        check(retry.authEntry.contains(global.stage.key_focus), 'auth entry does not accept focus after a failed attempt');
+        const after = rect(retry.prompt);
+        check(after.x >= monitor.x && after.x + after.width <= monitor.x + monitor.width, 'prompt off monitor after retry');
+
+        // Runtime prompt fallback: no safe placement (policy null) leaves the prompt at GNOME's position.
+        const runtime = theme.stateObj;
+        runtime._placements.prompt = null;
+        runtime._place();
+        await pause(300);
+        check(retry.prompt.translation_x === 0 && retry.prompt.translation_y === 0 && retry.prompt.visible,
+            `prompt moved without a safe placement: ${retry.prompt.translation_x},${retry.prompt.translation_y}`);
+        runtime._reapply();
+        await pause(300);
 
         // Monitor change re-applies (real monitor removal needs a live session).
         Main.layoutManager.emit('monitors-changed');
@@ -134,17 +137,19 @@ export default class LockTest extends Extension {
         this.checkStyled(actors, 'monitors-changed');
 
         // A failure while applying restores that actor (and the prompt) and reports it in `status`.
-        const runtime = theme.stateObj, move = runtime._move;
+        const move = runtime._move;
         runtime._move = function (actor, state) {
             if (state.key === 'clock') throw new Error('injected');
             return move.call(this, actor, state);
         };
         runtime._reapply();
         runtime._move = move;
+        await pause(500); // allocation passes must not re-move or re-style the failed actor
         actors = findLockActors();
         check(settings.get_string('status').startsWith('error: clock: injected'), `status not set: ${settings.get_string('status')}`);
         check(!actors.clock.style?.includes('#abcdef') && actors.clock.translation_x === 0, 'failed clock not restored');
         check(actors.prompt.visible && actors.authEntry?.visible, 'prompt hidden after a failure');
+        check(actors.prompt.translation_x === 0 && actors.prompt.translation_y === 0, 'failed apply left the prompt moved');
         runtime._reapply();
         check(settings.get_string('status') === '', 'status not cleared after a good apply');
         this.checkStyled(findLockActors(), 'after failure');

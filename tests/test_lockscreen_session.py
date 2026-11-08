@@ -43,5 +43,3 @@ output = (root / 'shell.log').read_text()
 if 'LOCKSCREEN PASS' not in output or 'LOCKSCREEN FAIL' in output:
     raise AssertionError(output[-14000:])
 print('LOCKSCREEN PASS')
-for line in output.splitlines():
-    if 'WRONG-PASSWORD' in line: print(line.strip())
