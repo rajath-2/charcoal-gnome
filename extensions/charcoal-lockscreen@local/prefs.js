@@ -201,14 +201,22 @@ export default class CharcoalLockscreenPreferences extends ExtensionPreferences 
 
         const reset = group('Reset', 'Returns layout, style and content to their defaults and stops following the theme. To get GNOME’s own lock screen back, turn this extension off.');
         const resetRow = new Adw.ActionRow({title: 'Reset lock screen'});
-        const resetButton = new Gtk.Button({label: 'Reset', valign: Gtk.Align.CENTER, css_classes: ['destructive-action']});
+        const resetButton = new Gtk.Button({label: 'Reset…', valign: Gtk.Align.CENTER, css_classes: ['destructive-action']});
         resetButton.connect('clicked', () => {
-            // Unlink first so resetting values does not record them as theme overrides.
-            settings.reset('follow-theme');
-            for (const key of settings.settings_schema.list_keys())
-                if (key !== 'follow-theme' && key !== 'override-activations') settings.reset(key);
-            settings.reset('override-activations');
-            report('');
+            const dialog = new Adw.AlertDialog({heading: 'Reset lock screen?',
+                body: 'Layout, styles, your decorative text and image, and saved theme overrides will be cleared.'});
+            dialog.add_response('cancel', 'Cancel'); dialog.add_response('reset', 'Reset');
+            dialog.set_response_appearance('reset', Adw.ResponseAppearance.DESTRUCTIVE);
+            dialog.default_response = 'cancel'; dialog.close_response = 'cancel';
+            dialog.choose(window, null, (source, result) => {
+                if (source.choose_finish(result) !== 'reset') return;
+                // Unlink first so resetting values does not record them as theme overrides.
+                settings.reset('follow-theme');
+                for (const key of settings.settings_schema.list_keys())
+                    if (key !== 'follow-theme' && key !== 'override-activations') settings.reset(key);
+                settings.reset('override-activations');
+                report('');
+            });
         });
         resetRow.add_suffix(resetButton); reset.add(resetRow);
 

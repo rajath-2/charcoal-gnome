@@ -274,12 +274,13 @@ It does not change GDM, the login screen shown before you sign in, or any other
 user's lock screen; GDM runs as its own system user and is out of scope. It also
 never touches authentication: the password prompt is GNOME's own, it cannot be
 hidden, and if its requested position is unsafe it stays where GNOME puts it. A
-wallpaper or image file that is missing is reported under **Status** in the
-preferences, and the previous background stays in place.
+lock-screen wallpaper file that is missing is reported under **Status** in the
+preferences, and the previous background stays in place; a missing decorative
+image is simply not shown.
 
 To undo a layout you do not like, unlock and open the preferences
 (`gnome-extensions prefs charcoal-lockscreen@local`) and press **Reset → Reset
-lock screen**; this returns every lock-screen setting to its default and stops
+lock screen** and confirm; this returns every lock-screen setting to its default and stops
 following the theme. To get GNOME's own lock screen back entirely, turn the
 extension off: `gnome-extensions disable charcoal-lockscreen@local`.
 

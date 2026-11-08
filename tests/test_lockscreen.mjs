@@ -190,3 +190,11 @@ test('preferences preview uses the shell layout policy (parity)', () => {
     assert.match(shellSource, /import \{[^}]*\breadValues\b[^}]*\blayoutLockElements\b[^}]*\} from '\.\/policy\.js'/);
     assert.match(shellSource, /new ThemeClient\('lockscreen', this\._settings\)/);
 });
+
+test('reset asks for confirmation and defaults to cancel', () => {
+    const prefs = readFileSync(new URL('../extensions/charcoal-lockscreen@local/prefs.js', import.meta.url), 'utf8');
+    const reset = prefs.slice(prefs.indexOf("resetButton.connect('clicked'"));
+    assert.match(reset, /new Adw\.AlertDialog/);
+    assert.match(reset, /default_response = 'cancel'; dialog\.close_response = 'cancel'/);
+    assert.ok(reset.indexOf("choose_finish(result) !== 'reset'") < reset.indexOf('settings.reset('), 'reset only after confirming');
+});
