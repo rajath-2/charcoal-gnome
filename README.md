@@ -336,7 +336,7 @@ appearance selected restores the bundled copy until the next successful update.
 
 ## Search and favorites launchers
 
-- **Super+Space:** centered search for applications, files, calculations, and settings.
+- **Super+Space:** centered search for applications, files, calculations, settings, and installable apps (opens GNOME Software; nothing is installed from search).
 - **Tap Super:** workspace overview.
 - **Hold Super:** compact favorites wheel at the cursor. Move toward an app and release
   to launch: the direction picks it, so overshooting past the wheel still selects the
@@ -385,7 +385,7 @@ GNOME's original Super action. Avoid enabling another Super-key remapper alongsi
 this extension.
 
 File results depend on GNOME Files and its search index; this is not a whole-disk
-scan. GNOME Search privacy settings are respected. Calculator and Settings require
+scan. GNOME Search privacy settings are respected. Calculator, Settings and Software (installable apps) require
 their installed GNOME search providers. Enter copies calculation results; ordinary
 results open their application or file. Unavailable providers are shown separately.
 

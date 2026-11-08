@@ -129,6 +129,7 @@ export default class CharcoalPreferences extends ExtensionPreferences {
         toggle(categories, 'search-files', 'Files and folders');
         toggle(categories, 'search-calculator', 'Calculations', 'Enter copies the result when the Calculator provider supplies it');
         toggle(categories, 'search-settings', 'System settings');
+        toggle(categories, 'search-software', 'Apps to install', 'Opens the app’s page in GNOME Software');
         spin(categories, 'result-limit', 'Results per category', 3, 20, 1);
         const searchSize = group(searchPage, 'Size');
         spin(searchSize, 'launcher-width', 'Panel width', 360, 1000, 20);

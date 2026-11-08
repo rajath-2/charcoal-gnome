@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Gesture, wheelGeometry, wheelSelection, restoreBindings, appHotkeyIndex, QueryGeneration, surfaceCss, searchColorCss} from '../extensions/charcoal-launchers@local/policy.js';
+import {Gesture, wheelGeometry, wheelSelection, restoreBindings, appHotkeyIndex, QueryGeneration, surfaceCss, searchColorCss, softwareAppId, SEARCH_ORDER} from '../extensions/charcoal-launchers@local/policy.js';
 
 test('a short Super tap opens overview once', () => {
     const g = new Gesture();
@@ -139,3 +139,12 @@ test('Super+N shortcut names map to favorite indexes', () => {
     assert.equal(appHotkeyIndex('app-ctrl-hotkey-1'), -1);
     assert.equal(appHotkeyIndex('switch-to-workspace-1'), -1);
 });
+
+test('software result ids map to desktop ids', () => {
+    assert.equal(softwareAppId('system/package/fedora/org.gnome.Nautilus/*'), 'org.gnome.Nautilus.desktop');
+    assert.equal(softwareAppId('system/package/fedora/icecat.desktop/*'), 'icecat.desktop');
+    assert.equal(softwareAppId('system/flatpak/flathub/one.ablaze.floorp/stable'), 'one.ablaze.floorp.desktop');
+    assert.equal(softwareAppId('garbage'), null);
+    assert.equal(softwareAppId(''), null);
+});
+test('software is listed last', () => assert.equal(SEARCH_ORDER.at(-1), 'software'));

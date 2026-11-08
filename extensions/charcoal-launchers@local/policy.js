@@ -151,3 +151,12 @@ export function appHotkeyIndex(name) {
     const match = /^app-hotkey-(\d+)$/.exec(name);
     return match ? Number(match[1]) - 1 : -1;
 }
+
+export const SEARCH_ORDER = ['calculator', 'favorites', 'apps', 'files', 'settings', 'software'];
+
+// GNOME Software result ids look like system/<kind>/<origin>/<app>/<branch>.
+export function softwareAppId(resultId) {
+    const parts = String(resultId).split('/');
+    if (parts.length < 5 || !parts[3]) return null;
+    return parts[3].endsWith('.desktop') ? parts[3] : `${parts[3]}.desktop`;
+}

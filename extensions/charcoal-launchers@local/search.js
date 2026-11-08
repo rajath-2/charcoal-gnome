@@ -5,13 +5,14 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {loadRemoteSearchProviders} from 'resource:///org/gnome/shell/ui/remoteSearch.js';
-import {QueryGeneration, rgbaOf} from './policy.js';
+import {QueryGeneration, rgbaOf, SEARCH_ORDER, softwareAppId} from './policy.js';
 import {animate, color, surfaceStyle, addBlur, keepOnTop} from './appearance.js';
 
 const PROVIDERS = {
     'org.gnome.Calculator.desktop': ['calculator', 'Calculator'],
     'org.gnome.Nautilus.desktop': ['files', 'Files'],
     'org.gnome.Settings.desktop': ['settings', 'Settings'],
+    'org.gnome.Software.desktop': ['software', 'Software'],
 };
 function call(proxy, method, args, cancellable) {
     return new Promise((resolve, reject) => proxy.call(method, args, Gio.DBusCallFlags.NONE, 2000,
@@ -168,15 +169,21 @@ export class SearchLauncher {
     }
     async _providerQuery(provider, category, title, terms, limit, generation, cancellable) {
         try {
-            const ids = await call(provider.proxy, 'GetInitialResultSet', new GLib.Variant('(as)', [terms]), cancellable);
-            const metas = ids.length ? await call(provider.proxy, 'GetResultMetas',
-                new GLib.Variant('(as)', [ids.slice(0, limit)]), cancellable) : [];
+            const found = await call(provider.proxy, 'GetInitialResultSet', new GLib.Variant('(as)', [terms]), cancellable);
+            const ids = category === 'software' ? found.slice(0, limit * 3) : found;
+            // Software also returns apps that are already installed; drop those.
+            const wanted = category === 'software'
+                ? ids.filter(id => { const app = softwareAppId(id); return !app || !Shell.AppSystem.get_default().lookup_app(app); }).slice(0, limit)
+                : ids.slice(0, limit);
+            const metas = wanted.length ? await call(provider.proxy, 'GetResultMetas',
+                new GLib.Variant('(as)', [wanted]), cancellable) : [];
             if (!this.isOpen || !this.generation.current(generation)) return;
             const results = metas.map(meta => {
                 for (const key in meta) if (key !== 'icon') meta[key] = meta[key].deepUnpack();
                 const clipboard = meta.clipboardText;
                 return {id: `${category}:${meta.id}`, name: clipboard ? `${meta.name} = ${clipboard}` : meta.name,
-                    detail: clipboard ? 'Enter to copy result' : meta.description || `Open ${title.toLowerCase()} result`,
+                    detail: clipboard ? 'Enter to copy result' : meta.description || (category === 'software' ? 'Open in Software' : `Open ${title.toLowerCase()} result`),
+                    tag: category === 'software' ? 'Install' : undefined,
                     icon: size => provider.createIcon(size, meta) ?? new St.Icon({gicon: provider.appInfo.get_icon(), icon_size: size}),
                     activate: () => {
                         if (clipboard) St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, clipboard);
@@ -196,7 +203,7 @@ export class SearchLauncher {
         const selectedId = this.rows[this.selected]?.result.id;
         this.resultBox.destroy_all_children();
         this.rows = [];
-        for (const category of ['calculator', 'favorites', 'apps', 'files', 'settings']) {
+        for (const category of SEARCH_ORDER) {
             const group = this.groups.get(category);
             if (!group || (!group.results.length && !group.status)) continue;
             this.resultBox.add_child(new St.Label({text: group.title, style_class: 'charcoal-heading'}));
@@ -209,7 +216,10 @@ export class SearchLauncher {
                     style_class: 'charcoal-result-text', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
                 labels.add_child(new St.Label({text: result.name ?? '', x_expand: true}));
                 labels.add_child(new St.Label({text: result.detail ?? '', style_class: 'charcoal-detail', x_expand: true}));
-                content.add_child(labels); row.set_child(content);
+                content.add_child(labels);
+                if (result.tag) content.add_child(new St.Label({text: result.tag, style_class: 'charcoal-install-tag',
+                    y_align: Clutter.ActorAlign.CENTER}));
+                row.set_child(content);
                 row.connect('clicked', () => this._activate(result));
                 this.rows.push({row, result}); this.resultBox.add_child(row);
             }

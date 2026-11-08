@@ -10,3 +10,4 @@
 .charcoal-hint { font-size: 0.8em; }
 .charcoal-empty { padding: 20px 8px; }
 .charcoal-wheel-label { font-size: 10px; text-align: center; }
+.charcoal-install-tag { font-size: 0.8em; padding: 2px 9px; border-radius: 999px; background-color: rgba(255,255,255,0.12); }
