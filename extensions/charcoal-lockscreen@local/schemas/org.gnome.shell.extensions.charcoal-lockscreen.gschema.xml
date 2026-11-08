@@ -1,0 +1,7 @@
+<schemalist>
+  <schema id="org.gnome.shell.extensions.charcoal-lockscreen" path="/org/gnome/shell/extensions/charcoal-lockscreen/">
+    <key name="follow-theme" type="b"><default>false</default></key>
+    <key name="override-activations" type="s"><default>'{}'</default></key>
+    <key name="status" type="s"><default>''</default></key>
+  </schema>
+</schemalist>
