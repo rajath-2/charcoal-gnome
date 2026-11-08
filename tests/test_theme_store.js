@@ -28,6 +28,12 @@ const defaulted = captureSettings('built-in', 'Charcoal Default', {topbar: {
         get_key() { return {get_default_value: () => ({deepUnpack: () => '#121212'})}; }},
 }}, true);
 assert(defaulted.components.topbar['bar-color'] === '#121212', 'built-in uses schema default, not live value');
+ensureDefaultTheme(store, {topbar: {
+    settings_schema: {has_key(key) { return key === 'bar-color'; },
+        get_key() { return {get_default_value: () => ({deepUnpack: () => '#121212'})}; }},
+}});
+assert(store.get('charcoal-default').components.topbar['bar-color'] === '#121212',
+    'default gains components installed after the theme engine');
 store.delete('test');
 store.delete('charcoal-default');
 assert(store.list().length === 0, 'delete removes profile');

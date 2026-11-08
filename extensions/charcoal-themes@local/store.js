@@ -93,6 +93,14 @@ export function installedComponentSettings() {
 }
 
 export function ensureDefaultTheme(store, components) {
-    if (!store.get('charcoal-default'))
-        store.save(captureSettings('charcoal-default', 'Charcoal Default', components, true));
+    const existing = store.get('charcoal-default');
+    const captured = captureSettings('charcoal-default', 'Charcoal Default', components, true);
+    if (!existing) {
+        store.save(captured);
+        return;
+    }
+    const missing = Object.fromEntries(Object.entries(captured.components)
+        .filter(([component]) => !Object.hasOwn(existing.components, component)));
+    if (Object.keys(missing).length)
+        store.save({...existing, components: {...existing.components, ...missing}});
 }

@@ -239,7 +239,7 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
     _save(key, value) {
         let saved = {};
         try {
-            saved = JSON.parse(this.settings.get_string(key));
+            saved = JSON.parse((this.settings.local ?? this.settings).get_string(key));
         } catch {}
         if (typeof saved !== 'object' || saved === null)
             saved = {};

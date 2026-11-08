@@ -175,7 +175,7 @@ def install(args):
             ignore = shutil.ignore_patterns('gtk.css.*') if label == 'gtk-4.0' else None
             shutil.copytree(ROOT / label, target, symlinks=True, ignore=ignore)
             if label in {f'extensions/{name}' for name in [TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS]}:
-                for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js',
+                for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js', 'theme-profile.js',
                                'theme-editor.js', 'theme-controls.js']:
                     shutil.copy2(ROOT / 'shared' / module, target / module)
             manifest['targets'][label]['installed'] = True

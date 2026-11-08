@@ -1,6 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {resolveValue} from './theme-policy.js';
+import {validateProfile} from './theme-profile.js';
 
 const ENGINE_UUID = 'charcoal-themes@local';
 const ENGINE_SCHEMA = 'org.gnome.shell.extensions.charcoal-themes';
@@ -19,8 +20,7 @@ function loadProfile(id) {
         const path = GLib.build_filenamev([GLib.get_user_config_dir(), 'charcoal', 'themes', `${id}.json`]);
         const [, bytes] = Gio.File.new_for_path(path).load_contents(null);
         const profile = JSON.parse(new TextDecoder().decode(bytes));
-        return profile?.version === 1 && profile.id === id && profile.components && typeof profile.components === 'object'
-            ? profile : null;
+        return profile?.id === id && validateProfile(profile).ok ? profile : null;
     } catch { return null; }
 }
 
@@ -37,6 +37,12 @@ export class ThemeClient {
         this._loadProfile = options.loadProfile ?? loadProfile;
         this._isEngineEnabled = options.isEngineEnabled ?? engineEnabled;
         this._callbacks = new Set();
+        this._shellSettings = options.shellSettings === undefined
+            ? new Gio.Settings({schema_id: 'org.gnome.shell'}) : options.shellSettings;
+        this._shellSignal = this._shellSettings?.connect('changed::enabled-extensions', () => {
+            this._revision = null;
+            for (const callback of this._callbacks) callback();
+        });
         this._revision = null;
         this._profile = null;
         this._centralSignal = this.central?.connect('changed', () => {
@@ -52,7 +58,8 @@ export class ThemeClient {
         if (!id) return null;
         if (this._revision !== `${id}:${revision}`) {
             this._revision = `${id}:${revision}`;
-            this._profile = this._loadProfile(id);
+            const profile = this._loadProfile(id);
+            this._profile = profile?.id === id && validateProfile(profile).ok ? profile : null;
         }
         return this._profile;
     }
@@ -119,8 +126,10 @@ export class ThemeClient {
 
     destroy() {
         if (this._centralSignal) this.central.disconnect(this._centralSignal);
+        if (this._shellSignal) this._shellSettings.disconnect(this._shellSignal);
         this._callbacks.clear();
         this.central = null;
+        this._shellSettings = null;
         this.local = null;
     }
 }
