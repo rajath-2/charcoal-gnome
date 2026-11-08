@@ -3,5 +3,199 @@
     <key name="follow-theme" type="b"><default>false</default></key>
     <key name="override-activations" type="s"><default>'{}'</default></key>
     <key name="status" type="s"><default>''</default></key>
+    <key name="clock-x" type="d">
+      <default>0.3</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="clock-y" type="d">
+      <default>0.18</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="clock-w" type="d">
+      <default>0.4</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="clock-h" type="d">
+      <default>0.15</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="clock-visible" type="b">
+      <default>true</default>
+    </key>
+    <key name="date-x" type="d">
+      <default>0.35</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="date-y" type="d">
+      <default>0.33</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="date-w" type="d">
+      <default>0.3</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="date-h" type="d">
+      <default>0.05</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="date-visible" type="b">
+      <default>true</default>
+    </key>
+    <key name="user-x" type="d">
+      <default>0.35</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="user-y" type="d">
+      <default>0.45</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="user-w" type="d">
+      <default>0.3</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="user-h" type="d">
+      <default>0.06</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="user-visible" type="b">
+      <default>true</default>
+    </key>
+    <key name="prompt-x" type="d">
+      <default>0.35</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="prompt-y" type="d">
+      <default>0.52</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="prompt-w" type="d">
+      <default>0.3</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="prompt-h" type="d">
+      <default>0.14</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="status-x" type="d">
+      <default>0.3</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="status-y" type="d">
+      <default>0.68</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="status-w" type="d">
+      <default>0.4</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="status-h" type="d">
+      <default>0.05</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="status-visible" type="b">
+      <default>true</default>
+    </key>
+    <key name="notifications-x" type="d">
+      <default>0.3</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="notifications-y" type="d">
+      <default>0.76</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="notifications-w" type="d">
+      <default>0.4</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="notifications-h" type="d">
+      <default>0.15</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="notifications-visible" type="b">
+      <default>true</default>
+    </key>
+    <key name="text-x" type="d">
+      <default>0.3</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="text-y" type="d">
+      <default>0.05</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="text-w" type="d">
+      <default>0.4</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="text-h" type="d">
+      <default>0.06</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="text-visible" type="b">
+      <default>false</default>
+    </key>
+    <key name="image-x" type="d">
+      <default>0.05</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="image-y" type="d">
+      <default>0.05</default>
+      <range min="0" max="1"/>
+    </key>
+    <key name="image-w" type="d">
+      <default>0.15</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="image-h" type="d">
+      <default>0.15</default>
+      <range min="0.02" max="1"/>
+    </key>
+    <key name="image-visible" type="b">
+      <default>false</default>
+    </key>
+    <key name="text-content" type="s">
+      <default>''</default>
+    </key>
+    <key name="image-uri" type="s">
+      <default>''</default>
+    </key>
+    <key name="font-family" type="s">
+      <default>'Sans'</default>
+    </key>
+    <key name="font-weight" type="i">
+      <default>400</default>
+      <range min="100" max="900"/>
+    </key>
+    <key name="font-size" type="i">
+      <default>24</default>
+      <range min="8" max="200"/>
+    </key>
+    <key name="text-color" type="s">
+      <default>'#f2ece4'</default>
+    </key>
+    <key name="accent-color" type="s">
+      <default>'#d9903d'</default>
+    </key>
+    <key name="panel-color" type="s">
+      <default>'#15110d'</default>
+    </key>
+    <key name="border-width" type="i">
+      <default>1</default>
+      <range min="0" max="16"/>
+    </key>
+    <key name="border-radius" type="i">
+      <default>12</default>
+      <range min="0" max="64"/>
+    </key>
+    <key name="shadow-size" type="i">
+      <default>12</default>
+      <range min="0" max="64"/>
+    </key>
+    <key name="spacing" type="i">
+      <default>8</default>
+      <range min="0" max="64"/>
+    </key>
+    <key name="lock-wallpaper" type="s">
+      <default>''</default>
+    </key>
   </schema>
 </schemalist>
