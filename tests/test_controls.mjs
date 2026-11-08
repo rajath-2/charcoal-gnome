@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {nextWheelState, pickWheelItem, clampWheel, releaseSelection} from '../extensions/charcoal-controls@local/policy.js';
+import {nextWheelState, pickWheelItem, clampWheel, releaseSelection, themeItems} from '../extensions/charcoal-controls@local/policy.js';
 import {requiresConfirmation, dispatchAction} from '../extensions/charcoal-controls@local/actions.js';
 
 test('control wheel navigation and safe selection', () => {
@@ -17,6 +17,12 @@ test('control wheel navigation and safe selection', () => {
     assert.equal(pickWheelItem(geometry.x + 300, geometry.y, geometry, ['one']), null);
     assert.equal(pickWheelItem(geometry.x, geometry.y - 100, geometry, []), null);
     assert.equal(pickWheelItem(geometry.x, geometry.y - 100, geometry, ['one']), 'one');
+});
+
+test('theme list keeps stable IDs and active marker', () => {
+    assert.deepEqual(themeItems([{id: 'night', name: 'Night'}, {id: 'day', name: 'Day'}], 'night'),
+        [['night', '● Night'], ['day', 'Day']]);
+    assert.deepEqual(themeItems([], ''), []);
 });
 
 test('destructive actions require confirmation and dispatch once', async () => {

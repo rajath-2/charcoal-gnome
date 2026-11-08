@@ -22,6 +22,7 @@ restore command.
 | Charcoal Launchers (`charcoal-launchers@local`) | Super+Space search, hold-Super favorites wheel, window previews, radial dock and touchpad gestures |
 | Charcoal Widgets (`charcoal-widgets@local`) | Resizable weather, calendar and music cards on the empty desktop |
 | Charcoal Themes (`charcoal-themes@local`) | Named presets for Charcoal appearance, layout, and desktop wallpaper |
+| Charcoal Control Wheel (`charcoal-controls@local`) | Separate wheel for actions, quick notes, settings, and theme switching |
 
 Blur comes from the bundled **Blur My Shell** extension. Static blur uses only the
 wallpaper and is the default; live blur can be selected in each extension's
@@ -145,7 +146,7 @@ Open [preferences](#open-preferences), choose your weather city, and try
 
 | Option | Effect |
 | --- | --- |
-| `--only PIECE [PIECE ...]` | Install any combination of `topbar`, `appearance`, `launchers`, `widgets`, `themes`; default: all |
+| `--only PIECE [PIECE ...]` | Install any combination of `topbar`, `appearance`, `launchers`, `widgets`, `themes`, `controls`; default: all |
 | `--mode auto\|compact\|islands` | Choose the top bar's starting layout; default: `auto` |
 | `--no-activate` | Copy files and compile schemas without changing desktop settings or enabling extensions |
 | `--dry-run` | Preview without writes, prompts or downloads |
@@ -160,6 +161,7 @@ Examples:
 ./install.sh --only launchers              # Launchers + Blur My Shell
 ./install.sh --only widgets                # Widgets + Blur My Shell
 ./install.sh --only themes                 # Theme engine only
+./install.sh --only controls               # Control wheel only
 ./install.sh --only topbar launchers --mode islands
 ./install.sh --mode compact                # all pieces, fixed compact top bar
 ./install.sh --no-activate                 # file-only installation
@@ -238,7 +240,7 @@ individually. Keep Blur My Shell enabled for Charcoal's blur effects.
 
 Open **Charcoal Themes** preferences to create a theme from your current
 settings, duplicate or rename one, choose a desktop wallpaper, and edit values
-for Topbar, Appearance, Launchers, and Widgets. Applying a theme changes its
+for Topbar, Appearance, Launchers, Widgets, and the Control Wheel. Applying a theme changes its
 wallpaper immediately. Each other Charcoal extension has a **Follow active
 theme** switch in its own preferences; existing installations start with that
 switch off, preserving their current settings.
@@ -251,6 +253,16 @@ settings you changed locally into the selected theme. Shortcuts, favorites,
 weather city, enabled widgets, and other feature or personal settings always
 stay local. If the theme engine is disabled or unavailable, linked extensions
 use their saved local settings.
+
+## Control wheel
+
+Press **Super+Q** to open the separate control wheel. Its actions include lock,
+suspend, log out, restart, power off, a quick note, and Charcoal settings.
+Select **Themes** for a second ring of saved profiles; the active theme is marked
+with a dot. Log out, restart, and power off ask for confirmation. Quick notes
+are stored as UTF-8 text files under `~/.local/share/charcoal/notes/` and are
+never included in a theme. Edit the shortcut and wheel appearance in
+**Charcoal Control Wheel** preferences.
 
 ## Top bar
 

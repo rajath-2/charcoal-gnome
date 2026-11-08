@@ -1,7 +1,7 @@
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {clampWheel, pickWheelItem, releaseSelection} from './policy.js';
+import {clampWheel, pickWheelItem, releaseSelection, themeItems} from './policy.js';
 
 const ACTIONS = [
     ['lock', 'Lock'], ['note', 'Note'], ['settings', 'Settings'], ['themes', 'Themes'],
@@ -20,7 +20,7 @@ export class ControlWheel {
     }
 
     setThemes(profiles, activeId) {
-        this.themes = profiles.map(profile => [profile.id, `${profile.id === activeId ? '● ' : ''}${profile.name}`]);
+        this.themes = themeItems(profiles, activeId);
         if (this.actor && this.layer === 'themes') this._render();
     }
 
@@ -51,7 +51,9 @@ export class ControlWheel {
         const center = new St.Label({text: this.layer === 'themes' ? 'Themes' : 'Controls',
             style: `color: ${this.settings.get_string('foreground-color')}; font-size: ${font + 2}px;`});
         this.actor.add_child(center);
-        center.set_position(r - center.width / 2, r - center.height / 2);
+        const [, centerWidth] = center.get_preferred_width(-1);
+        const [, centerHeight] = center.get_preferred_height(-1);
+        center.set_position(r - centerWidth / 2, r - centerHeight / 2);
         items.forEach(([id, label], index) => {
             const angle = index * Math.PI * 2 / items.length - Math.PI / 2;
             const orbit = r * 0.69;
@@ -62,8 +64,10 @@ export class ControlWheel {
                 `box-shadow: 0 3px ${this.settings.get_int('shadow-size')}px ${this.settings.get_string('shadow-color')};`});
             item._wheelId = id;
             this.actor.add_child(item);
-            item.set_position(r + Math.cos(angle) * orbit - item.width / 2,
-                r + Math.sin(angle) * orbit - item.height / 2);
+            const [, width] = item.get_preferred_width(-1);
+            const [, height] = item.get_preferred_height(-1);
+            item.set_position(r + Math.cos(angle) * orbit - width / 2,
+                r + Math.sin(angle) * orbit - height / 2);
         });
     }
 

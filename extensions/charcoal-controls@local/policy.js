@@ -26,3 +26,7 @@ export function pickWheelItem(x, y, geometry, ids, neutralRadius = 36) {
 export function releaseSelection(pressed, released, dispatched) {
     return !dispatched && pressed && pressed === released ? pressed : null;
 }
+
+export function themeItems(profiles, activeId) {
+    return profiles.map(profile => [profile.id, `${profile.id === activeId ? '● ' : ''}${profile.name}`]);
+}

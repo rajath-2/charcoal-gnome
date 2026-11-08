@@ -26,7 +26,8 @@ APPEARANCE = 'charcoal-appearance@local'
 LAUNCHERS = 'charcoal-launchers@local'
 WIDGETS = 'charcoal-widgets@local'
 THEMES = 'charcoal-themes@local'
-EXTENSIONS = [BLUR, TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS, THEMES]
+CONTROLS = 'charcoal-controls@local'
+EXTENSIONS = [BLUR, TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS, THEMES, CONTROLS]
 # Earlier bundles: the top bar was a Shell theme plus this extension, loaded by user-theme.
 AUTO = 'adaptive-smoke-panel@local'
 USER_THEME = 'user-theme@gnome-shell-extensions.gcampax.github.com'
@@ -46,6 +47,7 @@ COMPONENTS = {
     'launchers': [f'extensions/{BLUR}', f'extensions/{LAUNCHERS}'],
     'widgets': [f'extensions/{BLUR}', f'extensions/{WIDGETS}'],
     'themes': [f'extensions/{THEMES}'],
+    'controls': [f'extensions/{CONTROLS}'],
 }
 SCHEMA_DIRS = {'org.gnome.shell.extensions.blur-my-shell': BLUR, 'org.gnome.shell.extensions.user-theme': USER_THEME,
                'org.gnome.shell.extensions.charcoal-topbar': TOPBAR}
@@ -174,7 +176,7 @@ def install(args):
             # Do not install old GTK edit snapshots as live configuration.
             ignore = shutil.ignore_patterns('gtk.css.*') if label == 'gtk-4.0' else None
             shutil.copytree(ROOT / label, target, symlinks=True, ignore=ignore)
-            if label in {f'extensions/{name}' for name in [TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS]}:
+            if label in {f'extensions/{name}' for name in [TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS, CONTROLS]}:
                 for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js', 'theme-profile.js',
                                'theme-editor.js', 'theme-controls.js']:
                     shutil.copy2(ROOT / 'shared' / module, target / module)

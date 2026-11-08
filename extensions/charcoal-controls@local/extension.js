@@ -9,6 +9,8 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {ControlWheel} from './wheel.js';
 import {dispatchAction, requiresConfirmation} from './actions.js';
 import {saveNote} from './notes.js';
+import {ThemeClient} from './theme-client.js';
+import {listThemes} from './theme-library.js';
 
 function sessionCall(method, parameters = null) {
     Gio.DBus.session.call_sync('org.gnome.SessionManager', '/org/gnome/SessionManager',
@@ -18,11 +20,14 @@ function sessionCall(method, parameters = null) {
 export default class CharcoalControls extends Extension {
     enable() {
         this._settings = this.getSettings();
-        this._wheel = new ControlWheel(this._settings, id => this._select(id));
+        this._theme = new ThemeClient('controls', this._settings);
+        this._wheel = new ControlWheel(this._theme, id => this._select(id));
+        this._themeChanged = this._theme.connectChanged(() => this._refreshThemes());
         this._accelerators = [];
         this._activated = global.display.connect('accelerator-activated', (_, action) => {
             if (!this._accelerators.includes(action) || Main.sessionMode.currentMode !== 'user') return;
             const [x, y] = global.get_pointer();
+            this._refreshThemes();
             this._wheel.open(x, y);
         });
         this._shortcut = this._settings.connect('changed::shortcut', () => this._claimShortcut());
@@ -30,6 +35,15 @@ export default class CharcoalControls extends Extension {
             this._wheel.close(); this._dialog?.close(); this._dialog = null;
         });
         this._claimShortcut();
+    }
+
+    _refreshThemes() {
+        const themes = this._theme.central ? listThemes() : [];
+        this._wheel.setThemes(themes, this._theme.central?.get_string('active-theme-id'));
+        if (this._wheel.actor && this._wheel.layer === 'themes' && themes.length === 0) {
+            const {x, y} = this._wheel.geometry;
+            this._wheel.open(x, y, 'actions');
+        }
     }
 
     _claimShortcut() {
@@ -48,6 +62,28 @@ export default class CharcoalControls extends Extension {
     }
 
     _select(id) {
+        if (id === 'themes') {
+            const themes = this._theme.central ? listThemes() : [];
+            if (!themes.length) {
+                this._settings.set_string('status', 'No themes available');
+                this._wheel.close(); return;
+            }
+            this._wheel.setThemes(themes, this._theme.central?.get_string('active-theme-id'));
+            const {x, y} = this._wheel.geometry;
+            this._wheel.open(x, y, 'themes');
+            return;
+        }
+        if (this._wheel.layer === 'themes') {
+            if (id === 'back') {
+                const {x, y} = this._wheel.geometry;
+                this._wheel.open(x, y, 'actions');
+            } else {
+                if (this._theme.central && listThemes().some(profile => profile.id === id))
+                    this._theme.central.set_string('requested-theme-id', id);
+                this._wheel.close();
+            }
+            return;
+        }
         this._wheel.close();
         if (requiresConfirmation(id)) {
             this._showDialog(`Confirm ${id === 'poweroff' ? 'power off' : id}?`, null,
@@ -103,6 +139,8 @@ export default class CharcoalControls extends Extension {
 
     disable() {
         this._wheel?.destroy(); this._wheel = null;
+        this._themeChanged?.(); this._themeChanged = null;
+        this._theme?.destroy(); this._theme = null;
         this._dialog?.destroy(); this._dialog = null;
         for (const action of this._accelerators ?? []) global.display.ungrab_accelerator(action);
         this._accelerators = [];
