@@ -55,13 +55,31 @@ export default class CharcoalWidgets extends Extension {
     }
 
     _settingChanged(key) {
-        if (key === 'follow-theme' || key === 'override-activations') { this._loadStyle(); this._build(); }
+        if (key === 'follow-theme') { this._loadStyle(); this._build(); }
+        // Dragging a linked card records an override from inside the card's own drag handler:
+        // re-place now, rebuild (on idle) only if a value that needs new cards changed.
+        else if (key === 'override-activations') { this._loadStyle(); this._placeAll(); this._queueRebuild(); }
         else if (key === 'positions' || key === 'sizes') this._placeAll();
         else if (REBUILD_KEYS.includes(key)) this._build();
         else if (!OWN_KEYS.includes(key)) this._queueStyle(key.endsWith('-size') ? key.slice(0, -5) : null);
     }
 
+    _rebuildState() {
+        return JSON.stringify(REBUILD_KEYS.map(key => this._theme.get(key)));
+    }
+
+    _queueRebuild() {
+        if (this._rebuild || this._rebuildState() === this._built)
+            return;
+        this._rebuild = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            this._rebuild = 0;
+            this._build();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
     _build(names = NAMES) {
+        this._built = this._rebuildState();
         for (const name of names) {
             this._cards.get(name)?.destroy();
             this._cards.delete(name);
@@ -166,7 +184,8 @@ export default class CharcoalWidgets extends Extension {
         this._windows.clear();
         if (this._pending) GLib.Source.remove(this._pending);
         if (this._styleTimer) GLib.Source.remove(this._styleTimer);
-        this._pending = this._styleTimer = 0;
+        if (this._rebuild) GLib.Source.remove(this._rebuild);
+        this._pending = this._styleTimer = this._rebuild = 0;
         this._cards.clear();
         this._container.destroy();
         this._container = null;

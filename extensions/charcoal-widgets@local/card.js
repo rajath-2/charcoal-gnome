@@ -4,7 +4,7 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {addBlur, RoundedMask} from './blur.js';
-import {DEFAULT_CONTENT_SIZE, effectBox, fitContent, fromFraction, readPositions, readSize, resizeEdges, resizeRect, widgetLayout, toFraction} from './policy.js';
+import {DEFAULT_CONTENT_SIZE, effectBox, fitContent, fromFraction, mergeCardValue, readPositions, readSize, resizeEdges, resizeRect, widgetLayout, toFraction} from './policy.js';
 
 const FADE_MS = 200;
 const DRAG_THRESHOLD = 5;
@@ -235,15 +235,7 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
         return Clutter.EVENT_STOP;
     }
 
-    // Settings hold one JSON object per key, {name: value}, shared by the three cards.
     _save(key, value) {
-        let saved = {};
-        try {
-            saved = JSON.parse((this.settings.local ?? this.settings).get_string(key));
-        } catch {}
-        if (typeof saved !== 'object' || saved === null)
-            saved = {};
-        saved[this.name] = value;
-        this.settings.set_string(key, JSON.stringify(saved));
+        this.settings.set_string(key, mergeCardValue(this.settings.get_string(key), this.name, value));
     }
 });

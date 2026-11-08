@@ -5,7 +5,7 @@ import {runInNewContext} from 'node:vm';
 import {buildCss} from '../extensions/charcoal-widgets@local/theme.js';
 import {DEFAULT_POSITIONS, readPositions, toFraction, fromFraction, isDesktopClear, effectBox,
     geocodeUrl, parseGeocode, forecastUrl, parseForecast, describeWeather, monthGrid,
-    pickPlayer, trackInfo, formatTime, nextLoop,
+    pickPlayer, trackInfo, formatTime, nextLoop, mergeCardValue,
     placeSearchUrl, parsePlaceSearch, mergePlaces, weekStartDay, weatherDue, widgetLayout, weekGrid, readSize, fitContent, MIN_CARD,
     resizeEdges, resizeRect} from '../extensions/charcoal-widgets@local/policy.js';
 
@@ -284,4 +284,16 @@ test('content fills a wider shape and shrinks into a smaller one', () => {
     const narrow = fitContent(124, 400, 248, calendar);
     assert.ok(narrow.width * narrow.scale <= 124.001 && narrow.height * narrow.scale <= 400);
     assert.ok(narrow.width >= 248);
+});
+
+test('saving one card keeps the other cards at their effective (theme) values', () => {
+    const theme = JSON.stringify({weather: {monitor: 0, x: 0.1, y: 0.1}, calendar: {monitor: 0, x: 0.5, y: 0.5}});
+    const merged = JSON.parse(mergeCardValue(theme, 'music', {monitor: 0, x: 0.9, y: 0.9}));
+    assert.deepEqual(merged, {weather: {monitor: 0, x: 0.1, y: 0.1}, calendar: {monitor: 0, x: 0.5, y: 0.5},
+        music: {monitor: 0, x: 0.9, y: 0.9}});
+    for (const bad of ['', 'null', '[1]', '{oops'])
+        assert.deepEqual(JSON.parse(mergeCardValue(bad, 'music', {x: 1})), {music: {x: 1}});
+    const card = readFileSync(new URL('../extensions/charcoal-widgets@local/card.js', import.meta.url), 'utf8');
+    assert.match(card, /mergeCardValue\(this\.settings\.get_string\(key\)/, 'card seeds from the effective value');
+    assert.doesNotMatch(card, /settings\.local/);
 });

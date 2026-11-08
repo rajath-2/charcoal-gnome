@@ -246,3 +246,12 @@ export function fitContent(boxW, boxH, minW, measure) {
     }
     return {width, height: measure(width), scale};
 }
+
+// Settings hold one JSON object per key, {name: value}, shared by the three cards. `effective` is
+// the value the cards are drawn from (the theme's when linked), so the other cards keep their spots.
+export function mergeCardValue(effective, name, value) {
+    let saved = {};
+    try { saved = JSON.parse(effective); } catch {}
+    if (typeof saved !== 'object' || saved === null || Array.isArray(saved)) saved = {};
+    return JSON.stringify({...saved, [name]: value});
+}
