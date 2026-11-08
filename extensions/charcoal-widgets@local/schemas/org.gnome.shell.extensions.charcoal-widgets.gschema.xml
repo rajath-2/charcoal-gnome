@@ -26,5 +26,7 @@
     <key name="text-color" type="s"><default>'#f2ece4'</default></key>
     <key name="blur" type="b"><default>true</default></key>
     <key name="static-blur" type="b"><default>true</default></key>
+    <key name="follow-theme" type="b"><default>false</default></key>
+    <key name="override-activations" type="s"><default>'{}'</default></key>
   </schema>
 </schemalist>

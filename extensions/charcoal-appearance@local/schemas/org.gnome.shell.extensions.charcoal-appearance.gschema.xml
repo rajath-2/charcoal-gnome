@@ -19,5 +19,7 @@
       <default>{}</default>
       <summary>Desktop values from before enabling, restored on disable</summary>
     </key>
+    <key name="follow-theme" type="b"><default>false</default></key>
+    <key name="override-activations" type="s"><default>'{}'</default></key>
   </schema>
 </schemalist>

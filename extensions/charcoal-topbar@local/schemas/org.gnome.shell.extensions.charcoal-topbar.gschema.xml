@@ -44,5 +44,7 @@
     <key name="popup-color" type="s"><default>'#141414'</default></key>
     <key name="popup-opacity" type="i"><range min="30" max="100"/><default>86</default></key>
     <key name="popup-radius" type="i"><range min="0" max="32"/><default>22</default></key>
+    <key name="follow-theme" type="b"><default>false</default></key>
+    <key name="override-activations" type="s"><default>'{}'</default></key>
   </schema>
 </schemalist>

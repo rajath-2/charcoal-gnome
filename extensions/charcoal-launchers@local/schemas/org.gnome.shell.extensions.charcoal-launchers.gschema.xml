@@ -62,5 +62,7 @@
     <key name="owned-bindings" type="s"><default>'[]'</default></key>
     <key name="owned-dock" type="s"><default>''</default><summary>dash-to-dock values to restore after hover-only mode</summary></key>
     <key name="status" type="s"><default>''</default></key>
+    <key name="follow-theme" type="b"><default>false</default></key>
+    <key name="override-activations" type="s"><default>'{}'</default></key>
   </schema>
 </schemalist>
