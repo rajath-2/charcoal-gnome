@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
 import {nextWheelState, pickWheelItem, clampWheel, releaseSelection, themeItems} from '../extensions/charcoal-controls@local/policy.js';
 import {requiresConfirmation, dispatchAction} from '../extensions/charcoal-controls@local/actions.js';
 
@@ -42,4 +43,11 @@ test('only deliberate matching press and release selects once', () => {
     assert.equal(releaseSelection('note', 'poweroff', false), null);
     assert.equal(releaseSelection('note', 'note', true), null);
     assert.equal(releaseSelection(null, 'note', false), null);
+});
+
+test('prefs entry rows show an apply button so edits save', () => {
+    const prefs = readFileSync(new URL('../extensions/charcoal-controls@local/prefs.js', import.meta.url), 'utf8');
+    const rows = prefs.match(/new Adw\.EntryRow\(\{[^}]*\}\)/g);
+    assert.equal(rows.length, 2);
+    for (const row of rows) assert.match(row, /show_apply_button: true/);
 });

@@ -11,7 +11,8 @@ export default class CharcoalControlsPreferences extends ExtensionPreferences {
         const group = new Adw.PreferencesGroup({title: 'Control wheel',
             description: 'Open with Super+Q by default. Click a segment to select it.'});
         page.add(group);
-        const shortcut = new Adw.EntryRow({title: 'Shortcut', text: settings.get_strv('shortcut')[0] ?? ''});
+        const shortcut = new Adw.EntryRow({title: 'Shortcut', text: settings.get_strv('shortcut')[0] ?? '',
+            show_apply_button: true});
         shortcut.connect('apply', () => settings.set_strv('shortcut', shortcut.text ? [shortcut.text] : []));
         group.add(shortcut);
         const spin = (key, label, min, max) => {
@@ -26,9 +27,11 @@ export default class CharcoalControlsPreferences extends ExtensionPreferences {
         spin('border-width', 'Border width', 0, 6);
         spin('shadow-size', 'Shadow size', 0, 60);
         const color = (key, label) => {
-            const row = new Adw.EntryRow({title: label, text: settings.get_string(key)});
+            const row = new Adw.EntryRow({title: label, text: settings.get_string(key), show_apply_button: true});
             row.connect('apply', () => {
-                if (/^#[0-9a-fA-F]{6}$/.test(row.text)) settings.set_string(key, row.text);
+                const valid = /^#[0-9a-fA-F]{6}$/.test(row.text);
+                if (valid) settings.set_string(key, row.text);
+                if (valid) row.remove_css_class('error'); else row.add_css_class('error');
             });
             group.add(row);
         };
