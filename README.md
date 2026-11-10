@@ -238,6 +238,14 @@ individually. Keep Blur My Shell enabled for Charcoal's blur effects.
 
 ## Coordinated themes
 
+Use **Export selected theme…** in Charcoal Themes preferences to save a portable
+JSON file containing the theme settings and wallpaper. Use **Import theme…** to
+add an exported file as a new theme, then select **Apply theme** when ready.
+Existing themes are preserved. Exports support wallpapers up to 32 MiB; missing
+wallpaper files must be reselected before exporting. Imported wallpaper copies
+are stored in `~/.config/charcoal/themes/wallpapers/`. Theme exports do not bundle
+installed fonts, icon packs, or extensions.
+
 Open **Charcoal Themes** preferences to create a theme from your current
 settings, duplicate or rename one, choose a desktop wallpaper, and edit values
 for Topbar, Appearance, Launchers, Widgets, and the Control Wheel. Applying a theme changes its

@@ -3,6 +3,7 @@ import Gdk from 'gi://Gdk';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {exportTheme, importTheme} from './transfer.js';
 import {THEME_KEYS} from './catalog.js';
 import {ThemeStore, captureSettings, ensureDefaultTheme, installedComponentSettings} from './store.js';
 
@@ -138,6 +139,39 @@ export default class CharcoalThemesPreferences extends ExtensionPreferences {
             if (profile) save({...profile, id: `theme-${GLib.uuid_string_random().slice(0, 8)}`,
                 name: `${profile.name} Copy`});
         });
+        const transferDialog = (exporting) => {
+            const profile = selected();
+            if (exporting && !profile) return;
+            const dialog = new Gtk.FileDialog({title: exporting ? 'Export theme' : 'Import theme'});
+            const filter = new Gtk.FileFilter({name: 'Charcoal theme (*.json)'});
+            filter.add_pattern('*.json');
+            dialog.default_filter = filter;
+            if (exporting) dialog.initial_name = `${profile.id}.json`;
+            const finish = (source, result) => {
+                let file;
+                try { file = exporting ? source.save_finish(result) : source.open_finish(result); }
+                catch (error) {
+                    if (!error.matches?.(Gtk.DialogError, Gtk.DialogError.DISMISSED))
+                        status.subtitle = error.message;
+                    return;
+                }
+                try {
+                    if (exporting) {
+                        exportTheme(profile, file);
+                        status.subtitle = `Exported ${profile.name}, including its wallpaper`;
+                    } else {
+                        const imported = importTheme(file, store);
+                        markRevision();
+                        refresh(imported.id);
+                        status.subtitle = `Imported ${imported.name}. Select Apply theme to use it.`;
+                    }
+                } catch (error) { status.subtitle = `Theme ${exporting ? 'export' : 'import'} failed: ${error.message}`; }
+            };
+            if (exporting) dialog.save(window, null, finish);
+            else dialog.open(window, null, finish);
+        };
+        button('Export selected theme…', () => transferDialog(true));
+        button('Import theme…', () => transferDialog(false));
         button('Delete selected theme', () => {
             if (!selectedId || selectedId === settings.get_string('active-theme-id')) {
                 status.subtitle = 'Switch to another theme before deleting this one'; return;
