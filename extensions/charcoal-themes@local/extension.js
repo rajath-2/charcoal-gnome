@@ -27,7 +27,9 @@ export default class CharcoalThemes extends Extension {
     _activateRequested() {
         const id = this._settings.get_string('requested-theme-id');
         if (!id) return;
-        activateTheme(id, this._settings, this._store,
+        // Fresh object: activateTheme batches with delay(), and GSettings never leaves delay mode,
+        // which would leave this._settings reading its own stale writes forever.
+        activateTheme(id, this.getSettings(), this._store,
             (profile, activation) => applyWallpaper(profile, this._desktop, this._settings, activation),
             () => GLib.uuid_string_random());
         this._settings.set_string('requested-theme-id', '');

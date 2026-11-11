@@ -50,7 +50,8 @@ export function importTheme(file, store) {
     if (bundle.wallpaper !== null) {
         if (typeof bundle.wallpaper !== 'string' || !bundle.wallpaper.length ||
             bundle.wallpaper.length > Math.ceil(MAX_IMAGE / 3) * 4 ||
-            !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(bundle.wallpaper))
+            // Flat character class: a repeated group overflows the regex stack on multi-MB wallpapers.
+            bundle.wallpaper.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(bundle.wallpaper))
             throw new Error('Invalid embedded wallpaper');
         bytes = GLib.base64_decode(bundle.wallpaper);
         if (bytes.length > MAX_IMAGE) throw new Error('Wallpaper is too large');
