@@ -10,7 +10,7 @@ Click the animation for the full-quality video.
 | ![Calendar and notifications menu](media/calendar-menu.jpg) **Calendar menu:** styled notifications, media controls and events | ![Super+Space search panel](media/search.jpg) **Super+Space search:** apps, files and calculations |
 | ![Hold-Super favorites wheel](media/favorites-wheel.jpg) **Favorites wheel:** hold Super | [![Top bar switching layouts](media/topbar-layout.gif)](media/topbar-layout.mp4) **Automatic layout:** the bar splits and joins as windows open and maximize (click for video) |
 
-A charcoal-and-glass desktop for **GNOME Shell 51**, with six configurable
+A charcoal-and-glass desktop for **GNOME Shell 50 and 51**, with six configurable
 extensions, GTK4 styling, icons and a cursor theme. Install the whole bundle or
 choose individual pieces. Theme files install for your user, with a backup and
 restore command.
@@ -60,8 +60,8 @@ into its GNOME desktop. Open Terminal and check:
 gnome-shell --version
 ```
 
-**Continue with activation only if this reports GNOME Shell 51.x.** Not every
-release of these distributions ships GNOME 51. If you have another Shell version, follow your
+**Continue with activation only if this reports GNOME Shell 50.x or 51.x.** Not every
+release of these distributions ships GNOME 50 or 51. If you have another Shell version, follow your
 distribution's supported desktop/release upgrade process or use the file-only
 option below. Charcoal does not install GNOME, change desktop environments, upgrade
 your distribution, or bypass extension version checks.
@@ -172,7 +172,7 @@ selected component can still enable its own extension and apply its preferences.
 
 ### Dependencies
 
-Activation requires GNOME Shell 51, a running GNOME session, `gsettings`, `gjs` and
+Activation requires GNOME Shell 50 or 51, a running GNOME session, `gsettings`, `gjs` and
 `glib-compile-schemas`, in addition to Bash and Python. File-only installation with
 `--no-activate` needs only `glib-compile-schemas`. It can copy onto other desktop
 versions but does not make the extensions compatible with them.
@@ -241,13 +241,14 @@ JSON file containing the theme settings and wallpaper. Use **Import theme…** t
 add an exported file as a new theme, then select **Apply theme** when ready.
 Existing themes are preserved. Exports support wallpapers up to 32 MiB; missing
 wallpaper files must be reselected before exporting. Imported wallpaper copies
-are stored in `~/.config/charcoal/themes/wallpapers/`. Theme exports do not bundle
+are stored in `~/.config/charcoal/themes/wallpapers/`, named after the theme id. Theme exports do not bundle
 installed fonts, icon packs, or extensions.
 
 Open **Charcoal Themes** preferences to create a theme from your current
 settings, duplicate or rename one, choose a desktop wallpaper, and edit values
 for Topbar, Appearance, Launchers, and Widgets. Applying a theme changes its
-wallpaper immediately. Each other Charcoal extension has a **Follow active
+wallpaper immediately: the desktop background points at the theme's image file
+(not a copy), and your previous wallpaper is restored when Charcoal Themes is disabled. Each other Charcoal extension has a **Follow active
 theme** switch in its own preferences; existing installations start with that
 switch off, preserving their current settings.
 
@@ -488,7 +489,7 @@ remove GTK4 CSS or restore replaced files.
 | --- | --- |
 | Installer reports Python missing/too old | Install Python 3.9+ with your package manager. |
 | Missing utility command | Install the reported command's package with your package manager ([Dependencies](#dependencies)). |
-| Shell version/session rejected | Run inside your GNOME 51 desktop session as its normal user; otherwise use `--no-activate` to copy only. |
+| Shell version/session rejected | Run inside your GNOME 50 or 51 desktop session as its normal user; otherwise use `--no-activate` to copy only. |
 | No new extensions or old behavior after installing | Log out and back in, then check each extension in Extension Manager/Extensions. |
 | All extensions are off | Check the global extensions switch; the installer respects it. |
 | Blur absent | Enable bundled Blur My Shell and the relevant component's blur setting. |
@@ -500,9 +501,10 @@ remove GTK4 CSS or restore replaced files.
 | Extension Manager install fails | The GUI is optional. Use `gnome-extensions prefs` or install it later from upstream's Flathub link. |
 | GTK4 apps retain the old style | Restart the apps; sandboxed applications may not read host CSS. |
 
-The custom extensions and CSS target **GNOME 51**. Existing development checks
+The custom extensions and CSS target **GNOME 50 and 51**. Existing development checks
 exercised an isolated GNOME 51.1 Wayland session, including preferences, launcher
-selection/cancellation, Super+Left, provider responses and blur. This is not a
+selection/cancellation, Super+Left, provider responses and blur. On GNOME 50.1 the headless
+session tests below pass and the bundle runs on a real desktop. This is not a
 promise of compatibility with other Shell versions, every distribution, hardware
 keyboard, touchpad or mixed-DPI monitor configuration.
 
@@ -541,7 +543,7 @@ This writes the compiled schema in that directory. The separate integration test
 `python3 tests/test_topbar_session.py` starts a headless GNOME session and leaves
 its log and screenshot under `/tmp`; it needs a suitable GNOME test environment.
 
-For GNOME 51 runtime checks, these launch isolated headless sessions with temporary
+For GNOME 50/51 runtime checks, these launch isolated headless sessions with temporary
 settings and extension copies:
 
 ```bash
