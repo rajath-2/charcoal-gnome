@@ -81,8 +81,10 @@ export function captureSettings(id, name, settingsByComponent, useDefaults = fal
 export function installedComponentSettings() {
     const components = {};
     for (const component of ['topbar', 'appearance', 'launchers', 'widgets']) {
-        const dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'gnome-shell', 'extensions',
-            `charcoal-${component}@local`, 'schemas']);
+        // User install first, then system-wide installs.
+        const dir = [GLib.get_user_data_dir(), ...GLib.get_system_data_dirs()]
+            .map(d => GLib.build_filenamev([d, 'gnome-shell', 'extensions', `charcoal-${component}@local`, 'schemas']))
+            .find(d => GLib.file_test(d, GLib.FileTest.IS_DIR));
         try {
             const source = Gio.SettingsSchemaSource.new_from_directory(dir, Gio.SettingsSchemaSource.get_default(), false);
             const schema = source.lookup(`org.gnome.shell.extensions.charcoal-${component}`, true);

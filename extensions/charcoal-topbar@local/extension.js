@@ -120,7 +120,7 @@ export default class CharcoalTopbar extends Extension {
     }
 
     _settings(uuid, schema) {
-        const dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'gnome-shell', 'extensions', uuid, 'schemas']);
+        const dir = Main.extensionManager.lookup(uuid).dir.get_child('schemas').get_path();
         const source = Gio.SettingsSchemaSource.new_from_directory(dir, Gio.SettingsSchemaSource.get_default(), false);
         return new Gio.Settings({settings_schema: source.lookup(schema, true)});
     }

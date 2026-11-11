@@ -1,20 +1,20 @@
 import Clutter from 'gi://Clutter';
-import Cogl from 'gi://Cogl';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 import {MINIMAL_ORDER, rgbaOf} from './policy.js';
 import {addBlur, color, surfaceStyle} from './appearance.js';
 import {SearchLauncher} from './search.js';
+import {SnippetEffect} from './snippet-effect.js';
 
 // Cuts the blur layer to the card's rounded rectangle (size and radius in px).
-const RoundedMask = GObject.registerClass(class RoundedMask extends Clutter.ShaderEffect {
+const RoundedMask = GObject.registerClass(class RoundedMask extends SnippetEffect {
     setShape(width, height, radius) { this.set_uniform_float('shape', 3, [width, height, radius]); }
-    vfunc_get_static_snippet() {
-        return Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, 'uniform vec3 shape;', `
+    snippet() {
+        return ['uniform vec3 shape;', `
 vec2 half_size = shape.xy * 0.5;
 vec2 q = abs(cogl_tex_coord_in[0].xy * shape.xy - half_size) - half_size + shape.z;
 float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - shape.z;
-cogl_color_out *= 1.0 - smoothstep(-0.75, 0.75, d);`);
+cogl_color_out *= 1.0 - smoothstep(-0.75, 0.75, d);`];
     }
 });
 

@@ -1,6 +1,5 @@
-import Clutter from 'gi://Clutter';
-import Cogl from 'gi://Cogl';
 import GObject from 'gi://GObject';
+import {SnippetEffect} from './snippet-effect.js';
 
 // Cuts the actor (the wheel's blur layer) to the wheel's sector shapes, with soft edges.
 // Each sector follows its own animation (scale about the centre, opacity), so the blur
@@ -43,7 +42,7 @@ ${rings.map(i => `mask += sector(ring${i}, offset, d, a); offset += ring${i}.z;`
 cogl_color_out *= clamp(mask, 0.0, 1.0);
 `;
 
-export const RingMask = GObject.registerClass(class RingMask extends Clutter.ShaderEffect {
+export const RingMask = GObject.registerClass(class RingMask extends SnippetEffect {
     _init(size, ringValues) {
         super._init();
         this.set_uniform_float('size', 1, [size]);
@@ -58,7 +57,7 @@ export const RingMask = GObject.registerClass(class RingMask extends Clutter.Sha
             this.set_uniform_float(`pack${i}`, 4, [...(values[2 * i] ?? [1, 0]), ...(values[2 * i + 1] ?? [1, 0])]);
     }
 
-    vfunc_get_static_snippet() {
-        return Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, DECLARATIONS, CODE);
+    snippet() {
+        return [DECLARATIONS, CODE];
     }
 });

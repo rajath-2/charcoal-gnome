@@ -2,7 +2,7 @@
   "uuid": "charcoal-appearance@local",
   "name": "Charcoal Appearance",
   "description": "Applies the GreyStone icons, Future Black cursor, dark style and left-side window buttons. Disabling restores your previous choices.",
-  "shell-version": ["51"],
+  "shell-version": ["50", "51"],
   "session-modes": ["user", "unlock-dialog"],
   "settings-schema": "org.gnome.shell.extensions.charcoal-appearance",
   "version": 1

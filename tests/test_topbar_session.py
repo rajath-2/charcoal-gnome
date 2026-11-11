@@ -22,13 +22,13 @@ fixture.mkdir()
 shutil.copyfile(repo / "tests/topbar-session.js", fixture / "extension.js")
 (fixture / "metadata.json").write_text(json.dumps({
     "uuid": "topbar-test@local", "name": "Topbar test", "description": "Isolated checks",
-    "shell-version": ["51"], "session-modes": ["user", "topbar-test"],
+    "shell-version": ["50", "51"], "session-modes": ["user", "topbar-test"],
 }))
 (root / "data/gnome-shell/modes/topbar-test.json").write_text(json.dumps({
     "parentMode": "user", "enabledExtensions": ["charcoal-topbar@local", "topbar-test@local"],
     "hasOverview": False, "showWelcomeDialog": False,
 }))
-env = dict(os.environ, XDG_DATA_HOME=str(root / "data"), XDG_CONFIG_HOME=str(root / "config"),
+env = dict(os.environ, XDG_DATA_HOME=str(root / "home"), XDG_CONFIG_HOME=str(root / "config"),
            XDG_DATA_DIRS=f"{root / 'data'}:/usr/local/share:/usr/share",
            XDG_CACHE_HOME=str(root / "cache"), XDG_RUNTIME_DIR=str(root / "runtime"),
            XDG_STATE_HOME=str(root / "state"), GSETTINGS_BACKEND="memory")

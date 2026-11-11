@@ -2,7 +2,7 @@
   "uuid": "charcoal-launchers@local",
   "name": "Charcoal Launchers",
   "description": "Centered app, file, calculator and settings search, plus a hold-Super favorites wheel. Customize both in Preferences.",
-  "shell-version": ["51"],
+  "shell-version": ["50", "51"],
   "settings-schema": "org.gnome.shell.extensions.charcoal-launchers",
   "version": 1
 }

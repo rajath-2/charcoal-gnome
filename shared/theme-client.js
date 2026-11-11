@@ -8,7 +8,10 @@ const ENGINE_SCHEMA = 'org.gnome.shell.extensions.charcoal-themes';
 
 function openEngineSettings() {
     try {
-        const dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'gnome-shell', 'extensions', ENGINE_UUID, 'schemas']);
+        // User install first, then system-wide installs.
+        const dir = [GLib.get_user_data_dir(), ...GLib.get_system_data_dirs()]
+            .map(d => GLib.build_filenamev([d, 'gnome-shell', 'extensions', ENGINE_UUID, 'schemas']))
+            .find(d => GLib.file_test(d, GLib.FileTest.IS_DIR));
         const source = Gio.SettingsSchemaSource.new_from_directory(dir, Gio.SettingsSchemaSource.get_default(), false);
         return new Gio.Settings({settings_schema: source.lookup(ENGINE_SCHEMA, true)});
     } catch { return null; }

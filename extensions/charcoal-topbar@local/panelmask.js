@@ -1,6 +1,5 @@
-import Clutter from 'gi://Clutter';
-import Cogl from 'gi://Cogl';
 import GObject from 'gi://GObject';
+import {SnippetEffect} from './snippet-effect.js';
 
 // Cuts the auto bar's blur layer to the bar's current shapes (up to three rounded pieces),
 // so the blur stays exactly under the bar while it splits into islands and back.
@@ -26,7 +25,7 @@ vec2 p = box.xy + cogl_tex_coord_in[0].xy * box.zw;
 cogl_color_out *= max(max(piece(shape0, p), piece(shape1, p)), piece(shape2, p));
 `;
 
-export const PanelMask = GObject.registerClass(class PanelMask extends Clutter.ShaderEffect {
+export const PanelMask = GObject.registerClass(class PanelMask extends SnippetEffect {
     setShapes(size, box, shapes) {
         this.set_uniform_float('size', 2, size);
         this.set_uniform_float('box', 4, box);
@@ -36,7 +35,7 @@ export const PanelMask = GObject.registerClass(class PanelMask extends Clutter.S
         }
     }
 
-    vfunc_get_static_snippet() {
-        return Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, DECLARATIONS, CODE);
+    snippet() {
+        return [DECLARATIONS, CODE];
     }
 });

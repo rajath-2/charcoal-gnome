@@ -1,15 +1,14 @@
-import Clutter from 'gi://Clutter';
-import Cogl from 'gi://Cogl';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 import {rgb01} from './theme.js';
+import {SnippetEffect} from './snippet-effect.js';
 
 // CSS cannot recolor full-color tray textures or custom-painted indicators.
 // Preserve their alpha (including antialiasing), replacing only the foreground.
-const ForegroundTint = GObject.registerClass(class CharcoalForegroundTint extends Clutter.ShaderEffect {
-    vfunc_get_static_snippet() {
-        return Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, 'uniform vec3 foreground;',
-            'cogl_color_out.rgb = foreground * cogl_color_out.a;');
+const ForegroundTint = GObject.registerClass(class CharcoalForegroundTint extends SnippetEffect {
+    snippet() {
+        return ['uniform vec3 foreground;',
+            'cogl_color_out.rgb = foreground * cogl_color_out.a;'];
     }
 });
 

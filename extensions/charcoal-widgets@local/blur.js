@@ -1,8 +1,7 @@
-import Clutter from 'gi://Clutter';
-import Cogl from 'gi://Cogl';
 import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {SnippetEffect} from './snippet-effect.js';
 
 // Blur My Shell's popup pipeline inside `actor` (mirrors charcoal-launchers' appearance.js).
 // Static: a blurred wallpaper copy; resolves to its group so the caller keeps it aligned.
@@ -71,14 +70,14 @@ cogl_color_out *= clamp(0.5 - dist, 0.0, 1.0);
 `;
 
 // Cuts the blur layer to the card's rounded rectangle (charcoal-topbar's PanelMask, one shape).
-export const RoundedMask = GObject.registerClass(class RoundedMask extends Clutter.ShaderEffect {
+export const RoundedMask = GObject.registerClass(class RoundedMask extends SnippetEffect {
     setShape(size, box, radius) {
         this.set_uniform_float('size', 2, size);
         this.set_uniform_float('box', 4, box);
         this.set_uniform_float('radius', 1, [radius]);
     }
 
-    vfunc_get_static_snippet() {
-        return Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, DECLARATIONS, CODE);
+    snippet() {
+        return [DECLARATIONS, CODE];
     }
 });

@@ -126,11 +126,11 @@ def preflight(activate):
                            "distribution's package manager (see README.md, Dependencies), then rerun.")
     if activate:
         if not shutil.which('gnome-shell'):
-            raise RuntimeError('Activation requires an existing GNOME Shell 51 desktop. '
+            raise RuntimeError('Activation requires an existing GNOME Shell 50 or 51 desktop. '
                                'See README.md for setup, or use --no-activate to copy only.')
         version = run(['gnome-shell', '--version'])
-        if not re.search(r'GNOME Shell 51(?:\.|\s|$)', version):
-            raise RuntimeError(f'Activation requires GNOME Shell 51; found {version}. Use --no-activate to copy only.')
+        if not re.search(r'GNOME Shell 5[01](?:\.|\s|$)', version):
+            raise RuntimeError(f'Activation requires GNOME Shell 50 or 51; found {version}. Use --no-activate to copy only.')
         if not os.environ.get('DBUS_SESSION_BUS_ADDRESS'):
             raise RuntimeError('Run inside your GNOME session, or use --no-activate.')
         if os.environ.get('GSETTINGS_BACKEND') == 'memory':

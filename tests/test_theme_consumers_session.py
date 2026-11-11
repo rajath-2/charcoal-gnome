@@ -22,7 +22,7 @@ fixture.mkdir()
 shutil.copyfile(repo / "tests/theme-consumers-session.js", fixture / "extension.js")
 (fixture / "metadata.json").write_text(json.dumps({
     "uuid": "theme-consumers-test@local", "name": "Theme consumers test", "description": "Isolated checks",
-    "shell-version": ["51"], "session-modes": ["user", "theme-consumers-test"],
+    "shell-version": ["50", "51"], "session-modes": ["user", "theme-consumers-test"],
 }))
 (root / "data/gnome-shell/modes/theme-consumers-test.json").write_text(json.dumps({
     "parentMode": "user", "enabledExtensions": ["blur-my-shell@aunetx", "charcoal-themes@local",
@@ -38,7 +38,7 @@ shutil.copyfile(repo / "tests/theme-consumers-session.js", fixture / "extension.
                    "topbar": {"bar-height": 42}, "widgets": {"background-color": "#112233",
                                                            "positions": '{"music":{"monitor":0,"x":0.2,"y":0.3}}'}},
 }))
-env = dict(os.environ, XDG_DATA_HOME=str(root / "data"), XDG_CONFIG_HOME=str(root / "config"),
+env = dict(os.environ, XDG_DATA_HOME=str(root / "home"), XDG_CONFIG_HOME=str(root / "config"),
            XDG_DATA_DIRS=f"{root / 'data'}:/usr/local/share:/usr/share", XDG_CACHE_HOME=str(root / "cache"),
            XDG_RUNTIME_DIR=str(root / "runtime"), XDG_STATE_HOME=str(root / "state"), GSETTINGS_BACKEND="memory")
 for key in ["WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS"]:

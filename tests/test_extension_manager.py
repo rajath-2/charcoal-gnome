@@ -122,10 +122,10 @@ class InstallerIntegrationTest(unittest.TestCase):
 
     def test_wrong_gnome_fails_before_manager_setup(self):
         with patch.object(self.installer.shutil, 'which', return_value='/usr/bin/tool'), \
-                patch.object(self.installer, 'run', return_value='GNOME Shell 50.1'), \
+                patch.object(self.installer, 'run', return_value='GNOME Shell 49.1'), \
                 patch.object(self.installer, 'install_manager', side_effect=AssertionError('Setup ran')):
             self.assertEqual(self.main('--install-extension-manager'), 1)
-        self.assertIn('GNOME Shell 51', self.output.getvalue())
+        self.assertIn('GNOME Shell 50 or 51', self.output.getvalue())
         self.assertFalse(any(self.home.iterdir()))
 
     def test_root_is_rejected(self):
