@@ -174,8 +174,6 @@ export default class CharcoalWidgets extends Extension {
     disable() {
         this._unwatchTheme?.();
         this._unwatchTheme = null;
-        this._theme?.destroy();
-        this._theme = null;
         for (const [object, id] of this._signals)
             object.disconnect(id);
         this._signals = [];
@@ -189,6 +187,8 @@ export default class CharcoalWidgets extends Extension {
         this._cards.clear();
         this._container.destroy();
         this._container = null;
+        this._theme?.destroy();
+        this._theme = null;
         this._unloadStyle();
         this._settings = null;
     }

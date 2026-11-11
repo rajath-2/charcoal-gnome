@@ -34,6 +34,8 @@ ensureDefaultTheme(store, {topbar: {
 }});
 assert(store.get('charcoal-default').components.topbar['bar-color'] === '#121212',
     'default gains components installed after the theme engine');
+store.save({...profile, components: {...profile.components, controls: {radius: 180}}});
+assert(!Object.hasOwn(store.get('test').components, 'controls'), 'saved profiles normalize retired components');
 store.delete('test');
 store.delete('charcoal-default');
 assert(store.list().length === 0, 'delete removes profile');

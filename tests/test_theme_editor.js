@@ -32,6 +32,14 @@ assert(state['profile-revision'] === revision, 'rejected edit does not notify re
 const [, afterBad] = file.load_contents(null);
 assert(JSON.parse(new TextDecoder().decode(afterBad)).components.topbar['bar-color'] === '#abcdef',
     'rejected edit preserves the theme');
+// Do not publish an edit over a damaged profile, even if the edited value itself is valid.
+file.replace_contents(new TextEncoder().encode(JSON.stringify({...saved, name: ''})),
+    null, false, Gio.FileCreateFlags.PRIVATE, null);
+rejected = false;
+try { saveOverridesToTheme('topbar', local, central, ['bar-color'], dir); }
+catch { rejected = true; }
+assert(rejected, 'full profile validation is shared with imports and consumers');
+assert(state['profile-revision'] === revision, 'damaged profile does not notify readers');
 file.delete(null);
 Gio.File.new_for_path(dir).delete(null);
 print('theme editor: ok');

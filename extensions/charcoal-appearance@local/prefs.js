@@ -24,6 +24,7 @@ function themes(cursors) {
             if (GLib.file_test(path, cursors ? GLib.FileTest.IS_DIR : GLib.FileTest.IS_REGULAR))
                 names.add(name);
         }
+        children.close(null);
     }
     return [...names].sort((a, b) => a.localeCompare(b));
 }
@@ -38,7 +39,8 @@ export default class CharcoalAppearancePreferences extends ExtensionPreferences 
         page.add(group);
         window.add(page);
         const ids = [];
-        window.connect('close-request', () => { ids.forEach(id => settings.disconnect(id)); return false; });
+        const cancellable = new Gio.Cancellable();
+        window.connect('close-request', () => { cancellable.cancel(); ids.forEach(id => settings.disconnect(id)); return false; });
 
         const choice = (key, title, options, labels = options) => {
             const row = new Adw.ComboRow({title, model: Gtk.StringList.new(labels)});
@@ -75,13 +77,15 @@ export default class CharcoalAppearancePreferences extends ExtensionPreferences 
             check.sensitive = false;
             status.subtitle = 'Checking…';
             try {
-                const version = await updateIcons();
+                const version = await updateIcons(cancellable);
+                if (cancellable.is_cancelled()) return;
                 settings.set_int64('icon-last-check', Math.floor(Date.now() / 1000));
                 status.subtitle = version ? `Updated to ${version}` : `${installedVersion() ?? 'Not installed'} (up to date)`;
             } catch (error) {
+                if (cancellable.is_cancelled()) return;
                 status.subtitle = `Update failed: ${error.message}`;
             } finally {
-                check.sensitive = true;
+                if (!cancellable.is_cancelled()) check.sensitive = true;
             }
         });
         status.add_suffix(check);

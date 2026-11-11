@@ -20,7 +20,7 @@ function loadProfile(id) {
         const path = GLib.build_filenamev([GLib.get_user_config_dir(), 'charcoal', 'themes', `${id}.json`]);
         const [, bytes] = Gio.File.new_for_path(path).load_contents(null);
         const profile = JSON.parse(new TextDecoder().decode(bytes));
-        return profile?.id === id && validateProfile(profile).ok ? profile : null;
+        return profile?.id === id ? validateProfile(profile).profile : null;
     } catch { return null; }
 }
 
@@ -69,7 +69,7 @@ export class ThemeClient {
         if (this._revision !== `${id}:${revision}`) {
             this._revision = `${id}:${revision}`;
             const profile = this._loadProfile(id);
-            this._profile = profile?.id === id && validateProfile(profile).ok ? profile : null;
+            this._profile = profile?.id === id ? validateProfile(profile).profile : null;
         }
         return this._profile;
     }

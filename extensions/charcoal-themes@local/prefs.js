@@ -199,8 +199,13 @@ export default class CharcoalThemesPreferences extends ExtensionPreferences {
                 } catch { /* File chooser cancelled. */ }
             }));
         wallpaperRow.add_suffix(choose);
-        settings.connect('changed::status', () => { status.subtitle = settings.get_string('status') || 'Theme ready'; });
-        settings.connect('changed::active-theme-id', () => refresh());
+        const statusSignal = settings.connect('changed::status', () => { status.subtitle = settings.get_string('status') || 'Theme ready'; });
+        const activeSignal = settings.connect('changed::active-theme-id', () => refresh());
+        window.connect('close-request', () => {
+            settings.disconnect(statusSignal);
+            settings.disconnect(activeSignal);
+            return false;
+        });
         refresh(settings.get_string('active-theme-id')); // open on the applied theme
     }
 }

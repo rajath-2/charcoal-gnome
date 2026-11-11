@@ -26,8 +26,7 @@ APPEARANCE = 'charcoal-appearance@local'
 LAUNCHERS = 'charcoal-launchers@local'
 WIDGETS = 'charcoal-widgets@local'
 THEMES = 'charcoal-themes@local'
-CONTROLS = 'charcoal-controls@local'
-EXTENSIONS = [BLUR, TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS, THEMES, CONTROLS]
+EXTENSIONS = [BLUR, TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS, THEMES]
 # Earlier bundles: the top bar was a Shell theme plus this extension, loaded by user-theme.
 AUTO = 'adaptive-smoke-panel@local'
 USER_THEME = 'user-theme@gnome-shell-extensions.gcampax.github.com'
@@ -47,11 +46,10 @@ COMPONENTS = {
     'launchers': [f'extensions/{BLUR}', f'extensions/{LAUNCHERS}'],
     'widgets': [f'extensions/{BLUR}', f'extensions/{WIDGETS}'],
     'themes': [f'extensions/{THEMES}'],
-    'controls': [f'extensions/{CONTROLS}'],
 }
 # Every consumer carries copies of the shared theme modules; all copies must know every catalog
 # section, or a profile holding a newer component is rejected as a whole.
-CONSUMERS = [TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS, CONTROLS]
+CONSUMERS = [TOPBAR, APPEARANCE, LAUNCHERS, WIDGETS]
 THEME_MODULES = ['theme-client.js', 'theme-policy.js', 'theme-catalog.js', 'theme-profile.js',
                  'theme-editor.js', 'theme-controls.js']
 SCHEMA_DIRS = {'org.gnome.shell.extensions.blur-my-shell': BLUR, 'org.gnome.shell.extensions.user-theme': USER_THEME,
@@ -315,7 +313,7 @@ def main():
     parser.add_argument('--mode', choices=['auto', 'compact', 'islands'], default='auto',
                         help='initial top bar layout; change later in Charcoal Topbar preferences')
     parser.add_argument('--only', nargs='+', choices=list(COMPONENTS), default=list(COMPONENTS), metavar='PIECE',
-                        help='install only some pieces: topbar, appearance, launchers, widgets, themes, controls (default: all)')
+                        help='install only some pieces: topbar, appearance, launchers, widgets, themes (default: all)')
     parser.add_argument('--dry-run', action='store_true', help='show changes without writing')
     parser.add_argument('--no-activate', action='store_true', help='install files without desktop settings changes')
     parser.add_argument('--install-extension-manager', action='store_true',

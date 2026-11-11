@@ -142,7 +142,7 @@ test('every consumer carries byte-identical copies of the shared theme modules',
     const extensions = new URL('../extensions/', import.meta.url);
     const modules = readdirSync(shared).filter(name => name.endsWith('.js'));
     const consumers = readdirSync(extensions).filter(dir => modules.some(name => existsSync(new URL(`${dir}/${name}`, extensions))));
-    assert.ok(consumers.length >= 5, `found consumers: ${consumers}`);
+    assert.ok(consumers.length === 4, `found consumers: ${consumers}`);
     for (const dir of consumers) for (const name of modules)
         assert.ok(readFileSync(new URL(`${dir}/${name}`, extensions)).equals(readFileSync(new URL(name, shared))), `${dir}/${name}`);
 });
@@ -167,4 +167,20 @@ test('themes saved with the dropped lock screen section still load, without it',
         components: {topbar: {}, lockscreen: {'clock-y': 0.4}}});
     assert.ok(checked.ok, checked.errors.join('; '));
     assert.deepEqual(Object.keys(checked.profile.components), ['topbar']);
+});
+
+
+test('retired controls profiles retain supported components', () => {
+    const checked = validateProfile({...minimal, components: {...minimal.components, controls: {'radius': 180}}});
+    assert.equal(checked.ok, true);
+    assert.equal(Object.hasOwn(checked.profile.components, 'controls'), false);
+});
+
+test('widget JSON settings require objects, not scalar JSON', () => {
+    for (const value of ['true', '42', '"text"', 'null', '[]'])
+        assert.equal(validateProfile({...minimal, components: {widgets: {positions: value}}}).ok, false);
+});
+
+test('prototype names cannot masquerade as catalog components', () => {
+    assert.equal(validateProfile({...minimal, components: {constructor: {}}}).ok, false);
 });

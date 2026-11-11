@@ -74,6 +74,7 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
                 this.place();
         });
         addBlur(this._blurLayer, settings).then(group => {
+            if (this._destroyed) return;
             this._blurStatic = group;
             this._syncBlur();
         });
@@ -83,6 +84,7 @@ export const Card = GObject.registerClass(class Card extends St.Widget {
         this.connect('button-release-event', () => this._endDrag());
         this.connect('leave-event', () => { if (!this._grab) this.cursor_type = Clutter.CursorType.DEFAULT; });
         this.connect('destroy', () => {
+            this._destroyed = true;
             this._grab?.dismiss();
             if (this._layoutIdle) GLib.Source.remove(this._layoutIdle);
         });

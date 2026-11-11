@@ -23,7 +23,7 @@ shutil.copyfile(repo / 'tests/search-session.js', fixture / 'extension.js')
     'description': 'Isolated checks', 'shell-version': ['51'], 'session-modes': ['user', 'search-test']}))
 (root / 'data/gnome-shell/modes/search-test.json').write_text(json.dumps({'parentMode': 'user',
     'enabledExtensions': ['blur-my-shell@aunetx', 'charcoal-launchers@local', 'search-test@local'],
-    'hasOverview': False, 'showWelcomeDialog': False}))
+    'hasOverview': True, 'showWelcomeDialog': False}))
 # Set before dbus-run-session: nothing in the session may reach the real dconf.
 env = dict(os.environ, XDG_DATA_HOME=str(root / 'data'), XDG_CONFIG_HOME=str(root / 'config'),
     XDG_DATA_DIRS=f"{root / 'data'}:/usr/local/share:/usr/share", XDG_CACHE_HOME=str(root / 'cache'),
@@ -42,6 +42,6 @@ with (root / 'shell.log').open('w') as log:
         except ProcessLookupError: pass
         process.wait()
 output = (root / 'shell.log').read_text()
-if 'SEARCH PASS' not in output or 'SEARCH FAIL' in output:
+if 'SEARCH PASS' not in output or 'SEARCH FAIL' in output or 'JS ERROR:' in output:
     raise AssertionError(output[-14000:])
 print('SEARCH PASS')

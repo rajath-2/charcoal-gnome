@@ -11,7 +11,7 @@ function validValue(value, rule) {
     if (rule.type === 'text') return typeof value === 'string' && value.length <= 256 && !value.includes('\0');
     if (rule.type === 'json') {
         if (typeof value !== 'string' || value.length > 16384) return false;
-        try { return !!JSON.parse(value) && !Array.isArray(JSON.parse(value)); }
+        try { const parsed = JSON.parse(value); return !!parsed && typeof parsed === 'object' && !Array.isArray(parsed); }
         catch { return false; }
     }
     return false;
@@ -20,9 +20,9 @@ function validValue(value, rule) {
 export function validateProfile(raw, catalog = THEME_KEYS) {
     const errors = [];
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {ok: false, profile: null, errors: ['Profile must be an object']};
-    // Lock screen was dropped; themes saved before that still carry its section, so strip it instead of rejecting them.
-    if (raw.components && Object.hasOwn(raw.components, 'lockscreen')) {
-        const {lockscreen: _dropped, ...components} = raw.components;
+    // Retired sections must not make otherwise usable saved themes unreadable.
+    if (raw.components && typeof raw.components === 'object' && !Array.isArray(raw.components)) {
+        const {lockscreen: _lockscreen, controls: _controls, ...components} = raw.components;
         raw = {...raw, components};
     }
     if (raw.version !== 1) errors.push('Unsupported profile version');
@@ -34,12 +34,12 @@ export function validateProfile(raw, catalog = THEME_KEYS) {
     if (!raw.components || typeof raw.components !== 'object' || Array.isArray(raw.components))
         errors.push('Components must be an object');
     else for (const [component, values] of Object.entries(raw.components)) {
-        const rules = catalog[component];
+        const rules = Object.hasOwn(catalog, component) ? catalog[component] : null;
         if (!rules || !values || typeof values !== 'object' || Array.isArray(values)) {
             errors.push(`Invalid component: ${component}`); continue;
         }
         for (const [key, value] of Object.entries(values)) {
-            if (!rules[key] || !validValue(value, rules[key])) errors.push(`Invalid value: ${component}.${key}`);
+            if (!Object.hasOwn(rules, key) || !validValue(value, rules[key])) errors.push(`Invalid value: ${component}.${key}`);
         }
     }
     return {ok: errors.length === 0, profile: errors.length ? null : raw, errors};

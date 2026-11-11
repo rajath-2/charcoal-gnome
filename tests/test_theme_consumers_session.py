@@ -29,7 +29,7 @@ shutil.copyfile(repo / "tests/theme-consumers-session.js", fixture / "extension.
                                           "charcoal-launchers@local", "charcoal-appearance@local",
                                           "charcoal-topbar@local", "charcoal-widgets@local",
                                           "theme-consumers-test@local"],
-    "hasOverview": False, "showWelcomeDialog": False,
+    "hasOverview": True, "showWelcomeDialog": False,
 }))
 (root / "config/charcoal/themes/night.json").write_text(json.dumps({
     "version": 1, "id": "night", "name": "Night", "wallpaper": None,
@@ -57,6 +57,6 @@ with (root / "shell.log").open("w") as log:
             pass
         process.wait()
 output = (root / "shell.log").read_text()
-if "THEME CONSUMERS PASS" not in output or "THEME CONSUMERS FAIL" in output:
+if "THEME CONSUMERS PASS" not in output or "THEME CONSUMERS FAIL" in output or "JS ERROR:" in output:
     raise AssertionError(output[-14000:])
 print("THEME CONSUMERS PASS")

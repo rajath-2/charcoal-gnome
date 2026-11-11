@@ -21,7 +21,7 @@ export class ThemeStore {
             const [, bytes] = file.load_contents(null);
             const value = JSON.parse(new TextDecoder().decode(bytes));
             const checked = validateProfile(value);
-            return checked.ok && value.id === id ? value : null;
+            return checked.ok && value.id === id ? checked.profile : null;
         } catch {
             return null;
         }
@@ -48,7 +48,7 @@ export class ThemeStore {
         if (!checked.ok) throw new Error(checked.errors.join('; '));
         GLib.mkdir_with_parents(this.dir, 0o700);
         const file = this._file(profile.id);
-        file.replace_contents(new TextEncoder().encode(JSON.stringify(profile, null, 2)), null, false,
+        file.replace_contents(new TextEncoder().encode(JSON.stringify(checked.profile, null, 2)), null, false,
             Gio.FileCreateFlags.PRIVATE, null);
     }
 
@@ -80,7 +80,7 @@ export function captureSettings(id, name, settingsByComponent, useDefaults = fal
 
 export function installedComponentSettings() {
     const components = {};
-    for (const component of ['topbar', 'appearance', 'launchers', 'widgets', 'controls']) {
+    for (const component of ['topbar', 'appearance', 'launchers', 'widgets']) {
         const dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'gnome-shell', 'extensions',
             `charcoal-${component}@local`, 'schemas']);
         try {

@@ -53,7 +53,7 @@ class InstallerTest(unittest.TestCase):
             self.assertTrue((launcher / 'prefs.js').is_file())
             self.assertTrue((launcher / 'schemas/gschemas.compiled').is_file())
             for name in ['charcoal-topbar@local', 'charcoal-appearance@local',
-                         'charcoal-launchers@local', 'charcoal-widgets@local', 'charcoal-controls@local']:
+                         'charcoal-launchers@local', 'charcoal-widgets@local']:
                 installed = home / '.local/share/gnome-shell/extensions' / name
                 for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js', 'theme-profile.js',
                                'theme-editor.js', 'theme-controls.js']:
@@ -133,22 +133,11 @@ class InstallerTest(unittest.TestCase):
             self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
             self.assertFalse((extensions / 'charcoal-themes@local').exists())
 
-    def test_only_controls_installs_and_restores_wheel(self):
-        with tempfile.TemporaryDirectory(prefix='gnome-theme-install-test-') as directory:
-            home = Path(directory)
-            env = dict(os.environ, HOME=str(home), XDG_DATA_HOME=str(home / '.local/share'),
-                       XDG_CONFIG_HOME=str(home / '.config'), XDG_STATE_HOME=str(home / '.local/state'))
-            extensions = home / '.local/share/gnome-shell/extensions'
-            result = subprocess.run([str(ROOT / 'install.sh'), '--no-activate', '--only', 'controls'],
-                                    env=env, text=True, capture_output=True)
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertTrue((extensions / 'charcoal-controls@local/schemas/gschemas.compiled').is_file())
-            self.assertFalse((extensions / 'charcoal-themes@local').exists())
-            backup = next((home / '.local/state/gnome-themes/backups').iterdir())
-            restored = subprocess.run([str(ROOT / 'install.sh'), '--restore', str(backup)],
-                                      env=env, text=True, capture_output=True)
-            self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
-            self.assertFalse((extensions / 'charcoal-controls@local').exists())
+    def test_controls_is_no_longer_an_installable_component(self):
+        result = subprocess.run([str(ROOT / 'install.sh'), '--dry-run', '--only', 'controls'],
+                                text=True, capture_output=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('invalid choice', result.stderr)
 
     def test_partial_install_refreshes_theme_modules_of_installed_consumers(self):
         with tempfile.TemporaryDirectory(prefix='gnome-theme-install-test-') as directory:
@@ -156,27 +145,27 @@ class InstallerTest(unittest.TestCase):
             env = dict(os.environ, HOME=str(home), XDG_DATA_HOME=str(home / '.local/share'),
                        XDG_CONFIG_HOME=str(home / '.config'), XDG_STATE_HOME=str(home / '.local/state'))
             extensions = home / '.local/share/gnome-shell/extensions'
-            # An older controls install with outdated shared modules.
-            controls = extensions / 'charcoal-controls@local'
-            controls.mkdir(parents=True)
-            (controls / 'extension.js').write_text('older controls')
-            (controls / 'theme-catalog.js').write_text('older catalog')
-            (controls / 'theme-profile.js').write_text('older profile')
+            # An older appearance install with outdated shared modules.
+            appearance = extensions / 'charcoal-appearance@local'
+            appearance.mkdir(parents=True)
+            (appearance / 'extension.js').write_text('older appearance')
+            (appearance / 'theme-catalog.js').write_text('older catalog')
+            (appearance / 'theme-profile.js').write_text('older profile')
             result = subprocess.run([str(ROOT / 'install.sh'), '--no-activate', '--only', 'themes'],
                                     env=env, text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             for module in ['theme-client.js', 'theme-policy.js', 'theme-catalog.js', 'theme-profile.js',
                            'theme-editor.js', 'theme-controls.js']:
-                self.assertEqual((controls / module).read_bytes(), (ROOT / 'shared' / module).read_bytes(), module)
-            self.assertEqual((controls / 'extension.js').read_text(), 'older controls', 'only shared modules change')
+                self.assertEqual((appearance / module).read_bytes(), (ROOT / 'shared' / module).read_bytes(), module)
+            self.assertEqual((appearance / 'extension.js').read_text(), 'older appearance', 'only shared modules change')
             for absent in ['charcoal-topbar@local', 'charcoal-widgets@local', 'charcoal-launchers@local']:
                 self.assertFalse((extensions / absent).exists(), absent)
             backup = next((home / '.local/state/gnome-themes/backups').iterdir())
             restored = subprocess.run([str(ROOT / 'install.sh'), '--restore', str(backup)],
                                       env=env, text=True, capture_output=True)
             self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
-            self.assertEqual((controls / 'theme-catalog.js').read_text(), 'older catalog')
-            self.assertEqual((controls / 'extension.js').read_text(), 'older controls')
+            self.assertEqual((appearance / 'theme-catalog.js').read_text(), 'older catalog')
+            self.assertEqual((appearance / 'extension.js').read_text(), 'older appearance')
             self.assertFalse((extensions / 'charcoal-themes@local').exists())
 
 

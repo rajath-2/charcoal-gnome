@@ -27,4 +27,9 @@ for (const content of ['{', '{"version":99}', JSON.stringify({format: 'charcoal-
     file.replace_contents(new TextEncoder().encode(content), null, false, Gio.FileCreateFlags.PRIVATE, null);
     reject(() => importTheme(file, store));
 }
+// A typical wallpaper must not exhaust the regular-expression engine's stack.
+const large = new Uint8Array(1024 * 1024);
+wall.replace_contents(large, null, false, Gio.FileCreateFlags.PRIVATE, null);
+exportTheme(profile, file);
+assert(importTheme(file, store).wallpaper, 'large wallpaper imports');
 print('theme transfer: ok');

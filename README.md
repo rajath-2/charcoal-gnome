@@ -10,7 +10,7 @@ Click the animation for the full-quality video.
 | ![Calendar and notifications menu](media/calendar-menu.jpg) **Calendar menu:** styled notifications, media controls and events | ![Super+Space search panel](media/search.jpg) **Super+Space search:** apps, files and calculations |
 | ![Hold-Super favorites wheel](media/favorites-wheel.jpg) **Favorites wheel:** hold Super | [![Top bar switching layouts](media/topbar-layout.gif)](media/topbar-layout.mp4) **Automatic layout:** the bar splits and joins as windows open and maximize (click for video) |
 
-A charcoal-and-glass desktop for **GNOME Shell 51**, with seven configurable
+A charcoal-and-glass desktop for **GNOME Shell 51**, with six configurable
 extensions, GTK4 styling, icons and a cursor theme. Install the whole bundle or
 choose individual pieces. Theme files install for your user, with a backup and
 restore command.
@@ -22,7 +22,6 @@ restore command.
 | Charcoal Launchers (`charcoal-launchers@local`) | Super+Space search, hold-Super favorites wheel, window previews, radial dock and touchpad gestures |
 | Charcoal Widgets (`charcoal-widgets@local`) | Resizable weather, calendar and music cards on the empty desktop |
 | Charcoal Themes (`charcoal-themes@local`) | Named presets for Charcoal appearance, layout, and desktop wallpaper |
-| Charcoal Control Wheel (`charcoal-controls@local`) | Separate wheel for actions, quick notes, settings, and theme switching |
 
 Blur comes from the bundled **Blur My Shell** extension. Static blur uses only the
 wallpaper and is the default; live blur can be selected in each extension's
@@ -146,7 +145,7 @@ Open [preferences](#open-preferences), choose your weather city, and try
 
 | Option | Effect |
 | --- | --- |
-| `--only PIECE [PIECE ...]` | Install any combination of `topbar`, `appearance`, `launchers`, `widgets`, `themes`, `controls`; default: all |
+| `--only PIECE [PIECE ...]` | Install any combination of `topbar`, `appearance`, `launchers`, `widgets`, `themes`; default: all |
 | `--mode auto\|compact\|islands` | Choose the top bar's starting layout; default: `auto` |
 | `--no-activate` | Copy files and compile schemas without changing desktop settings or enabling extensions |
 | `--dry-run` | Preview without writes, prompts or downloads |
@@ -161,7 +160,6 @@ Examples:
 ./install.sh --only launchers              # Launchers + Blur My Shell
 ./install.sh --only widgets                # Widgets + Blur My Shell
 ./install.sh --only themes                 # Theme engine only
-./install.sh --only controls               # Control wheel only
 ./install.sh --only topbar launchers --mode islands
 ./install.sh --mode compact                # all pieces, fixed compact top bar
 ./install.sh --no-activate                 # file-only installation
@@ -248,7 +246,7 @@ installed fonts, icon packs, or extensions.
 
 Open **Charcoal Themes** preferences to create a theme from your current
 settings, duplicate or rename one, choose a desktop wallpaper, and edit values
-for Topbar, Appearance, Launchers, Widgets, and the Control Wheel. Applying a theme changes its
+for Topbar, Appearance, Launchers, and Widgets. Applying a theme changes its
 wallpaper immediately. Each other Charcoal extension has a **Follow active
 theme** switch in its own preferences; existing installations start with that
 switch off, preserving their current settings.
@@ -262,17 +260,10 @@ weather city, enabled widgets, and other feature or personal settings always
 stay local. If the theme engine is disabled or unavailable, linked extensions
 use their saved local settings.
 
-## Control wheel
-
-Set a shortcut for the separate control wheel in **Charcoal Control Wheel**
-preferences (none is set by default; press **Set shortcut** and then the keys).
-Hold the shortcut, move the pointer onto an item and release to run it; release over
-the centre to cancel. Clicking an item also works. Its items are lock, suspend, log out, restart, power off, a quick note, Charcoal
-settings and themes; turn each on or off under **Wheel items**.
-Select **Themes** for a second ring of saved profiles; the applied theme is
-filled with the accent colour and named in the centre. Log out, restart, and power off ask for confirmation. Quick notes
-are stored as UTF-8 text files under `~/.local/share/charcoal/notes/` and are
-never included in a theme. Wheel appearance is also set in its preferences.
+The experimental Control Wheel is deferred and preserved on the
+`archive/controls-wheel` branch. It is no longer installed by this branch.
+If you previously installed it, disable `charcoal-controls@local` in your
+extension manager; its saved notes and settings are left intact.
 
 ## Top bar
 
@@ -536,7 +527,7 @@ For contributors with Node.js and GJS installed:
 
 ```bash
 node --test tests/*.mjs
-gjs -m tests/test_icon_update.js
+for test in tests/test_*.js; do GSETTINGS_BACKEND=memory gjs -m "$test" || exit 1; done
 ```
 
 The icon test's network download is opt-in via `ICON_UPDATE_NETWORK=1`; use a
@@ -549,6 +540,19 @@ glib-compile-schemas --strict extensions/charcoal-launchers@local/schemas
 This writes the compiled schema in that directory. The separate integration test
 `python3 tests/test_topbar_session.py` starts a headless GNOME session and leaves
 its log and screenshot under `/tmp`; it needs a suitable GNOME test environment.
+
+For GNOME 51 runtime checks, these launch isolated headless sessions with temporary
+settings and extension copies:
+
+```bash
+python3 tests/test_theme_consumers_session.py
+python3 tests/test_topbar_session.py
+python3 tests/test_search_session.py
+```
+
+These checks cover theme switching, local overrides, disable/re-enable cleanup,
+topbar rendering, and launcher input/search. They do not replace manual testing
+on multiple monitors, fractional scaling, or different graphics drivers.
 
 ## License
 

@@ -71,6 +71,20 @@ export default class ThemeConsumersTest extends Extension {
         check(launchers._wheel.settings.get_int('wheel-radius') === 140, 'unlinked wheel did not restore local');
         check(appearance._desktop.get('icon-theme').get_string('icon-theme') === appearance._settings.get_string('icon-theme'),
             'unlinked icon choice did not restore local');
+        // A user's later desktop choice belongs to the user, even when Appearance is disabled.
+        const desktop = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
+        desktop.set_string('icon-theme', 'user-external-choice');
+        appearance.disable();
+        check(desktop.get_string('icon-theme') === 'user-external-choice', 'disable overwrote external icon choice');
+        appearance.enable();
+        // Exercise actual cleanup/re-enable of every component with pending redraw work.
+        for (const extension of [launchers, widgets, topbar, appearance, themes]) {
+            extension.disable();
+            extension.enable();
+        }
+        await pause(400);
+        check(launchers._input && widgets._container && topbar._surface && appearance._desktop && themes._store,
+            'extensions failed to re-enable');
         console.log('THEME CONSUMERS PASS');
         global.context.terminate();
     }

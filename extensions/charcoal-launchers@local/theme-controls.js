@@ -26,10 +26,7 @@ export function attachThemeControls(window, page, settings, component) {
         row.add_suffix(button); group.add(row);
         return button;
     };
-    const overrides = () => {
-        try { return JSON.parse(settings.get_string('override-activations')); }
-        catch { return {}; }
-    };
+    const overrides = () => client._overrides();
     const use = action('Use theme values', 'Use theme', () => {
         const values = overrides();
         for (const key of keys) if (Object.hasOwn(values, key)) values[key] = '';

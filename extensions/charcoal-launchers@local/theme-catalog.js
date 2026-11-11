@@ -8,13 +8,6 @@ const number = (min, max) => ({type: 'number', min, max});
 // Lock elements are placed by fractions of the monitor; decorative text-content stays personal.
 
 export const THEME_KEYS = {
-    controls: {
-        radius: integer(100, 320), 'neutral-radius': integer(20, 80),
-        'text-size': integer(10, 32), 'background-color': color,
-        'foreground-color': color, 'accent-color': color,
-        'border-color': color, 'border-width': integer(0, 6),
-        'shadow-color': color, 'shadow-size': integer(0, 60),
-    },
     topbar: {
         mode: {type: 'choice', values: ['auto', 'compact', 'islands']},
         'invert-auto': bool, 'static-blur': bool,
